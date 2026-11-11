@@ -1,4 +1,5 @@
 import Logo from "./components/Logo";
+import UploadPanel from "./components/UploadPanel";
 
 const agents = [
   {
@@ -47,12 +48,7 @@ export default function App() {
 
         <section className="panel" aria-labelledby="upload-title">
           <h2 id="upload-title">Start with your CV</h2>
-          <div className="dropzone">
-            <p className="dropzone-title">PDF upload</p>
-            <p className="dropzone-hint">
-              Coming in the next step — PDF only, up to 5 MB. Nothing is stored after the run.
-            </p>
-          </div>
+          <UploadPanel />
         </section>
 
         <section className="panel" aria-labelledby="pipeline-title">

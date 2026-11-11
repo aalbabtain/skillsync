@@ -116,13 +116,23 @@ Copy `.env.example` to `api/.env` and set:
 | `POST` | `/api/auth/login` | Get a JWT |
 | `POST` | `/api/runs` | Upload a CV and start the pipeline |
 | `GET` | `/api/runs/{id}/events` | Stream pipeline progress (SSE) |
+
+`POST /api/runs` currently accepts a multipart `file` field with a PDF up to 5 MB and 10 pages,
+extracts the text in memory, and returns it with a `run_id`. The file and its text are never
+written to disk or logged. Rejections use `{"detail": {"code", "message"}}` with the codes
+`EMPTY_UPLOAD`, `NOT_A_PDF`, `NOT_A_PDF_MAGIC`, `PDF_TOO_LARGE`, `PDF_ENCRYPTED`,
+`PDF_CORRUPTED`, `PDF_TOO_MANY_PAGES` and `PDF_NO_TEXT_LAYER`.
+
+Arabic CVs are supported: the parser restores right-to-left runs from the visual order PDF stores
+them in. Punctuation that sits between two Arabic words can land on the neighbouring word, and a
+scanned CV with no text layer is rejected rather than OCR'd.
 | `GET` | `/api/runs/{id}` | Fetch the run result |
 | `POST` | `/api/runs/{id}/approve` | Approve, edit, or reject the draft plan |
 
 ## Testing
 
 ```bash
-cd api
+- [x] CV upload and PDF text extraction
 pytest
 ```
 
