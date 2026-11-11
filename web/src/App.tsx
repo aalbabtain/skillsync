@@ -1,3 +1,5 @@
+import Logo from "./components/Logo";
+
 const agents = [
   {
     step: 1,
@@ -26,12 +28,9 @@ export default function App() {
     <div className="page">
       <header className="site-head">
         <div className="wrap head-inner">
-          <span className="brand">
-            <span className="mark" aria-hidden="true">
-              →
-            </span>
-            SkillSync
-          </span>
+          <a className="brand" href="/" aria-label="SkillSync, back to top">
+            <Logo />
+          </a>
           <span className="badge">Scaffold</span>
         </div>
       </header>
