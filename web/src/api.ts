@@ -32,3 +32,32 @@ export async function createRun(file: File): Promise<RunResult> {
 
   return payload as RunResult;
 }
+
+export type Skill = {
+  name: string;
+  category: string;
+  evidence: string;
+};
+
+export type SkillsResult = {
+  skills: Skill[];
+  dropped_count: number;
+};
+
+export async function extractSkills(text: string): Promise<SkillsResult> {
+  const response = await fetch("/api/skills/extract", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new ApiRequestError(
+      payload?.detail?.code ?? "UNKNOWN",
+      payload?.detail?.message ?? "Skill extraction failed.",
+    );
+  }
+
+  return payload as SkillsResult;
+}

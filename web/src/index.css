@@ -250,6 +250,7 @@ a {
 
 .upload-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -277,6 +278,268 @@ a {
   margin-top: 0.8rem;
   font-size: 0.9rem;
   color: #f0a3a3;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.upload-actions .btn {
+  padding: 0.55rem 0.95rem;
+  font-size: 0.88rem;
+}
+
+.upload-status {
+  margin-bottom: 0.9rem;
+  font-size: 0.88rem;
+  color: var(--accent);
+}
+
+.upload-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.upload-error .btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.btn:disabled:active {
+  transform: none;
+}
+
+.btn-primary:disabled:hover {
+  background: var(--accent);
+}
+
+.btn-ghost:disabled:hover {
+  border-color: var(--line2);
+  color: var(--text);
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(13, 19, 48, 0.25);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Skills ---------- */
+
+.skills-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.skills-count {
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.skills-note {
+  margin-bottom: 1.1rem;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+  background: rgba(236, 238, 242, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.skills-empty {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.skills-groups {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.chip-group h3 {
+  margin-bottom: 0.55rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.75rem;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+}
+
+.chip-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.chip-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(141, 162, 251, 0.1);
+  border-radius: 999px;
+  cursor: help;
+}
+
+.chip-badge svg {
+  display: block;
+}
+
+.chip-badge-user {
+  color: var(--muted);
+  background: rgba(236, 238, 242, 0.05);
+  cursor: default;
+}
+
+.chip-evidence {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 10;
+  width: max-content;
+  max-width: min(340px, 72vw);
+  padding: 0.55rem 0.7rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.chip:hover .chip-evidence,
+.chip:focus-within .chip-evidence {
+  opacity: 1;
+}
+
+.chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.chip-remove:hover {
+  color: var(--text);
+  background: rgba(236, 238, 242, 0.08);
+}
+
+.add-skill {
+  margin-top: 1.4rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
+}
+
+.add-skill label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.add-skill-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.add-skill input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.9rem;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--text);
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+}
+
+.add-skill input::placeholder {
+  color: var(--muted);
+}
+
+.add-skill-row .btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.skills-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
 }
 
 /* ---------- Pipeline ---------- */
@@ -405,6 +668,20 @@ a {
     padding: 1.25rem;
   }
 
+  .skills-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .upload-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .add-skill-row {
+    flex-direction: column;
+  }
+
   .hero {
     padding: 64px 0 40px;
   }
@@ -427,6 +704,16 @@ a {
   .btn,
   .step,
   .step-n {
+    transition: none;
+  }
+
+  .spinner {
+    animation: none;
+    border-top-color: var(--accent);
+  }
+
+  .chip-evidence,
+  .chip-remove {
     transition: none;
   }
 }

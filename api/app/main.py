@@ -4,9 +4,12 @@ from uuid import uuid4
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
+from app.agents import cv_skills
 from app.config import get_settings
 from app.parsers.pdf import PdfExtractionError, extract
+from app.verification import verify_skills
 
 settings = get_settings()
 
@@ -26,6 +29,8 @@ app.add_middleware(
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 CHUNK_BYTES = 64 * 1024
+MAX_CV_TEXT_CHARS = 50_000
+MIN_CV_TEXT_CHARS = 40
 STATUS_BY_CODE = {
     "EMPTY_UPLOAD": 400,
     "NOT_A_PDF": 415,
@@ -82,4 +87,40 @@ async def create_run(file: UploadFile = File(...)):
         "pages": document.pages,
         "characters": document.characters,
         "text": document.text,
+    }
+
+
+class SkillsRequest(BaseModel):
+    text: str
+
+
+@app.post("/api/skills/extract")
+def extract_skills_route(payload: SkillsRequest):
+    text = payload.text.strip()
+
+    if len(text) < MIN_CV_TEXT_CHARS:
+        return _error(422, "TEXT_TOO_SHORT", "The CV text is too short to extract skills.")
+
+    if len(text) > MAX_CV_TEXT_CHARS:
+        return _error(413, "TEXT_TOO_LONG", "The CV text is too long to extract skills.")
+
+    try:
+        candidates = cv_skills.extract(text)
+    except cv_skills.SkillExtractionError as error:
+        status = 503 if error.code == "SKILLS_UNAVAILABLE" else 502
+        return _error(status, error.code, error.message)
+
+    result = verify_skills(candidates, text)
+    logger.info(
+        "skills extraction: %d kept, %d dropped",
+        len(result.skills),
+        result.dropped_count,
+    )
+
+    return {
+        "skills": [
+            {"name": skill.name, "category": skill.category, "evidence": skill.evidence}
+            for skill in result.skills
+        ],
+        "dropped_count": result.dropped_count,
     }

@@ -47,6 +47,7 @@ skillsync/
       pipeline.py       runs the agents in order, streams progress
       agents/           one module per agent
       parsers/          CV text extraction
+      prompts/          agent system prompts, one markdown file each
       models/           DB models and Pydantic schemas
     tests/
     requirements.txt
@@ -115,7 +116,10 @@ Copy `.env.example` to `api/.env` and set:
 | `POST` | `/api/auth/register` | Create a student or instructor account |
 | `POST` | `/api/auth/login` | Get a JWT |
 | `POST` | `/api/runs` | Upload a CV and start the pipeline |
+| `GET` | `/api/runs/{id}` | Fetch the run result |
 | `GET` | `/api/runs/{id}/events` | Stream pipeline progress (SSE) |
+| `POST` | `/api/runs/{id}/approve` | Approve, edit, or reject the draft plan |
+| `POST` | `/api/skills/extract` | Extract skills from CV text and verify each one |
 
 `POST /api/runs` currently accepts a multipart `file` field with a PDF up to 5 MB and 10 pages,
 extracts the text in memory, and returns it with a `run_id`. The file and its text are never
@@ -126,14 +130,19 @@ written to disk or logged. Rejections use `{"detail": {"code", "message"}}` with
 Arabic CVs are supported: the parser restores right-to-left runs from the visual order PDF stores
 them in. Punctuation that sits between two Arabic words can land on the neighbouring word, and a
 scanned CV with no text layer is rejected rather than OCR'd.
-| `GET` | `/api/runs/{id}` | Fetch the run result |
-| `POST` | `/api/runs/{id}/approve` | Approve, edit, or reject the draft plan |
+
+`POST /api/skills/extract` takes `{"text": "..."}` between 40 and 50,000 characters and returns
+`{"skills": [{"name", "category", "evidence"}], "dropped_count": n}`. The model proposes a skill
+only with a verbatim quote from the CV; plain code then normalizes both, requires a whole-word match,
+merges aliases, and drops anything it cannot prove. The model never decides what is verified.
+Rejections use `TEXT_TOO_SHORT`, `TEXT_TOO_LONG`, `SKILLS_MALFORMED` and `SKILLS_UNAVAILABLE`.
+The prompt lives in `api/app/prompts/cv_assessor.md`, and the CV text is never logged or stored.
 
 ## Testing
 
 ```bash
-- [x] CV upload and PDF text extraction
-pytest
+cd api
+.venv\Scripts\python -m pytest
 ```
 
 Agent tests use recorded fixtures in `api/tests/fixtures/` so they run without a Gemini key.
@@ -141,9 +150,10 @@ The Gap Evaluator is covered by golden tests against the same input/output pairs
 
 ## Roadmap
 
-- [ ] Repo scaffolding, `.env.example`, CI
-- [ ] CV upload and PDF text extraction
-- [ ] Agent 1 — CV & Fit Assessor
+- [x] Repo scaffolding, `.env.example`, CI
+- [x] CV upload and PDF text extraction
+- [x] Agent 1 — skill extraction with automatic evidence verification
+- [ ] Agent 1 — short skill check and posting screening
 - [ ] Agent 2 — Requirements Extractor (RAG over postings)
 - [ ] Agent 3 — Gap Evaluator (deterministic, tested)
 - [ ] Agent 4 — Plan Builder

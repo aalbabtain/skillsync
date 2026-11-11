@@ -1,6 +1,12 @@
 import { useRef, useState } from "react";
 
-import { ApiRequestError, createRun, type RunResult } from "../api";
+import {
+  ApiRequestError,
+  createRun,
+  extractSkills,
+  type RunResult,
+  type SkillsResult,
+} from "../api";
 
 type State =
   | { kind: "idle" }
@@ -8,12 +14,24 @@ type State =
   | { kind: "error"; message: string }
   | { kind: "done"; result: RunResult };
 
-const MAX_BYTES = 5 * 1024 * 1024;
+type Extraction =
+  | { kind: "idle" }
+  | { kind: "running"; stage: "extracting" | "verifying" }
+  | { kind: "error"; message: string };
 
-export default function UploadPanel() {
+const MAX_BYTES = 5 * 1024 * 1024;
+const VERIFY_DELAY_MS = 1200;
+
+type Props = {
+  onSkills: (result: SkillsResult) => void;
+};
+
+export default function UploadPanel({ onSkills }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<State>({ kind: "idle" });
+  const [extraction, setExtraction] = useState<Extraction>({ kind: "idle" });
   const [dragging, setDragging] = useState(false);
+  const runningRef = useRef(false);
 
   async function start(file: File) {
     if (file.type !== "application/pdf") {
@@ -26,6 +44,7 @@ export default function UploadPanel() {
       return;
     }
 
+    setExtraction({ kind: "idle" });
     setState({ kind: "uploading", filename: file.name });
 
     try {
@@ -38,7 +57,37 @@ export default function UploadPanel() {
     }
   }
 
+  async function runExtraction() {
+    if (state.kind !== "done" || runningRef.current) {
+      return;
+    }
+
+    runningRef.current = true;
+    setExtraction({ kind: "running", stage: "extracting" });
+
+    try {
+      const result = await extractSkills(state.result.text);
+      setExtraction({ kind: "running", stage: "verifying" });
+      await new Promise((resolve) => setTimeout(resolve, VERIFY_DELAY_MS));
+      setExtraction({ kind: "idle" });
+      onSkills(result);
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError ? error.message : "Could not reach the server.";
+      setExtraction({ kind: "error", message });
+    } finally {
+      runningRef.current = false;
+    }
+  }
+
+  function startOver() {
+    setExtraction({ kind: "idle" });
+    setState({ kind: "idle" });
+  }
+
   if (state.kind === "done") {
+    const running = extraction.kind === "running";
+
     return (
       <div className="upload">
         <div className="upload-meta">
@@ -46,10 +95,37 @@ export default function UploadPanel() {
             {state.result.filename} · {state.result.pages} page
             {state.result.pages === 1 ? "" : "s"} · {state.result.characters} characters
           </span>
-          <button className="btn btn-ghost" onClick={() => setState({ kind: "idle" })}>
-            Start over
-          </button>
+          <div className="upload-actions">
+            <button
+              className="btn btn-primary"
+              onClick={() => void runExtraction()}
+              disabled={running}
+              aria-busy={running}
+            >
+              {running && <span className="spinner" aria-hidden="true" />}
+              Extract skills
+            </button>
+            <button className="btn btn-ghost" onClick={startOver} disabled={running}>
+              Start over
+            </button>
+          </div>
         </div>
+
+        {extraction.kind === "running" && (
+          <p className="upload-status" role="status">
+            {extraction.stage === "extracting" ? "Extracting skills…" : "Verifying…"}
+          </p>
+        )}
+
+        {extraction.kind === "error" && (
+          <div className="upload-error" role="alert">
+            <span>{extraction.message}</span>
+            <button className="btn btn-ghost" onClick={() => void runExtraction()}>
+              Retry
+            </button>
+          </div>
+        )}
+
         <pre className="upload-text" dir="auto">
           {state.result.text}
         </pre>

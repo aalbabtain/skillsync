@@ -1,4 +1,8 @@
+import { useState } from "react";
+
+import type { Skill, SkillsResult } from "./api";
 import Logo from "./components/Logo";
+import SkillsPanel from "./components/SkillsPanel";
 import UploadPanel from "./components/UploadPanel";
 
 const agents = [
@@ -24,7 +28,14 @@ const agents = [
   },
 ];
 
+type Step = "cv" | "skills" | "postings";
+
 export default function App() {
+  const [step, setStep] = useState<Step>("cv");
+  const [extraction, setExtraction] = useState<SkillsResult | null>(null);
+  const [skillsKey, setSkillsKey] = useState(0);
+  const [confirmed, setConfirmed] = useState<Skill[]>([]);
+
   return (
     <div className="page">
       <header className="site-head">
@@ -46,10 +57,47 @@ export default function App() {
           </p>
         </section>
 
-        <section className="panel" aria-labelledby="upload-title">
+        <section className="panel" aria-labelledby="upload-title" hidden={step !== "cv"}>
           <h2 id="upload-title">Start with your CV</h2>
-          <UploadPanel />
+          <UploadPanel
+            onSkills={(result) => {
+              setExtraction(result);
+              setSkillsKey((key) => key + 1);
+              setStep("skills");
+            }}
+          />
         </section>
+
+        {extraction && (
+          <section className="panel" aria-labelledby="skills-title" hidden={step !== "skills"}>
+            <SkillsPanel
+              key={skillsKey}
+              initial={extraction.skills}
+              droppedCount={extraction.dropped_count}
+              onBack={() => setStep("cv")}
+              onConfirm={(skills) => {
+                setConfirmed(skills);
+                setStep("postings");
+              }}
+            />
+          </section>
+        )}
+
+        {step === "postings" && (
+          <section className="panel" aria-labelledby="postings-title">
+            <p className="eyebrow">Next step</p>
+            <h2 id="postings-title">Job postings</h2>
+            <p className="lead">
+              {confirmed.length} {confirmed.length === 1 ? "skill" : "skills"} confirmed. Posting
+              screening against these skills comes next.
+            </p>
+            <div className="skills-actions">
+              <button className="btn btn-ghost" onClick={() => setStep("skills")}>
+                Back
+              </button>
+            </div>
+          </section>
+        )}
 
         <section className="panel" aria-labelledby="pipeline-title">
           <h2 id="pipeline-title">The pipeline</h2>
