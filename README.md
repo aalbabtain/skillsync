@@ -79,6 +79,14 @@ uvicorn app.main:app --reload --port 8000
 
 API docs are served at `http://localhost:8000/docs`.
 
+Check the Gemini key before running the pipeline:
+
+```bash
+.venv\Scripts\python scripts/check_gemini.py
+```
+
+It prints `OK: <model> replied 'OK'` or the error, and never prints the key.
+
 ### Frontend
 
 ```bash
