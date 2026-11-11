@@ -29,6 +29,10 @@ function slug(name: string) {
     .replace(/^-|-$/g, "");
 }
 
+function groupOf(entry: Entry) {
+  return CATEGORY_ORDER.includes(entry.category) ? entry.category : "Other";
+}
+
 export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }: Props) {
   const [entries, setEntries] = useState<Entry[]>(() =>
     initial.map((skill) => ({ ...skill, source: "verified" })),
@@ -41,7 +45,7 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
 
   const groups = CATEGORY_ORDER.map((category) => ({
     category,
-    skills: entries.filter((entry) => entry.category === category),
+    skills: entries.filter((entry) => groupOf(entry) === category),
   })).filter((group) => group.skills.length > 0);
 
   function remove(name: string) {
