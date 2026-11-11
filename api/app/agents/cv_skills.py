@@ -20,7 +20,7 @@ MAX_NAME_CHARS = 80
 MAX_EVIDENCE_CHARS = 300
 
 CATEGORIES = (
-    "Languages",
+    "Programming languages",
     "Frameworks",
     "Databases",
     "Cloud & DevOps",

@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import type { Skill } from "../api";
 
 const CATEGORY_ORDER = [
-  "Languages",
+  "Programming languages",
   "Frameworks",
   "Databases",
   "Cloud & DevOps",

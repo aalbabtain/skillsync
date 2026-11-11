@@ -20,7 +20,7 @@ Rules:
 - If the CV lists no skills, return an empty skills list.
 
 Categories: use exactly one of these values.
-- Languages
+- Programming languages
 - Frameworks
 - Databases
 - Cloud & DevOps
@@ -35,7 +35,7 @@ Output: JSON only, in this shape.
   "skills": [
     {
       "name": "Python",
-      "category": "Languages",
+      "category": "Programming languages",
       "evidence": "Built the SkillSync pipeline in Python and FastAPI"
     }
   ]

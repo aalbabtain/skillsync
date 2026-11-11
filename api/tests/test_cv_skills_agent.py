@@ -44,7 +44,7 @@ def test_returns_candidate_skills(monkeypatch):
         skills=[
             cv_skills.ExtractedSkill(
                 name="  Python ",
-                category="Languages",
+                category="Programming languages",
                 evidence="Built the SkillSync pipeline in Python and FastAPI",
             )
         ]
@@ -55,7 +55,7 @@ def test_returns_candidate_skills(monkeypatch):
     assert cv_skills.extract(CV_TEXT) == [
         {
             "name": "Python",
-            "category": "Languages",
+            "category": "Programming languages",
             "evidence": "Built the SkillSync pipeline in Python and FastAPI",
         }
     ]

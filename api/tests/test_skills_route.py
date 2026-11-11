@@ -23,7 +23,7 @@ def test_extracts_skills_and_reports_dropped(monkeypatch):
         [
             {
                 "name": "Python",
-                "category": "Languages",
+                "category": "Programming languages",
                 "evidence": "Skills: Python, ReactJS, TypeScript",
             },
             {
@@ -39,7 +39,7 @@ def test_extracts_skills_and_reports_dropped(monkeypatch):
     assert response.status_code == 200
     body = response.json()
     assert [skill["name"] for skill in body["skills"]] == ["Python"]
-    assert body["skills"][0]["category"] == "Languages"
+    assert body["skills"][0]["category"] == "Programming languages"
     assert body["dropped_count"] == 1
 
 
