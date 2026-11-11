@@ -41,6 +41,11 @@ STATUS_BY_CODE = {
     "PDF_NO_TEXT_LAYER": 422,
 }
 
+STATUS_BY_SKILL_ERROR = {
+    "SKILLS_UNAVAILABLE": 503,
+    "SKILLS_QUOTA_EXCEEDED": 429,
+}
+
 logger = logging.getLogger("skillsync.runs")
 
 
@@ -107,7 +112,7 @@ def extract_skills_route(payload: SkillsRequest):
     try:
         candidates = cv_skills.extract(text)
     except cv_skills.SkillExtractionError as error:
-        status = 503 if error.code == "SKILLS_UNAVAILABLE" else 502
+        status = STATUS_BY_SKILL_ERROR.get(error.code, 502)
         return _error(status, error.code, error.message)
 
     result = verify_skills(candidates, text)

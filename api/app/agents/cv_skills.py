@@ -19,6 +19,8 @@ MAX_SKILLS = 40
 MAX_NAME_CHARS = 80
 MAX_EVIDENCE_CHARS = 300
 
+QUOTA_STATUS = 429
+
 CATEGORIES = (
     "Programming languages",
     "Frameworks",
@@ -109,9 +111,25 @@ def extract(cv_text: str) -> list[dict[str, str]]:
             ),
         )
     except Exception as error:  # noqa: BLE001
-        logger.warning("skill extraction request failed: %s", type(error).__name__)
-        raise SkillExtractionError(
-            "SKILLS_UNAVAILABLE", "The extraction service did not respond."
-        ) from error
+        raise _upstream_failure(error) from error
 
     return _parse(response)
+
+
+def _upstream_failure(error: Exception) -> SkillExtractionError:
+    logger.warning(
+        "skill extraction request failed: %s code=%s",
+        type(error).__name__,
+        getattr(error, "code", None),
+    )
+
+    if getattr(error, "code", None) == QUOTA_STATUS:
+        return SkillExtractionError(
+            "SKILLS_QUOTA_EXCEEDED",
+            "The Gemini request limit is used up. Try again after the quota resets "
+            "or use an API key with available quota.",
+        )
+
+    return SkillExtractionError(
+        "SKILLS_UNAVAILABLE", "The extraction service did not respond."
+    )

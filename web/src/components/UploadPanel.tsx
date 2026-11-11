@@ -17,7 +17,7 @@ type State =
 type Extraction =
   | { kind: "idle" }
   | { kind: "running"; stage: "extracting" | "verifying" }
-  | { kind: "error"; message: string };
+  | { kind: "error"; code: string; message: string };
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const VERIFY_DELAY_MS = 1200;
@@ -72,9 +72,10 @@ export default function UploadPanel({ onSkills }: Props) {
       setExtraction({ kind: "idle" });
       onSkills(result);
     } catch (error) {
+      const code = error instanceof ApiRequestError ? error.code : "UNKNOWN";
       const message =
         error instanceof ApiRequestError ? error.message : "Could not reach the server.";
-      setExtraction({ kind: "error", message });
+      setExtraction({ kind: "error", code, message });
     } finally {
       runningRef.current = false;
     }
@@ -120,9 +121,11 @@ export default function UploadPanel({ onSkills }: Props) {
         {extraction.kind === "error" && (
           <div className="upload-error" role="alert">
             <span>{extraction.message}</span>
-            <button className="btn btn-ghost" onClick={() => void runExtraction()}>
-              Retry
-            </button>
+            {extraction.code !== "SKILLS_QUOTA_EXCEEDED" && (
+              <button className="btn btn-ghost" onClick={() => void runExtraction()}>
+                Retry
+              </button>
+            )}
           </div>
         )}
 

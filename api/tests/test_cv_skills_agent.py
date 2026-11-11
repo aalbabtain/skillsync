@@ -94,3 +94,40 @@ def test_reports_a_missing_api_key(monkeypatch):
         cv_skills.extract(CV_TEXT)
 
     assert error.value.code == "SKILLS_UNAVAILABLE"
+
+
+class QuotaError(Exception):
+    code = 429
+
+
+def failing_client(error):
+    def build(**kwargs):
+        def generate_content(self, **_):
+            raise error
+
+        models = type("Models", (), {"generate_content": generate_content})()
+        return type("Client", (), {"models": models})()
+
+    return build
+
+
+def test_reports_an_exhausted_quota(monkeypatch):
+    monkeypatch.setattr(cv_skills, "get_settings", lambda: FakeSettings())
+    monkeypatch.setattr(
+        cv_skills.genai, "Client", failing_client(QuotaError("429 RESOURCE_EXHAUSTED"))
+    )
+
+    with pytest.raises(cv_skills.SkillExtractionError) as error:
+        cv_skills.extract(CV_TEXT)
+
+    assert error.value.code == "SKILLS_QUOTA_EXCEEDED"
+
+
+def test_reports_an_unreachable_service(monkeypatch):
+    monkeypatch.setattr(cv_skills, "get_settings", lambda: FakeSettings())
+    monkeypatch.setattr(cv_skills.genai, "Client", failing_client(ConnectionError("down")))
+
+    with pytest.raises(cv_skills.SkillExtractionError) as error:
+        cv_skills.extract(CV_TEXT)
+
+    assert error.value.code == "SKILLS_UNAVAILABLE"

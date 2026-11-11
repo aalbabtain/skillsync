@@ -67,6 +67,18 @@ def test_reports_an_unavailable_model(monkeypatch):
     assert response.json()["detail"]["code"] == "SKILLS_UNAVAILABLE"
 
 
+def test_reports_an_exhausted_quota(monkeypatch):
+    def fail(text):
+        raise cv_skills.SkillExtractionError("SKILLS_QUOTA_EXCEEDED", "Quota used up.")
+
+    monkeypatch.setattr(cv_skills, "extract", fail)
+
+    response = client.post("/api/skills/extract", json={"text": CV_TEXT})
+
+    assert response.status_code == 429
+    assert response.json()["detail"]["code"] == "SKILLS_QUOTA_EXCEEDED"
+
+
 def test_rejects_text_that_is_too_short(monkeypatch):
     extract(monkeypatch, [])
 
