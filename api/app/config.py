@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.6-flash"
+    skillsync_extractor: str = ""
     database_url: str = "sqlite:///./skillsync.db"
     jwt_secret: str = ""
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]

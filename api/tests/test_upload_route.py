@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURES = Path(__file__).parent / "fixtures" / "cases"
 client = TestClient(app)
 
 

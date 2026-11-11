@@ -6,7 +6,7 @@ from pypdf import PdfWriter
 
 from app.parsers.pdf import PdfExtractionError, extract
 
-FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURES = Path(__file__).parent / "fixtures" / "cases"
 
 
 def read(name: str) -> bytes:

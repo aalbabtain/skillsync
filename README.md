@@ -50,11 +50,17 @@ skillsync/
       prompts/          agent system prompts, one markdown file each
       models/           DB models and Pydantic schemas
     tests/
+      fixtures/cases/  the CVs used by the tests and the case runner
+    scripts/
+      run_cases.py    case runner CLI
     requirements.txt
   web/                  React + Vite frontend
     src/
     package.json
   schemas/              shared JSON contracts between agents
+  reports/              case runner output, gitignored
+  run.ps1               one-command setup and run
+  AGENTS.md             how to run this repo in DevAI Desktop
   .env.example
   README.md
 ```
@@ -65,7 +71,20 @@ skillsync/
 
 - Python 3.11+
 - Node.js 20+
-- A Gemini API key from Google AI Studio
+- A Gemini API key from Google AI Studio — optional, see demo mode below
+
+### One command (Windows, and DevAI Desktop)
+
+```powershell
+.\run.ps1          # set up and run the app
+.\run.ps1 -Cases    # run every CV case and write the reports
+.\run.ps1 -Tests    # run the backend test suite
+```
+
+Without a Gemini key the app starts in **demo mode**: skills are matched from a
+built-in list in `api/app/agents/mock_extractor.py` instead of the model, and the web app
+says so above the page. Evidence verification is unchanged. `AGENTS.md` has the details
+for running this repo inside DevAI Desktop.
 
 ### Backend
 
@@ -106,6 +125,7 @@ Copy `.env.example` to `api/.env` and set:
 |----------|---------|
 | `GEMINI_API_KEY` | Server-side only. Never exposed to the browser. |
 | `GEMINI_MODEL` | Model used for extraction and planning. |
+| `SKILLSYNC_EXTRACTOR` | `mock` or `gemini`. Empty picks Gemini when a key is set, demo mode otherwise. |
 | `DATABASE_URL` | SQLite path, e.g. `sqlite:///./skillsync.db`. |
 | `JWT_SECRET` | Signing key for auth tokens. |
 
@@ -145,8 +165,18 @@ cd api
 .venv\Scripts\python -m pytest
 ```
 
-Agent tests use recorded fixtures in `api/tests/fixtures/` so they run without a Gemini key.
-The Gap Evaluator is covered by golden tests against the same input/output pairs.
+Agent tests use recorded fixtures in `api/tests/fixtures/cases/` so they run without a
+Gemini key. The Gap Evaluator is covered by golden tests against the same input/output pairs.
+
+Every fixture CV can be run through the whole pipeline at once:
+
+```powershell
+.\run.ps1 -Cases
+```
+
+It prints one line per case and writes `reports/<case>.md` (skill, category, the CV line that
+proves it) and `reports/summary.json`. A PDF with no text layer is reported as a failed case
+rather than skipped.
 
 ## Roadmap
 

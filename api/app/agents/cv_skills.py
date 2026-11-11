@@ -9,7 +9,9 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, ValidationError
 
+from app.agents import mock_extractor
 from app.config import get_settings
+
 
 logger = logging.getLogger("skillsync.agents")
 
@@ -20,6 +22,9 @@ MAX_NAME_CHARS = 80
 MAX_EVIDENCE_CHARS = 300
 
 QUOTA_STATUS = 429
+
+MOCK = "mock"
+GEMINI = "gemini"
 
 CATEGORIES = (
     "Programming languages",
@@ -91,12 +96,26 @@ def _parse(response) -> list[dict[str, str]]:
     return cleaned[:MAX_SKILLS]
 
 
-def extract(cv_text: str) -> list[dict[str, str]]:
+def extractor_mode() -> str:
     settings = get_settings()
+    requested = getattr(settings, "skillsync_extractor", "").strip().lower()
+
+    if requested in {MOCK, GEMINI}:
+        return requested
+
+    return GEMINI if settings.gemini_api_key else MOCK
+
+
+def extract(cv_text: str, extractor: str | None = None) -> list[dict[str, str]]:
+    settings = get_settings()
+
+    if (extractor or extractor_mode()) == MOCK:
+        candidates = [ExtractedSkill(**item) for item in mock_extractor.extract(cv_text)]
+        cleaned = [skill for item in candidates if (skill := _clean(item))]
+        return cleaned[:MAX_SKILLS]
 
     if not settings.gemini_api_key:
         raise SkillExtractionError("SKILLS_UNAVAILABLE", "Skill extraction is not configured.")
-
     client = genai.Client(api_key=settings.gemini_api_key)
 
     try:

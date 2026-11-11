@@ -61,3 +61,19 @@ export async function extractSkills(text: string): Promise<SkillsResult> {
 
   return payload as SkillsResult;
 }
+
+export type Health = {
+  status: string;
+  model: string;
+  extractor: string;
+};
+
+export async function getHealth(): Promise<Health> {
+  const response = await fetch("/api/health");
+
+  if (!response.ok) {
+    throw new ApiRequestError("UNKNOWN", "The API is not reachable.");
+  }
+
+  return (await response.json()) as Health;
+}

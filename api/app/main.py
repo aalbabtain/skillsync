@@ -58,7 +58,11 @@ def _error(status: int, code: str, message: str) -> JSONResponse:
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "model": settings.gemini_model}
+    return {
+        "status": "ok",
+        "model": settings.gemini_model,
+        "extractor": cv_skills.extractor_mode(),
+    }
 
 
 @app.post("/api/runs")

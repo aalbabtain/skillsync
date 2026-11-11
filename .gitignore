@@ -31,3 +31,8 @@ dist-ssr/
 .idea/
 .DS_Store
 Thumbs.db
+
+
+# Case runner output
+reports/
+*.log

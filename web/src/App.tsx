@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { getHealth } from "./api";
 import type { Skill, SkillsResult } from "./api";
 import Logo from "./components/Logo";
 import SkillsPanel from "./components/SkillsPanel";
@@ -35,7 +36,23 @@ export default function App() {
   const [extraction, setExtraction] = useState<SkillsResult | null>(null);
   const [skillsKey, setSkillsKey] = useState(0);
   const [confirmed, setConfirmed] = useState<Skill[]>([]);
+  const [demoMode, setDemoMode] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+
+    getHealth()
+      .then((health) => {
+        if (active) setDemoMode(health.extractor === "mock");
+      })
+      .catch(() => {
+        if (active) setDemoMode(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
   return (
     <div className="page">
       <header className="site-head">
@@ -46,6 +63,13 @@ export default function App() {
           <span className="badge">Scaffold</span>
         </div>
       </header>
+
+        {demoMode && (
+          <p className="demo-note" role="status">
+            <strong>Demo mode.</strong> No Gemini key is configured, so skills are matched from a
+            built-in list instead of the model.
+          </p>
+        )}
 
       <main className="wrap">
         <section className="hero">

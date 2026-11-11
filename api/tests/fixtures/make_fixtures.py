@@ -10,6 +10,7 @@ from urllib.request import urlretrieve
 from fpdf import FPDF
 
 HERE = Path(__file__).resolve().parent
+CASES = HERE / "cases"
 ARABIC_FONT = HERE / "NotoNaskhArabic.ttf"
 ARABIC_FONT_URL = (
     "https://github.com/google/fonts/raw/main/ofl/notonaskharabic/"
@@ -31,6 +32,22 @@ ARABIC = [
     "المشاريع: منصة سكيل سينك، مخطط المقررات",
 ]
 
+BACKEND = [
+    "Sara Alharbi",
+    "Backend Engineer, Riyadh",
+    "Skills: Python, Django, PostgreSQL, Docker, AWS",
+    "Experience: REST APIs in Django with Redis caching",
+    "Tools: Git, GitHub Actions, Linux",
+]
+
+GRADUATE = [
+    "Omar Alqahtani",
+    "Fresh graduate, Information Systems",
+    "Coursework: Java, SQL, HTML, CSS",
+    "Project: library system in Java with MySQL",
+    "Soft skills: teamwork, communication, presentation",
+]
+
 
 def write_lines(path: Path, lines: list[str], font: str | None = None) -> None:
     pdf = FPDF()
@@ -40,6 +57,11 @@ def write_lines(path: Path, lines: list[str], font: str | None = None) -> None:
     else:
         pdf.add_font("body", "", font)
         pdf.set_font("body", size=12)
+
+    for line in lines:
+        pdf.cell(0, 10, line, new_x="LMARGIN", new_y="NEXT")
+
+    pdf.output(str(path))
 
 
 def write_scanned(path: Path) -> None:
@@ -51,9 +73,12 @@ def write_scanned(path: Path) -> None:
 
 
 if __name__ == "__main__":
-    write_lines(HERE / "english_cv.pdf", ENGLISH)
+    CASES.mkdir(exist_ok=True)
+    write_lines(CASES / "english_cv.pdf", ENGLISH)
     if not ARABIC_FONT.exists():
         urlretrieve(ARABIC_FONT_URL, ARABIC_FONT)
-    write_lines(HERE / "arabic_cv.pdf", ARABIC, font=str(ARABIC_FONT))
-    write_scanned(HERE / "scanned.pdf")
-    print("fixtures written to", HERE)
+    write_lines(CASES / "arabic_cv.pdf", ARABIC, font=str(ARABIC_FONT))
+    write_lines(CASES / "backend_cv.pdf", BACKEND)
+    write_lines(CASES / "graduate_cv.pdf", GRADUATE)
+    write_scanned(CASES / "scanned.pdf")
+    print("fixtures written to", CASES)

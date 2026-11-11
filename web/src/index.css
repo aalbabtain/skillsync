@@ -154,6 +154,25 @@ a {
   padding: 0.35rem 0.8rem;
 }
 
+/* ---------- Demo mode ---------- */
+
+.demo-note {
+  max-width: var(--maxw);
+  margin: 1.5rem auto 0;
+  padding: 0.7rem 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: rgba(236, 238, 242, 0.03);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+}
+
+.demo-note strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
 /* ---------- Hero ---------- */
 
 .hero {

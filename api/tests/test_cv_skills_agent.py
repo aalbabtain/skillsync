@@ -13,6 +13,14 @@ class FakeSettings:
 class MissingKeySettings:
     gemini_api_key = ""
     gemini_model = "test-model"
+    skillsync_extractor = "gemini"
+
+
+class AutoSettings:
+    gemini_api_key = ""
+    gemini_model = "test-model"
+
+
 
 
 class FakeResponse:
@@ -87,13 +95,34 @@ def test_rejects_malformed_model_output(monkeypatch):
     assert error.value.code == "SKILLS_MALFORMED"
 
 
-def test_reports_a_missing_api_key(monkeypatch):
+def test_reports_a_missing_api_key_in_gemini_mode(monkeypatch):
     monkeypatch.setattr(cv_skills, "get_settings", lambda: MissingKeySettings())
 
     with pytest.raises(cv_skills.SkillExtractionError) as error:
         cv_skills.extract(CV_TEXT)
 
     assert error.value.code == "SKILLS_UNAVAILABLE"
+
+
+def test_falls_back_to_the_mock_extractor_without_a_key(monkeypatch):
+    monkeypatch.setattr(cv_skills, "get_settings", lambda: AutoSettings())
+
+    skills = cv_skills.extract(CV_TEXT)
+
+    assert {skill["name"] for skill in skills} == {"Python", "FastAPI"}
+    assert cv_skills.extractor_mode() == "mock"
+
+
+def test_the_extractor_setting_overrides_the_key(monkeypatch):
+    class MockSettings:
+        gemini_api_key = "test-key"
+        gemini_model = "test-model"
+        skillsync_extractor = "mock"
+
+    monkeypatch.setattr(cv_skills, "get_settings", lambda: MockSettings())
+
+    assert cv_skills.extractor_mode() == "mock"
+    assert cv_skills.extract(CV_TEXT)[0]["name"] == "Python"
 
 
 class QuotaError(Exception):
