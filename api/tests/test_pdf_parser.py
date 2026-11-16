@@ -90,3 +90,21 @@ def test_rejects_more_than_ten_pages():
         extract(buffer.getvalue())
 
     assert error.value.code == "PDF_TOO_MANY_PAGES"
+
+
+def test_reads_arabic_from_a_browser_made_pdf():
+    # Printed by Chrome, like "Save as PDF" or a Google Docs export.
+    document = extract(read("senior_arabic.pdf"))
+
+    assert document.pages == 2
+    assert "خالد الدوسري" in document.text
+    assert "مهندس برمجيات أول" in document.text
+    assert "بكالوريوس هندسة البرمجيات" in document.text
+
+
+def test_keeps_reading_arabic_stored_with_reversed_letters():
+    # arabic_cv.pdf stores each word's letters in visual order; both layouts must work.
+    document = extract(read("arabic_cv.pdf"))
+
+    assert "علوم الحاسب" in document.text
+    assert "المهارات" in document.text

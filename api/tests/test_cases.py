@@ -34,6 +34,7 @@ def test_runs_every_pdf_in_the_cases_directory():
         "english_cv",
         "graduate_cv",
         "scanned",
+        "senior_arabic",
     ]
     assert [result.status for result in results].count(cases.FAILED) == 1
 

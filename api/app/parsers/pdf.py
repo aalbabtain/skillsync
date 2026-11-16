@@ -1,5 +1,6 @@
 """PDF text extraction. The only module that knows about PDF libraries."""
 
+import re
 import unicodedata
 from dataclasses import dataclass
 
@@ -31,7 +32,7 @@ def _is_rtl(character: str) -> bool:
 
 
 def _reorder(line: str) -> str:
-    """PDF stores right-to-left runs in visual order; restore reading order."""
+    """Reverse each right-to-left run, for PDFs that store a word's letters in visual order."""
     pieces: list[str] = []
     run: list[str] = []
     for character in line:
@@ -43,14 +44,31 @@ def _reorder(line: str) -> str:
         pieces.append(character)
     pieces.append("".join(reversed(run)))
     return "".join(pieces)
-    pieces.append("".join(reversed(run)))
-    return "".join(pieces)
+
+
+ARABIC_WORD = re.compile(r"[\u0621-\u064a]{3,}")
+
+
+def _letters_are_reversed(text: str) -> bool:
+    """Tell the two ways PDFs store Arabic apart.
+
+    Browsers and Google Docs exports come out in reading order; some generators store each
+    word's letters backwards. Arabic words often start with the article "ال" and end with
+    "ة", never the reverse, so whichever pattern is more common tells the layout.
+    """
+    words = ARABIC_WORD.findall(text)
+    in_order = sum(word.startswith("ال") + word.endswith("ة") for word in words)
+    backwards = sum(word.endswith("لا") + word.startswith("ة") for word in words)
+    return backwards > in_order
 
 
 def _normalise(raw: str) -> str:
     text = unicodedata.normalize("NFKC", raw)
-    lines = (line.strip() for line in text.replace("\r\n", "\n").split("\n"))
-    return "\n".join(_reorder(line) for line in lines if line)
+    lines = [line.strip() for line in text.replace("\r\n", "\n").split("\n")]
+    lines = [line for line in lines if line]
+    if _letters_are_reversed(text):
+        lines = [_reorder(line) for line in lines]
+    return "\n".join(lines)
 
 
 def _count(text: str) -> int:

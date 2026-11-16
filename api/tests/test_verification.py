@@ -71,3 +71,10 @@ def test_drops_an_empty_evidence_quote():
 def test_normalize_removes_diacritics_and_punctuation():
     assert normalize("  المهارات: بَايثُون، ريأكت  ") == "المهارات بايثون ريأكت"
     assert normalize("Node.js / React.JS") == "node js react js"
+
+
+def test_normalize_separates_arabic_glued_to_latin():
+    # PDF extraction can drop the space between an Arabic word and an English one.
+    assert normalize("علىKubernetes") == "على kubernetes"
+    assert normalize("وDocker") == "و docker"
+    assert normalize("بنيتReact") == "بنيت react"

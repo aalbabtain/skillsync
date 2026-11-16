@@ -9,6 +9,10 @@ ARABIC_MARKS = re.compile(r"[\u0640\u064b-\u065f\u0670\u06d6-\u06ed]")
 # Keep + and # so "C++" and "C#" stay distinct.
 PUNCTUATION = re.compile(r"[^\w\s+#]|_", re.UNICODE)
 SPACES = re.compile(r"\s+")
+# PDF extraction can drop the space where Arabic meets Latin text ("علىKubernetes").
+SCRIPT_BOUNDARY = re.compile(
+    r"(?<=[\u0600-\u06ff])(?=[a-z0-9])|(?<=[a-z0-9])(?=[\u0600-\u06ff])"
+)
 
 CANONICAL_NAMES = {
     "react": "React",
@@ -48,6 +52,7 @@ def normalize(text: str) -> str:
     folded = unicodedata.normalize("NFKC", text).lower()
     folded = ARABIC_MARKS.sub("", folded)
     folded = PUNCTUATION.sub(" ", folded)
+    folded = SCRIPT_BOUNDARY.sub(" ", folded)
     return SPACES.sub(" ", folded).strip()
 
 
