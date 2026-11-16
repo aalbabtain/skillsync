@@ -1779,7 +1779,8 @@ a {
   position: absolute;
   inset-block-start: calc(1.75rem + 20px);
   inset-inline-start: 20px;
-  inset-inline-end: calc(25% - 1.5rem - 20px);
+  /* Runs one column (25%) past the last icon, the same length as the gap between steps. */
+  inset-inline-end: calc(-1.5rem - 20px);
   height: 2px;
   background: var(--line2);
   border-radius: 2px;
