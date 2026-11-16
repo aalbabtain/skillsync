@@ -16,7 +16,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { fetchStepCount } from "../analytics";
+import { fetchCheckedCount } from "../analytics";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { useCountUp, useReducedMotion } from "../motion";
@@ -108,8 +108,9 @@ export default function Landing({ onStart, counterCode }: Props) {
   const shownChecked = useCountUp(checked ?? 0, !playing);
 
   useEffect(() => {
+    if (!counterCode) return;
     let active = true;
-    fetchStepCount(counterCode, "skills").then((count) => {
+    fetchCheckedCount().then((count) => {
       if (active) setChecked(count);
     });
     return () => {

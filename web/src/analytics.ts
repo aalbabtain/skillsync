@@ -32,19 +32,16 @@ export function track(step: "start" | "skills" | "postings" | "gap") {
 }
 
 /**
- * How many visits reached a step, from GoatCounter's public counter. Zero is a real answer and
- * is shown; null means the counter is off ("Allow adding visitor counts on your website" in the
- * GoatCounter settings) or unreachable, and the landing then shows nothing.
+ * How many CVs were checked so far. Our server asks GoatCounter and caches the answer, so ad
+ * blockers that stop goatcounter.com in the browser cannot hide it. Zero is shown; null (the
+ * counter is off or unreachable) shows nothing.
  */
-export async function fetchStepCount(code: string, step: "skills"): Promise<number | null> {
-  if (!code) return null;
+export async function fetchCheckedCount(): Promise<number | null> {
   try {
-    const response = await fetch(`https://${code}.goatcounter.com/counter/step-${step}.json`);
+    const response = await fetch("/api/stats");
     if (!response.ok) return null;
-    const body = (await response.json()) as { count?: string };
-    const digits = String(body.count ?? "").replace(/[^0-9]/g, "");
-    if (!digits) return null;
-    return Number(digits);
+    const body = (await response.json()) as { checked?: number | null };
+    return typeof body.checked === "number" ? body.checked : null;
   } catch {
     return null;
   }

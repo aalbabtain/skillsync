@@ -1,5 +1,8 @@
+import json
 import logging
 import re
+import time
+import urllib.request
 from pathlib import Path
 from uuid import uuid4
 
@@ -91,15 +94,50 @@ def _error(status: int, code: str, message: str) -> JSONResponse:
 GOATCOUNTER_CODE = re.compile(r"[a-z0-9][a-z0-9-]{0,49}")
 
 
+def _goatcounter_code() -> str:
+    code = settings.goatcounter_code.strip().lower()
+    return code if GOATCOUNTER_CODE.fullmatch(code) else ""
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    code = settings.goatcounter_code.strip().lower()
     return {
         "status": "ok",
         "model": settings.gemini_model,
         "extractor": cv_skills.extractor_mode(),
-        "analytics": code if GOATCOUNTER_CODE.fullmatch(code) else "",
+        "analytics": _goatcounter_code(),
     }
+
+
+STATS_TTL_SECONDS = 300
+_stats_cache: dict = {"at": 0.0, "checked": None}
+
+
+def _read_goatcounter(code: str, path: str) -> int:
+    """One count from GoatCounter's public counter (needs "Allow adding visitor counts")."""
+    url = f"https://{code}.goatcounter.com/counter/{path}.json"
+    with urllib.request.urlopen(url, timeout=4) as response:
+        body = json.loads(response.read().decode("utf-8"))
+    return int("".join(ch for ch in str(body.get("count", "")) if ch.isdigit()))
+
+
+@app.get("/api/stats")
+def stats() -> dict[str, int | None]:
+    """How many CVs were checked, for the landing. Asked here rather than in the browser, where
+    ad blockers often stop requests to goatcounter.com; cached for a few minutes."""
+    code = _goatcounter_code()
+    if not code:
+        return {"checked": None}
+    now = time.monotonic()
+    if _stats_cache["at"] and now - _stats_cache["at"] < STATS_TTL_SECONDS:
+        return {"checked": _stats_cache["checked"]}
+    try:
+        checked = _read_goatcounter(code, "step-skills")
+    except (OSError, ValueError):
+        # A 404 (nothing counted yet) or an outage; the landing then shows nothing.
+        checked = None
+    _stats_cache.update(at=now, checked=checked)
+    return {"checked": checked}
 
 
 @app.post("/api/runs")

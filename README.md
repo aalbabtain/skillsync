@@ -135,6 +135,7 @@ Every error uses `{"detail": {"code", "message"}}`, and the site shows each code
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET` | `/api/health` | Status, model and whether demo mode is on |
+| `GET` | `/api/stats` | How many CVs were checked, read from GoatCounter and cached for 5 minutes; `null` when counting is off |
 | `GET` | `/api/skills/catalog` | Every skill the picker offers, with its category, and related skills for suggestions |
 | `POST` | `/api/runs` | Upload a CV (PDF or Word .docx) and get its text |
 | `POST` | `/api/skills/extract` | Agent 1: skills from CV text, each verified against a quote |
@@ -195,7 +196,7 @@ cd api
 python -m pytest
 ```
 
-171 tests, no network and no key: demo mode stands in for the model.
+176 tests, no network and no key: demo mode stands in for the model.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career
