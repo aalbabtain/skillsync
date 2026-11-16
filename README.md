@@ -140,6 +140,7 @@ Copy `.env.example` to `api/.env` and set:
 | `GET` | `/api/runs/{id}/events` | Stream pipeline progress (SSE) |
 | `POST` | `/api/runs/{id}/approve` | Approve, edit, or reject the draft plan |
 | `POST` | `/api/skills/extract` | Extract skills from CV text and verify each one |
+| `POST` | `/api/requirements/extract` | Extract and count the skills that pasted job postings ask for |
 
 `POST /api/runs` currently accepts a multipart `file` field with a PDF up to 5 MB and 10 pages,
 extracts the text in memory, and returns it with a `run_id`. The file and its text are never
@@ -157,6 +158,20 @@ only with a verbatim quote from the CV; plain code then normalizes both, require
 merges aliases, and drops anything it cannot prove. The model never decides what is verified.
 Rejections use `TEXT_TOO_SHORT`, `TEXT_TOO_LONG`, `SKILLS_MALFORMED` and `SKILLS_UNAVAILABLE`.
 The prompt lives in `api/app/prompts/cv_assessor.md`, and the CV text is never logged or stored.
+
+`POST /api/requirements/extract` (Agent 2) takes `{"postings": [{"title", "text"}]}`: 1 to 10
+postings the student pasted, each 80 to 20,000 characters, title up to 120. Each posting goes to
+the model on its own (prompt: `api/app/prompts/requirements_extractor.md`); every skill must come
+with a verbatim quote from that posting and a level, `required` or `preferred`. Code then verifies
+the quotes with the same normalization as Agent 1, merges aliases, counts how many postings ask
+for each skill (`frequency`) and ranks by frequency, then required before preferred. It returns
+`{"postings_count", "requirements": [{"name", "category", "level", "frequency", "sources":
+[{"posting", "level", "evidence"}]}], "dropped_count"}`. Rejections use `POSTINGS_EMPTY`,
+`POSTINGS_TOO_MANY`, `POSTING_TOO_SHORT`, `POSTING_TOO_LONG`, `POSTING_TITLE_TOO_LONG`,
+`REQUIREMENTS_MALFORMED`, `REQUIREMENTS_UNAVAILABLE` and `REQUIREMENTS_QUOTA_EXCEEDED`; if any
+posting fails, the whole request fails. Posting text is never logged or stored. In demo mode the
+skill dictionary is matched instead, and a skill is `preferred` when its line, or the heading above
+it, says "nice to have", "preferred", "bonus", "يفضل" and similar.
 
 ## Testing
 
@@ -184,7 +199,7 @@ rather than skipped.
 - [x] CV upload and PDF text extraction
 - [x] Agent 1 — skill extraction with automatic evidence verification
 - [ ] Agent 1 — short skill check and posting screening
-- [ ] Agent 2 — Requirements Extractor (RAG over postings)
+- [x] Agent 2 — Requirements Extractor (pasted postings, verified quotes, counted by code)
 - [ ] Agent 3 — Gap Evaluator (deterministic, tested)
 - [ ] Agent 4 — Plan Builder
 - [ ] Human-in-the-loop approve / edit / reject

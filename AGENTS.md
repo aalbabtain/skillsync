@@ -28,7 +28,7 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (53 tests, no network, no key). The frontend check is
+Runs `pytest` in `api` (87 tests, no network, no key). The frontend check is
 `cd web; npm run build`.
 
 ## Run every CV case
@@ -66,7 +66,10 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 |------|------------|
 | `api/app/main.py` | FastAPI routes: upload, extract skills, health |
 | `api/app/agents/cv_skills.py` | Agent 1, extraction: model call or demo mode |
-| `api/app/agents/mock_extractor.py` | Offline skill dictionary used in demo mode |
+| `api/app/agents/requirements.py` | Agent 2, requirements from pasted job postings: model call or demo mode |
+| `api/app/agents/mock_extractor.py` | Offline skill dictionary used in demo mode by Agents 1 and 2 |
+| `api/app/prompts/` | Agent prompts: `cv_assessor.md`, `requirements_extractor.md` |
+| `api/tests/fixtures/postings/` | Sample job postings written for the tests |
 | `api/app/verification.py` | Deterministic evidence check, runs in both modes |
 | `api/app/parsers/pdf.py` | PDF text extraction, including Arabic line order |
 | `api/app/cases.py` | Case runner logic and report rendering |
@@ -78,6 +81,7 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 
 - The CV text is never logged and never written to disk.
 - The model never decides what is verified: `api/app/verification.py` does, by matching
-  each quoted evidence string against the CV text.
+  each quoted evidence string against the CV or posting text. Counting how many postings
+  ask for a skill is also plain code.
 - The skill category label is `Programming languages` (plural) in the prompt, the backend,
   the frontend and the tests.

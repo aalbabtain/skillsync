@@ -1,0 +1,5 @@
+Full Stack Engineer / مهندس برمجيات
+Must have: Python, React and PostgreSQL in real projects.
+Experience with Docker is required.
+Bonus: Kubernetes and GitHub Actions.
+يفضل خبرة في Redis

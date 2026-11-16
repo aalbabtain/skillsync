@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
 import { getHealth } from "./api";
-import type { Skill, SkillsResult } from "./api";
+import type { RequirementsResult, Skill, SkillsResult } from "./api";
 import Logo from "./components/Logo";
+import PostingsPanel from "./components/PostingsPanel";
 import SkillsPanel from "./components/SkillsPanel";
 import UploadPanel from "./components/UploadPanel";
 
@@ -15,7 +16,7 @@ const agents = [
   {
     step: 2,
     name: "Requirements Extractor",
-    detail: "Pulls required skills from the matched postings.",
+    detail: "Pulls required skills from the postings you paste.",
   },
   {
     step: 3,
@@ -37,6 +38,8 @@ export default function App() {
   const [skillsKey, setSkillsKey] = useState(0);
   const [confirmed, setConfirmed] = useState<Skill[]>([]);
   const [demoMode, setDemoMode] = useState(false);
+  // Kept for Agent 3, which compares these with the confirmed skills.
+  const [, setRequirements] = useState<RequirementsResult | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -107,21 +110,15 @@ export default function App() {
           </section>
         )}
 
-        {step === "postings" && (
-          <section className="panel" aria-labelledby="postings-title">
-            <p className="eyebrow">Next step</p>
-            <h2 id="postings-title">Job postings</h2>
-            <p className="lead">
-              {confirmed.length} {confirmed.length === 1 ? "skill" : "skills"} confirmed. Posting
-              screening against these skills comes next.
-            </p>
-            <div className="skills-actions">
-              <button className="btn btn-ghost" onClick={() => setStep("skills")}>
-                Back
-              </button>
-            </div>
-          </section>
-        )}
+        <section className="panel" aria-labelledby="postings-title" hidden={step !== "postings"}>
+          {confirmed.length > 0 && (
+            <PostingsPanel
+              confirmedCount={confirmed.length}
+              onBack={() => setStep("skills")}
+              onResult={setRequirements}
+            />
+          )}
+        </section>
 
         <section className="panel" aria-labelledby="pipeline-title">
           <h2 id="pipeline-title">The pipeline</h2>

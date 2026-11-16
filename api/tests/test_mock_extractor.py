@@ -36,3 +36,35 @@ def test_matches_arabic_aliases():
 def test_every_dictionary_category_is_an_agent_category():
     for _, category, _ in mock_extractor.SKILLS:
         assert category in cv_skills.CATEGORIES
+
+
+def test_requirements_mark_a_nice_to_have_line_as_preferred():
+    found = mock_extractor.extract_requirements("Must know Python\nNice to have: Docker")
+    levels = {item["name"]: item["level"] for item in found}
+
+    assert levels == {"Python": "required", "Docker": "preferred"}
+
+
+def test_requirements_read_arabic_preferred_markers():
+    [docker] = mock_extractor.extract_requirements("يفضل معرفة Docker")
+
+    assert docker["level"] == "preferred"
+    assert docker["evidence"] == "يفضل معرفة Docker"
+
+
+def test_requirements_default_to_required():
+    [python] = mock_extractor.extract_requirements("Experience with Python")
+
+    assert python == {
+        "name": "Python",
+        "category": "Programming languages",
+        "level": "required",
+        "evidence": "Experience with Python",
+    }
+
+
+def test_requirements_follow_a_nice_to_have_heading():
+    text = "Requirements:\n- Python\nNice to have:\n- AWS\nQualifications:\n- Docker"
+    levels = {item["name"]: item["level"] for item in mock_extractor.extract_requirements(text)}
+
+    assert levels == {"Python": "required", "AWS": "preferred", "Docker": "required"}

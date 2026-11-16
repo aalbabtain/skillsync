@@ -6,10 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.agents import cv_skills
+from app.agents import cv_skills, requirements
 from app.config import get_settings
 from app.parsers.pdf import PdfExtractionError, extract
-from app.verification import verify_skills
+from app.verification import aggregate, verify_requirements, verify_skills
 
 settings = get_settings()
 
@@ -132,4 +132,104 @@ def extract_skills_route(payload: SkillsRequest):
             for skill in result.skills
         ],
         "dropped_count": result.dropped_count,
+    }
+
+
+MAX_POSTINGS = 10
+MIN_POSTING_CHARS = 80
+MAX_POSTING_CHARS = 20_000
+MAX_TITLE_CHARS = 120
+
+STATUS_BY_REQUIREMENTS_ERROR = {
+    "REQUIREMENTS_MALFORMED": 502,
+    "REQUIREMENTS_UNAVAILABLE": 503,
+    "REQUIREMENTS_QUOTA_EXCEEDED": 429,
+}
+
+
+class Posting(BaseModel):
+    title: str = ""
+    text: str
+
+
+class RequirementsRequest(BaseModel):
+    postings: list[Posting]
+
+
+def _check_postings(postings: list[Posting]) -> JSONResponse | None:
+    if not postings:
+        return _error(422, "POSTINGS_EMPTY", "Paste at least one job posting.")
+
+    if len(postings) > MAX_POSTINGS:
+        return _error(422, "POSTINGS_TOO_MANY", f"Paste at most {MAX_POSTINGS} job postings.")
+
+    for number, posting in enumerate(postings, start=1):
+        text = posting.text.strip()
+
+        if len(posting.title.strip()) > MAX_TITLE_CHARS:
+            return _error(
+                422,
+                "POSTING_TITLE_TOO_LONG",
+                f"Posting {number}: the title is longer than {MAX_TITLE_CHARS} characters.",
+            )
+        if len(text) < MIN_POSTING_CHARS:
+            return _error(
+                422,
+                "POSTING_TOO_SHORT",
+                f"Posting {number} is too short. Paste the full posting text.",
+            )
+        if len(text) > MAX_POSTING_CHARS:
+            return _error(
+                413,
+                "POSTING_TOO_LONG",
+                f"Posting {number} is longer than {MAX_POSTING_CHARS:,} characters.",
+            )
+
+    return None
+
+
+@app.post("/api/requirements/extract")
+def extract_requirements_route(payload: RequirementsRequest):
+    if rejection := _check_postings(payload.postings):
+        return rejection
+
+    per_posting = []
+    dropped = 0
+
+    for posting in payload.postings:
+        text = posting.text.strip()
+        try:
+            candidates = requirements.extract(text)
+        except requirements.RequirementsError as error:
+            status = STATUS_BY_REQUIREMENTS_ERROR.get(error.code, 502)
+            return _error(status, error.code, error.message)
+
+        kept, removed = verify_requirements(candidates, text)
+        per_posting.append(kept)
+        dropped += removed
+
+    results = aggregate(per_posting)
+    logger.info(
+        "requirements extraction: %d postings, %d kept, %d dropped",
+        len(per_posting),
+        len(results),
+        dropped,
+    )
+
+    return {
+        "postings_count": len(per_posting),
+        "requirements": [
+            {
+                "name": item.name,
+                "category": item.category,
+                "level": item.level,
+                "frequency": item.frequency,
+                "sources": [
+                    {"posting": s.posting, "level": s.level, "evidence": s.evidence}
+                    for s in item.sources
+                ],
+            }
+            for item in results
+        ],
+        "dropped_count": dropped,
     }
