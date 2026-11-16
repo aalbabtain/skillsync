@@ -202,6 +202,7 @@ rather than skipped.
 - [x] Agent 2 — Requirements Extractor (pasted postings, verified quotes, counted by code)
 - [ ] Agent 3 — Gap Evaluator (deterministic, tested)
 - [ ] Agent 4 — Plan Builder
+- [x] Landing page and full Arabic (right to left) / English site
 - [ ] Human-in-the-loop approve / edit / reject
 - [ ] Deploy frontend and backend
 

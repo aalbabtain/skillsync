@@ -1,6 +1,6 @@
 export default function Logo() {
   return (
-    <span className="logo">
+    <span className="logo" dir="ltr">
       <svg
         width="32"
         height="32"

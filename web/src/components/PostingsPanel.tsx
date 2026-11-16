@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { ApiRequestError, extractRequirements } from "../api";
 import type { PostingInput, RequirementsResult } from "../api";
+import { useI18n } from "../i18n";
 
 const MAX_POSTINGS = 10;
 const MIN_POSTING_CHARS = 80;
@@ -25,7 +26,8 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult }: Prop
   const [titles, setTitles] = useState<string[]>([]);
   const [result, setResult] = useState<RequirementsResult | null>(null);
   const [running, setRunning] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{ code: string; message: string } | null>(null);
+  const { t, category, errorMessage } = useI18n();
 
   const ready = drafts.every((draft) => draft.text.trim().length >= MIN_POSTING_CHARS);
 
@@ -33,24 +35,24 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult }: Prop
     setDrafts((current) =>
       current.map((draft) => (draft.id === id ? { ...draft, [field]: value } : draft)),
     );
-    if (error) setError("");
+    if (error) setError(null);
   }
 
   async function submit() {
     setRunning(true);
-    setError("");
+    setError(null);
 
     try {
       const postings = drafts.map(({ title, text }) => ({ title: title.trim(), text }));
       const extracted = await extractRequirements(postings);
-      setTitles(postings.map((posting, index) => posting.title || `Posting ${index + 1}`));
+      setTitles(postings.map((posting) => posting.title));
       setResult(extracted);
       onResult(extracted);
     } catch (caught) {
       setError(
         caught instanceof ApiRequestError
-          ? caught.message
-          : "The API is not reachable. Check that the backend is running.",
+          ? { code: caught.code, message: caught.message }
+          : { code: "network", message: "" },
       );
     } finally {
       setRunning(false);
@@ -61,15 +63,14 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult }: Prop
     <div className="postings">
       <div className="skills-head">
         <div>
-          <p className="eyebrow">Agent 2 · Requirements Extractor</p>
-          <h2 id="postings-title">Job postings</h2>
+          <p className="eyebrow">{t("postings_eyebrow")}</p>
+          <h2 id="postings-title">{t("postings_h")}</h2>
           <p className="skills-count">
-            {confirmedCount} {confirmedCount === 1 ? "skill" : "skills"} confirmed. Paste the
-            postings you want to apply for, up to {MAX_POSTINGS}.
+            {t("postings_lead", { n: confirmedCount })}
           </p>
         </div>
         <button className="btn btn-ghost" onClick={onBack}>
-          Back
+          {t("back")}
         </button>
       </div>
 
@@ -80,47 +81,47 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult }: Prop
           return (
             <li className="posting-card" key={draft.id}>
               <div className="posting-card-head">
-                <h3>Posting {index + 1}</h3>
+                <h3>{t("posting_n", { n: index + 1 })}</h3>
                 {drafts.length > 1 && (
                   <button
                     className="chip-remove"
                     onClick={() =>
                       setDrafts((current) => current.filter((item) => item.id !== draft.id))
                     }
-                    aria-label={`Remove posting ${index + 1}`}
+                    aria-label={t("remove_posting", { n: index + 1 })}
                   >
                     ×
                   </button>
                 )}
               </div>
               <label className="posting-label" htmlFor={`title-${draft.id}`}>
-                Title (optional)
+                {t("title_label")}
               </label>
               <input
                 id={`title-${draft.id}`}
                 className="posting-input"
                 value={draft.title}
                 maxLength={120}
-                dir="auto"
-                placeholder="e.g. Backend Developer at a Riyadh fintech"
+                dir={draft.title ? "auto" : undefined}
+                placeholder={t("title_ph")}
                 onChange={(event) => update(draft.id, "title", event.target.value)}
               />
               <label className="posting-label" htmlFor={`text-${draft.id}`}>
-                Posting text
+                {t("text_label")}
               </label>
               <textarea
                 id={`text-${draft.id}`}
                 className="posting-input posting-text"
                 value={draft.text}
-                dir="auto"
+                dir={draft.text ? "auto" : undefined}
                 rows={7}
-                placeholder="Paste the full posting: responsibilities, requirements, nice to have…"
+                placeholder={t("text_ph")}
                 aria-invalid={short}
                 onChange={(event) => update(draft.id, "text", event.target.value)}
               />
               {short && (
                 <p className="posting-hint">
-                  At least {MIN_POSTING_CHARS} characters. Paste the whole posting.
+                  {t("short_hint")}
                 </p>
               )}
             </li>
@@ -134,60 +135,64 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult }: Prop
           disabled={drafts.length >= MAX_POSTINGS || running}
           onClick={() => setDrafts((current) => [...current, emptyDraft()])}
         >
-          + Add another posting
+          {t("add_posting")}
         </button>
         <button className="btn btn-primary" disabled={!ready || running} onClick={submit}>
           {running && <span className="spinner" aria-hidden="true" />}
-          {running ? "Extracting…" : "Extract requirements"}
+          {running ? t("extracting_req") : t("extract_req")}
         </button>
       </div>
 
       {error && (
         <p className="upload-error" role="alert">
-          {error}
+          {errorMessage(error.code, error.message || t("err_network"))}
         </p>
       )}
 
       {result && (
         <section className="req-results" aria-labelledby="req-title">
           <h3 id="req-title" className="req-title">
-            Requirements from {result.postings_count}{" "}
-            {result.postings_count === 1 ? "posting" : "postings"}
+            {t("req_h", { n: result.postings_count })}
           </h3>
           {result.dropped_count > 0 && (
             <p className="skills-note">
-              {result.dropped_count} {result.dropped_count === 1 ? "skill" : "skills"} removed: no
-              supporting quote in the posting.
+              {t("req_dropped", { n: result.dropped_count })}
             </p>
           )}
 
           {result.requirements.length === 0 ? (
-            <p className="skills-empty">No skills found in these postings.</p>
+            <p className="skills-empty">{t("req_empty")}</p>
           ) : (
             <ul className="req-list">
               <li className="req-row req-row-head" aria-hidden="true">
-                <span>Skill</span>
-                <span>Category</span>
-                <span>Asked in</span>
-                <span>Level</span>
+                <span>{t("col_skill")}</span>
+                <span>{t("col_category")}</span>
+                <span>{t("col_asked")}</span>
+                <span>{t("col_level")}</span>
               </li>
               {result.requirements.map((item) => (
                 <li className="req-row" key={item.name}>
-                  <span className="req-name">{item.name}</span>
-                  <span className="req-category">{item.category}</span>
+                  <span className="req-name" dir="auto">
+                    {item.name}
+                  </span>
+                  <span className="req-category">{category(item.category)}</span>
                   <span className="req-freq">
-                    {item.frequency} of {result.postings_count}
+                    {t("asked", { n: item.frequency, total: result.postings_count })}
                   </span>
                   <span className={`req-level req-level-${item.level}`}>
-                    {item.level === "required" ? "Required" : "Preferred"}
+                    {item.level === "required" ? t("level_required") : t("level_preferred")}
                   </span>
                   <details className="req-quotes">
-                    <summary>Show {item.sources.length === 1 ? "quote" : "quotes"}</summary>
+                    <summary>{t("show_evidence")}</summary>
                     <ul>
                       {item.sources.map((source) => (
                         <li key={source.posting}>
-                          <span className="req-source">{titles[source.posting]}</span>
-                          <q dir="auto">{source.evidence}</q>
+                          <span className="req-source" dir="auto">
+                            {titles[source.posting] || t("posting_n", { n: source.posting + 1 })}
+                          </span>
+                          <span className="req-quote" dir="auto">
+                            {source.evidence}
+                          </span>
                         </li>
                       ))}
                     </ul>

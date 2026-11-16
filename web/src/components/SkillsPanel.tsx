@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 
 import type { Skill } from "../api";
+import { useI18n } from "../i18n";
 
 const CATEGORY_ORDER = [
   "Programming languages",
@@ -34,6 +35,7 @@ function groupOf(entry: Entry) {
 }
 
 export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }: Props) {
+  const { t, category } = useI18n();
   const [entries, setEntries] = useState<Entry[]>(() =>
     initial.map((skill) => ({ ...skill, source: "verified" })),
   );
@@ -57,12 +59,12 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
     const name = draft.trim();
 
     if (!name) {
-      setError("Type a skill name first.");
+      setError(t("add_empty"));
       return;
     }
 
     if (entries.some((entry) => entry.name.toLowerCase() === name.toLowerCase())) {
-      setError(`${name} is already in the list.`);
+      setError(t("add_dup", { name }));
       return;
     }
 
@@ -78,36 +80,37 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
     <div className="skills">
       <div className="skills-head">
         <div>
-          <h2 id="skills-title">Your verified skills</h2>
+          <h2 id="skills-title">{t("skills_h")}</h2>
           <p className="skills-count">
-            {verified} verified · {selfReported} self-reported
+            {t("skills_count", { verified, self: selfReported })}
           </p>
         </div>
         <button className="btn btn-ghost" onClick={onBack}>
-          Back
+          {t("back")}
         </button>
       </div>
 
       {droppedCount > 0 && (
         <p className="skills-note">
-          {droppedCount} {droppedCount === 1 ? "skill" : "skills"} removed: no supporting evidence
-          in your CV.
+          {t("skills_dropped", { n: droppedCount })}
         </p>
       )}
 
       {entries.length === 0 ? (
         <p className="skills-empty">
-          No skills left. Add one below, or go back and upload a different CV.
+          {t("skills_empty")}
         </p>
       ) : (
         <div className="skills-groups">
           {groups.map((group) => (
             <section className="chip-group" key={group.category}>
-              <h3>{group.category}</h3>
+              <h3>{category(group.category)}</h3>
               <ul className="chips">
                 {group.skills.map((skill) => (
                   <li className="chip" key={skill.name}>
-                    <span className="chip-name">{skill.name}</span>
+                    <span className="chip-name" dir="auto">
+                      {skill.name}
+                    </span>
                     {skill.source === "verified" ? (
                       <span className="chip-badge" tabIndex={0}>
                         <svg
@@ -126,16 +129,18 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
                             strokeLinejoin="round"
                           />
                         </svg>
-                        Verified
-                        <span className="chip-evidence">{skill.evidence}</span>
+                        {t("verified")}
+                        <span className="chip-evidence" dir="auto">
+                          {skill.evidence}
+                        </span>
                       </span>
                     ) : (
-                      <span className="chip-badge chip-badge-user">Self-reported</span>
+                      <span className="chip-badge chip-badge-user">{t("self_badge")}</span>
                     )}
                     <button
                       className="chip-remove"
                       onClick={() => remove(skill.name)}
-                      aria-label={`Remove ${skill.name}`}
+                      aria-label={t("remove_skill", { name: skill.name })}
                     >
                       ×
                     </button>
@@ -148,7 +153,7 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
       )}
 
       <form className="add-skill" onSubmit={add}>
-        <label htmlFor="add-skill">Add a missing skill</label>
+        <label htmlFor="add-skill">{t("add_label")}</label>
         <div className="add-skill-row">
           <input
             id="add-skill"
@@ -157,13 +162,14 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
               setDraft(event.target.value);
               if (error) setError("");
             }}
-            placeholder="e.g. Docker"
+            placeholder={t("add_placeholder")}
+            dir={draft ? "auto" : undefined}
             autoComplete="off"
             aria-invalid={Boolean(error)}
             aria-describedby={error ? "add-skill-error" : undefined}
           />
           <button className="btn btn-ghost" type="submit">
-            Add
+            {t("add_btn")}
           </button>
         </div>
         {error && (
@@ -183,7 +189,7 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
             )
           }
         >
-          Confirm skills
+          {t("confirm_skills")}
         </button>
       </div>
     </div>

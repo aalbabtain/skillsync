@@ -7,17 +7,20 @@ import {
   type RunResult,
   type SkillsResult,
 } from "../api";
+import { useI18n } from "../i18n";
+
+type Failure = { code: string; message: string };
 
 type State =
   | { kind: "idle" }
   | { kind: "uploading"; filename: string }
-  | { kind: "error"; message: string }
+  | ({ kind: "error" } & Failure)
   | { kind: "done"; result: RunResult };
 
 type Extraction =
   | { kind: "idle" }
   | { kind: "running"; stage: "extracting" | "verifying" }
-  | { kind: "error"; code: string; message: string };
+  | ({ kind: "error" } & Failure);
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const VERIFY_DELAY_MS = 1200;
@@ -26,21 +29,31 @@ type Props = {
   onSkills: (result: SkillsResult) => void;
 };
 
+function failureOf(error: unknown): Failure {
+  return error instanceof ApiRequestError
+    ? { code: error.code, message: error.message }
+    : { code: "network", message: "" };
+}
+
 export default function UploadPanel({ onSkills }: Props) {
+  const { t, errorMessage } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<State>({ kind: "idle" });
   const [extraction, setExtraction] = useState<Extraction>({ kind: "idle" });
   const [dragging, setDragging] = useState(false);
   const runningRef = useRef(false);
 
+  const describe = (failure: Failure) =>
+    errorMessage(failure.code, failure.message || t("err_network"));
+
   async function start(file: File) {
     if (file.type !== "application/pdf") {
-      setState({ kind: "error", message: "Only PDF files are accepted." });
+      setState({ kind: "error", code: "NOT_A_PDF", message: "" });
       return;
     }
 
     if (file.size > MAX_BYTES) {
-      setState({ kind: "error", message: "The PDF is larger than 5 MB." });
+      setState({ kind: "error", code: "PDF_TOO_LARGE", message: "" });
       return;
     }
 
@@ -51,9 +64,7 @@ export default function UploadPanel({ onSkills }: Props) {
       const result = await createRun(file);
       setState({ kind: "done", result });
     } catch (error) {
-      const message =
-        error instanceof ApiRequestError ? error.message : "Could not reach the server.";
-      setState({ kind: "error", message });
+      setState({ kind: "error", ...failureOf(error) });
     }
   }
 
@@ -72,10 +83,7 @@ export default function UploadPanel({ onSkills }: Props) {
       setExtraction({ kind: "idle" });
       onSkills(result);
     } catch (error) {
-      const code = error instanceof ApiRequestError ? error.code : "UNKNOWN";
-      const message =
-        error instanceof ApiRequestError ? error.message : "Could not reach the server.";
-      setExtraction({ kind: "error", code, message });
+      setExtraction({ kind: "error", ...failureOf(error) });
     } finally {
       runningRef.current = false;
     }
@@ -93,8 +101,11 @@ export default function UploadPanel({ onSkills }: Props) {
       <div className="upload">
         <div className="upload-meta">
           <span>
-            {state.result.filename} · {state.result.pages} page
-            {state.result.pages === 1 ? "" : "s"} · {state.result.characters} characters
+            <bdi>{state.result.filename}</bdi> ·{" "}
+            {t("upload_meta", {
+              pages: state.result.pages,
+              chars: state.result.characters,
+            })}
           </span>
           <div className="upload-actions">
             <button
@@ -104,26 +115,26 @@ export default function UploadPanel({ onSkills }: Props) {
               aria-busy={running}
             >
               {running && <span className="spinner" aria-hidden="true" />}
-              Extract skills
+              {t("extract_skills")}
             </button>
             <button className="btn btn-ghost" onClick={startOver} disabled={running}>
-              Start over
+              {t("start_over")}
             </button>
           </div>
         </div>
 
         {extraction.kind === "running" && (
           <p className="upload-status" role="status">
-            {extraction.stage === "extracting" ? "Extracting skills…" : "Verifying…"}
+            {extraction.stage === "extracting" ? t("extracting_skills") : t("verifying")}
           </p>
         )}
 
         {extraction.kind === "error" && (
           <div className="upload-error" role="alert">
-            <span>{extraction.message}</span>
+            <span>{describe(extraction)}</span>
             {extraction.code !== "SKILLS_QUOTA_EXCEEDED" && (
               <button className="btn btn-ghost" onClick={() => void runExtraction()}>
-                Retry
+                {t("retry")}
               </button>
             )}
           </div>
@@ -154,15 +165,17 @@ export default function UploadPanel({ onSkills }: Props) {
       >
         {state.kind === "uploading" ? (
           <>
-            <p className="dropzone-title">Extracting text…</p>
-            <p className="dropzone-hint">{state.filename}</p>
+            <p className="dropzone-title">{t("extracting_text")}</p>
+            <p className="dropzone-hint">
+              <bdi>{state.filename}</bdi>
+            </p>
           </>
         ) : (
           <>
-            <p className="dropzone-title">Drop your CV here</p>
-            <p className="dropzone-hint">PDF only, up to 5 MB and 10 pages.</p>
+            <p className="dropzone-title">{t("drop")}</p>
+            <p className="dropzone-hint">{t("drop_hint")}</p>
             <button className="btn btn-primary" onClick={() => inputRef.current?.click()}>
-              Choose a PDF
+              {t("choose")}
             </button>
           </>
         )}
@@ -182,7 +195,7 @@ export default function UploadPanel({ onSkills }: Props) {
 
       {state.kind === "error" && (
         <p className="upload-error" role="alert">
-          {state.message}
+          {describe(state)}
         </p>
       )}
     </div>

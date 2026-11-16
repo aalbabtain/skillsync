@@ -17,7 +17,8 @@ The script creates `api\.venv`, installs the backend and frontend dependencies, 
 on <http://localhost:8000> and the web app on <http://localhost:5173>, and stops both when
 you press Enter.
 
-Open <http://localhost:5173>, drop a PDF, press **Extract skills**. A "Demo mode" note appears
+Open <http://localhost:5173>, press **Start with your CV**, drop a PDF, press **Extract skills**.
+The header button switches the whole site between English and Arabic. A "Demo mode" note appears
 above the page when no key is configured.
 
 Requirements: Python 3.11+ and Node.js 20+.
@@ -76,6 +77,8 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `api/scripts/run_cases.py` | Case runner CLI |
 | `api/tests/fixtures/cases/` | The CVs used by the case runner and the tests |
 | `web/src/` | React + Vite frontend |
+| `web/src/i18n.tsx` | Every user-facing string, in English and Arabic (right to left) |
+| `web/src/components/Landing.tsx` | The landing page shown before the service |
 
 ## Rules that must not break
 
@@ -84,4 +87,6 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
   each quoted evidence string against the CV or posting text. Counting how many postings
   ask for a skill is also plain code.
 - The skill category label is `Programming languages` (plural) in the prompt, the backend,
-  the frontend and the tests.
+  the frontend and the tests. The Arabic site only translates it for display.
+- Every user-facing string lives in `web/src/i18n.tsx`, in both languages. Use logical CSS
+  properties (`inline-start`, `inline-end`), never `left`/`right`, so Arabic stays right to left.

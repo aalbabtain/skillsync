@@ -2,37 +2,21 @@ import { useEffect, useState } from "react";
 
 import { getHealth } from "./api";
 import type { RequirementsResult, Skill, SkillsResult } from "./api";
+import Landing from "./components/Landing";
 import Logo from "./components/Logo";
 import PostingsPanel from "./components/PostingsPanel";
 import SkillsPanel from "./components/SkillsPanel";
+import Stepper from "./components/Stepper";
+import type { StepId } from "./components/Stepper";
 import UploadPanel from "./components/UploadPanel";
+import { useI18n } from "./i18n";
 
-const agents = [
-  {
-    step: 1,
-    name: "CV & Fit Assessor",
-    detail: "Verifies claimed skills, then screens postings for fit.",
-  },
-  {
-    step: 2,
-    name: "Requirements Extractor",
-    detail: "Pulls required skills from the postings you paste.",
-  },
-  {
-    step: 3,
-    name: "Gap Evaluator",
-    detail: "Computes what you have against what is required.",
-  },
-  {
-    step: 4,
-    name: "Plan Builder",
-    detail: "Drafts a prioritized plan to close the gap.",
-  },
-];
-
+type View = "landing" | "service";
 type Step = "cv" | "skills" | "postings";
 
 export default function App() {
+  const { t, lang, setLang } = useI18n();
+  const [view, setView] = useState<View>("landing");
   const [step, setStep] = useState<Step>("cv");
   const [extraction, setExtraction] = useState<SkillsResult | null>(null);
   const [skillsKey, setSkillsKey] = useState(0);
@@ -56,87 +40,120 @@ export default function App() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [view, step]);
+
+  const reachable: StepId[] = ["cv"];
+  if (extraction) reachable.push("skills");
+  if (confirmed.length > 0) reachable.push("postings");
+
   return (
     <div className="page">
       <header className="site-head">
         <div className="wrap head-inner">
-          <a className="brand" href="/" aria-label="SkillSync, back to top">
+          <a
+            className="brand"
+            href="/"
+            aria-label={t("home_label")}
+            onClick={(event) => {
+              event.preventDefault();
+              setView("landing");
+            }}
+          >
             <Logo />
           </a>
-          <span className="badge">Scaffold</span>
+          <nav className="head-nav">
+            {view === "landing" && (
+              <>
+                <a className="head-link" href="#how">
+                  {t("nav_how")}
+                </a>
+                <a className="head-link" href="#who">
+                  {t("nav_who")}
+                </a>
+              </>
+            )}
+            <button
+              className="lang-btn"
+              onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+              aria-label={t("lang_switch_label")}
+              lang={lang === "ar" ? "en" : "ar"}
+            >
+              {t("lang_switch")}
+            </button>
+          </nav>
         </div>
       </header>
 
-        {demoMode && (
+      {demoMode && (
+        <div className="wrap">
           <p className="demo-note" role="status">
-            <strong>Demo mode.</strong> No Gemini key is configured, so skills are matched from a
-            built-in list instead of the model.
+            <strong>{t("demo_title")}</strong> {t("demo_body")}
           </p>
-        )}
+        </div>
+      )}
 
-      <main className="wrap">
-        <section className="hero">
-          <p className="eyebrow">SWE 485 · Course project</p>
-          <h1>Align your skills with the job market.</h1>
-          <p className="lead">
-            Upload your CV. SkillSync verifies what you can prove, compares it with real job
-            postings, and builds a learning plan for the gap.
-          </p>
-        </section>
-
-        <section className="panel" aria-labelledby="upload-title" hidden={step !== "cv"}>
-          <h2 id="upload-title">Start with your CV</h2>
-          <UploadPanel
-            onSkills={(result) => {
-              setExtraction(result);
-              setSkillsKey((key) => key + 1);
-              setStep("skills");
+      {view === "landing" ? (
+        <Landing onStart={() => setView("service")} />
+      ) : (
+        <main className="service">
+          <Stepper
+            current={step}
+            reachable={reachable}
+            soon={["gap", "plan"]}
+            onSelect={(target) => {
+              if (target === "cv" || target === "skills" || target === "postings") {
+                setStep(target);
+              }
             }}
           />
-        </section>
 
-        {extraction && (
-          <section className="panel" aria-labelledby="skills-title" hidden={step !== "skills"}>
-            <SkillsPanel
-              key={skillsKey}
-              initial={extraction.skills}
-              droppedCount={extraction.dropped_count}
-              onBack={() => setStep("cv")}
-              onConfirm={(skills) => {
-                setConfirmed(skills);
-                setStep("postings");
-              }}
-            />
-          </section>
-        )}
+          <div className="wrap">
+            <section className="panel" aria-labelledby="upload-title" hidden={step !== "cv"}>
+              <h2 id="upload-title">{t("upload_h")}</h2>
+              <UploadPanel
+                onSkills={(result) => {
+                  setExtraction(result);
+                  setSkillsKey((key) => key + 1);
+                  setConfirmed([]);
+                  setStep("skills");
+                }}
+              />
+            </section>
 
-        <section className="panel" aria-labelledby="postings-title" hidden={step !== "postings"}>
-          {confirmed.length > 0 && (
-            <PostingsPanel
-              confirmedCount={confirmed.length}
-              onBack={() => setStep("skills")}
-              onResult={setRequirements}
-            />
-          )}
-        </section>
+            {extraction && (
+              <section className="panel" aria-labelledby="skills-title" hidden={step !== "skills"}>
+                <SkillsPanel
+                  key={skillsKey}
+                  initial={extraction.skills}
+                  droppedCount={extraction.dropped_count}
+                  onBack={() => setStep("cv")}
+                  onConfirm={(skills) => {
+                    setConfirmed(skills);
+                    setStep("postings");
+                  }}
+                />
+              </section>
+            )}
 
-        <section className="panel" aria-labelledby="pipeline-title">
-          <h2 id="pipeline-title">The pipeline</h2>
-          <ol className="pipeline">
-            {agents.map((agent) => (
-              <li className="step" key={agent.step}>
-                <span className="step-n">Agent {agent.step}</span>
-                <h3>{agent.name}</h3>
-                <p>{agent.detail}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </main>
-
-      <footer className="site-foot wrap">
-        <span>SkillSync · Ahmed Ababtain</span>
-      </footer>
+            <section
+              className="panel"
+              aria-labelledby="postings-title"
+              hidden={step !== "postings"}
+            >
+              {confirmed.length > 0 && (
+                <PostingsPanel
+                  confirmedCount={confirmed.length}
+                  onBack={() => setStep("skills")}
+                  onResult={setRequirements}
+                />
+              )}
+            </section>
+          </div>
+        </main>
+      )}
     </div>
   );
 }
