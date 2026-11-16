@@ -121,6 +121,7 @@ Copy `.env.example` to `api/.env`. On Render, set them under the service's **Env
 |----------|---------|
 | `GEMINI_API_KEY` | Server-side only, never sent to the browser. Empty means demo mode. |
 | `GEMINI_MODEL` | Model used for extraction. |
+| `GEMINI_FALLBACK_MODEL` | Optional second model, tried when the main one stays busy. |
 | `SKILLSYNC_EXTRACTOR` | `mock` or `gemini` to force one. Empty picks Gemini when a key is set. |
 | `SKILLSYNC_RATE_LIMIT` | Model requests per visitor address per hour (default 20; a CV counts 1, each posting 1). `0` turns it off. |
 | `SKILLSYNC_STATIC_DIR` | Folder with the built web app; set in the Docker image. |
@@ -150,7 +151,7 @@ before reordering. Scanned CVs with no text layer are rejected, not OCR'd.
 
 **`POST /api/skills/extract`** takes `{"text"}` of 40 to 50,000 characters and returns
 `{"skills": [{"name", "category", "evidence"}], "dropped_count"}`. Codes: `TEXT_TOO_SHORT`,
-`TEXT_TOO_LONG`, `SKILLS_MALFORMED`, `SKILLS_UNAVAILABLE`, `SKILLS_QUOTA_EXCEEDED`, `RATE_LIMITED`.
+`TEXT_TOO_LONG`, `SKILLS_MALFORMED`, `SKILLS_UNAVAILABLE`, `SKILLS_BUSY`, `SKILLS_QUOTA_EXCEEDED`, `RATE_LIMITED`.
 Prompt: `api/app/prompts/cv_assessor.md`.
 
 **`POST /api/requirements/extract`** takes `{"postings": [{"title", "text"}]}`: 1 to 10 postings,
@@ -160,13 +161,17 @@ ranks by frequency, then required before preferred. Returns `{"postings_count", 
 [{"name", "category", "level", "frequency", "sources": [{"posting", "level", "evidence"}]}],
 "dropped_count"}`. If any posting fails, the whole request fails. Codes: `POSTINGS_EMPTY`,
 `POSTINGS_TOO_MANY`, `POSTING_TOO_SHORT`, `POSTING_TOO_LONG`, `POSTING_TITLE_TOO_LONG`,
-`REQUIREMENTS_MALFORMED`, `REQUIREMENTS_UNAVAILABLE`, `REQUIREMENTS_QUOTA_EXCEEDED`, `RATE_LIMITED`.
+`REQUIREMENTS_MALFORMED`, `REQUIREMENTS_UNAVAILABLE`, `REQUIREMENTS_BUSY`, `REQUIREMENTS_QUOTA_EXCEEDED`, `RATE_LIMITED`.
 Prompt: `api/app/prompts/requirements_extractor.md`.
 
 **`POST /api/gap`** takes `{"skills": [{"name", "category", "evidence", "verified"}],
 "requirements": [...], "postings_count"}` and returns `have`, `needs_proof` and `missing` with a
 summary of required and preferred skills proven. No model; the same input always gives the same
 gap. Codes: `GAP_NO_REQUIREMENTS`, `GAP_INVALID`.
+
+**When Gemini is busy:** Google answers 500 to 504 when a model is overloaded. Each call is
+tried three times (waiting 1 then 2 seconds), then once more on `GEMINI_FALLBACK_MODEL` if set,
+before the route answers `SKILLS_BUSY` or `REQUIREMENTS_BUSY`.
 
 **Limits:** the two model routes allow 20 model requests per visitor address per hour
 (`SKILLSYNC_RATE_LIMIT`), then answer `429 RATE_LIMITED` with a `Retry-After` header.
@@ -181,7 +186,7 @@ cd api
 python -m pytest
 ```
 
-156 tests, no network and no key: demo mode stands in for the model.
+162 tests, no network and no key: demo mode stands in for the model.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career

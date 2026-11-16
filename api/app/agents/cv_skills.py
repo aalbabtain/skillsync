@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, ValidationError
 
-from app.agents import mock_extractor
+from app.agents import gemini, mock_extractor
 from app.config import get_settings
 
 
@@ -119,8 +119,9 @@ def extract(cv_text: str, extractor: str | None = None) -> list[dict[str, str]]:
     client = genai.Client(api_key=settings.gemini_api_key)
 
     try:
-        response = client.models.generate_content(
-            model=settings.gemini_model,
+        response = gemini.generate(
+            client,
+            [settings.gemini_model, getattr(settings, "gemini_fallback_model", "")],
             contents=cv_text,
             config=types.GenerateContentConfig(
                 system_instruction=load_prompt(),
@@ -141,6 +142,12 @@ def _upstream_failure(error: Exception) -> SkillExtractionError:
         type(error).__name__,
         getattr(error, "code", None),
     )
+
+    if gemini.is_busy(error):
+        return SkillExtractionError(
+            "SKILLS_BUSY",
+            "The AI model is busy right now. Try again in a minute.",
+        )
 
     if getattr(error, "code", None) == QUOTA_STATUS:
         return SkillExtractionError(

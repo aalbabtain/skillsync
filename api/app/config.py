@@ -15,6 +15,8 @@ class Settings(BaseSettings):
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.6-flash"
+    # Tried when the main model stays busy; empty means no fallback.
+    gemini_fallback_model: str = ""
     skillsync_extractor: str = ""
     skillsync_static_dir: str = ""
     # Model requests per client address per hour; 0 turns the limit off.
