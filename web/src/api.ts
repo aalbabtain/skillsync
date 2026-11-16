@@ -77,3 +77,48 @@ export async function getHealth(): Promise<Health> {
 
   return (await response.json()) as Health;
 }
+
+export type PostingInput = {
+  title: string;
+  text: string;
+};
+
+export type RequirementSource = {
+  posting: number;
+  level: "required" | "preferred";
+  evidence: string;
+};
+
+export type Requirement = {
+  name: string;
+  category: string;
+  level: "required" | "preferred";
+  frequency: number;
+  sources: RequirementSource[];
+};
+
+export type RequirementsResult = {
+  postings_count: number;
+  requirements: Requirement[];
+  dropped_count: number;
+};
+
+export async function extractRequirements(
+  postings: PostingInput[],
+): Promise<RequirementsResult> {
+  const response = await fetch("/api/requirements/extract", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ postings }),
+  });
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new ApiRequestError(
+      payload?.detail?.code ?? "UNKNOWN",
+      payload?.detail?.message ?? "Requirements extraction failed.",
+    );
+  }
+
+  return payload as RequirementsResult;
+}
