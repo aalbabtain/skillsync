@@ -105,3 +105,30 @@ def extract(cv_text: str) -> list[dict[str, str]]:
                 break
 
     return found
+
+
+PREFERRED_MARKERS = tuple(
+    normalize(marker)
+    for marker in (
+        "preferred",
+        "nice to have",
+        "plus",
+        "bonus",
+        "advantage",
+        "يفضل",
+        "ميزة",
+        "مفضل",
+    )
+)
+
+
+def extract_requirements(posting_text: str) -> list[dict[str, str]]:
+    """Match the skill dictionary against a posting and guess each skill's level."""
+    found = []
+
+    for item in extract(posting_text):
+        line = normalize(item["evidence"])
+        preferred = any(_mentions(line, marker) for marker in PREFERRED_MARKERS)
+        found.append({**item, "level": "preferred" if preferred else "required"})
+
+    return found
