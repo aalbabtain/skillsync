@@ -15,9 +15,12 @@ import {
   Shuffle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useRef } from "react";
+import type { CSSProperties } from "react";
 
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
+import { useReducedMotion, useRevealOnScroll, useScrollProgress, useTimeline } from "../motion";
 import Logo from "./Logo";
 
 type Props = {
@@ -64,12 +67,25 @@ const PREVIEW: {
   { id: "have", icon: CircleCheck, title: "grp_have_h", items: [{ name: "Python", n: 3 }, { name: "SQL", n: 2 }] },
 ];
 
+// The sample card checks one skill at a time: appear, check the quote, then resolve.
+const CARD_TIMELINE = [500, 900, 250, 900, 250, 900];
+
+const stagger = (index: number) => ({ "--i": index }) as CSSProperties;
+
 export default function Landing({ onStart }: Props) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const reduced = useReducedMotion();
+  const root = useRef<HTMLDivElement>(null);
+  const steps = useRef<HTMLOListElement>(null);
+  const tick = useTimeline(CARD_TIMELINE, reduced, lang);
+  const progress = useScrollProgress(steps, reduced);
+
+  useRevealOnScroll(root, reduced);
 
   const sample = [
-    { name: "Python", quote: t("sample_quote_python") },
-    { name: "PostgreSQL", quote: t("sample_quote_postgres") },
+    { name: "Python", quote: t("sample_quote_python"), gap: false },
+    { name: "PostgreSQL", quote: t("sample_quote_postgres"), gap: false },
+    { name: "Docker", quote: t("gap_note"), gap: true },
   ];
 
   const startButton = (
@@ -79,7 +95,7 @@ export default function Landing({ onStart }: Props) {
   );
 
   return (
-    <div className="landing">
+    <div className="landing" ref={root}>
       <section className="hero-split wrap" aria-labelledby="hero-title">
         <div className="hero-copy">
           <p className="eyebrow">{t("eyebrow")}</p>
@@ -98,26 +114,32 @@ export default function Landing({ onStart }: Props) {
             <span>{t("sample")}</span>
             <span>{t("sample_meta")}</span>
           </figcaption>
-          {sample.map((item) => (
-            <div className="proof-row" key={item.name}>
-              <div className="proof-top">
-                <strong dir="ltr">{item.name}</strong>
-                <span className="tag tag-ok">
-                  <BadgeCheck size={13} aria-hidden="true" /> {t("verified")}
-                </span>
+          {sample.map((item, index) => {
+            const shown = tick >= index * 2 + 1;
+            const done = tick >= index * 2 + 2;
+            const state = !shown ? "is-pending" : done ? "is-done" : "is-checking";
+            return (
+              <div className={`proof-row ${state}`} key={item.name}>
+                <div className="proof-top">
+                  <strong dir="ltr">{item.name}</strong>
+                  {!done ? (
+                    <span className="tag tag-checking">
+                      <span className="spinner spinner-sm" aria-hidden="true" /> {t("verifying")}
+                    </span>
+                  ) : item.gap ? (
+                    <span className="tag tag-gap">{t("gap_badge")}</span>
+                  ) : (
+                    <span className="tag tag-ok">
+                      <BadgeCheck size={13} aria-hidden="true" /> {t("verified")}
+                    </span>
+                  )}
+                </div>
+                <p className="proof-quote" dir="auto">
+                  <span className="proof-scan">{item.quote}</span>
+                </p>
               </div>
-              <p className="proof-quote" dir="auto">
-                {item.quote}
-              </p>
-            </div>
-          ))}
-          <div className="proof-row">
-            <div className="proof-top">
-              <strong dir="ltr">Docker</strong>
-              <span className="tag tag-gap">{t("gap_badge")}</span>
-            </div>
-            <p className="proof-quote">{t("gap_note")}</p>
-          </div>
+            );
+          })}
         </figure>
       </section>
 
@@ -126,9 +148,17 @@ export default function Landing({ onStart }: Props) {
           <h2 id="how-title" className="visually-hidden">
             {t("how_h")}
           </h2>
-          <ol className="steps-grid">
+          <ol
+            className="steps-grid"
+            ref={steps}
+            style={{ "--progress": progress } as CSSProperties}
+          >
+            <span className="steps-line" aria-hidden="true" />
             {STEPS.map(({ icon: Icon, title, body }, index) => (
-              <li key={title}>
+              <li
+                key={title}
+                className={progress >= index / (STEPS.length - 1) - 0.02 ? "is-reached" : ""}
+              >
                 <span className="icon-tile" aria-hidden="true">
                   <Icon size={20} />
                 </span>
@@ -142,10 +172,10 @@ export default function Landing({ onStart }: Props) {
       </section>
 
       <section className="wrap band" aria-labelledby="trust-title">
-        <h2 id="trust-title">{t("trust_h")}</h2>
+        <h2 data-reveal id="trust-title">{t("trust_h")}</h2>
         <ul className="card-grid">
-          {TRUST.map(({ icon: Icon, title, body }) => (
-            <li key={title}>
+          {TRUST.map(({ icon: Icon, title, body }, index) => (
+            <li key={title} data-reveal style={stagger(index)}>
               <span className="icon-tile" aria-hidden="true">
                 <Icon size={20} />
               </span>
@@ -158,10 +188,10 @@ export default function Landing({ onStart }: Props) {
 
       <section className="wrap band" aria-labelledby="preview-title">
         <div>
-          <h2 id="preview-title">{t("preview_h")}</h2>
+          <h2 data-reveal id="preview-title">{t("preview_h")}</h2>
           <p className="band-lead">{t("preview_lead")}</p>
         </div>
-        <div className="preview" aria-hidden="true">
+        <div className="preview" aria-hidden="true" data-reveal>
           {PREVIEW.map(({ id, icon: Icon, title, items }) => (
             <div className={`preview-col gap-${id}`} key={id}>
               <p className="preview-title">
@@ -179,10 +209,10 @@ export default function Landing({ onStart }: Props) {
       </section>
 
       <section className="wrap band" id="who" aria-labelledby="who-title">
-        <h2 id="who-title">{t("who_h")}</h2>
+        <h2 data-reveal id="who-title">{t("who_h")}</h2>
         <ul className="card-grid">
-          {AUDIENCES.map(({ icon: Icon, title, body }) => (
-            <li key={title}>
+          {AUDIENCES.map(({ icon: Icon, title, body }, index) => (
+            <li key={title} data-reveal style={stagger(index)}>
               <span className="icon-tile" aria-hidden="true">
                 <Icon size={20} />
               </span>
@@ -194,10 +224,10 @@ export default function Landing({ onStart }: Props) {
       </section>
 
       <section className="wrap band" id="faq" aria-labelledby="faq-title">
-        <h2 id="faq-title">{t("faq_h")}</h2>
+        <h2 data-reveal id="faq-title">{t("faq_h")}</h2>
         <div className="faq">
-          {FAQ.map(({ q, a }) => (
-            <details key={q}>
+          {FAQ.map(({ q, a }, index) => (
+            <details key={q} data-reveal style={stagger(index)}>
               <summary>{t(q)}</summary>
               <p>{t(a)}</p>
             </details>
@@ -205,7 +235,7 @@ export default function Landing({ onStart }: Props) {
         </div>
       </section>
 
-      <section className="wrap closing" aria-labelledby="closing-title">
+      <section className="wrap closing" aria-labelledby="closing-title" data-reveal>
         <div>
           <h2 id="closing-title">{t("final_h")}</h2>
           <p>{t("final")}</p>

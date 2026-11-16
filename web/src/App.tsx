@@ -112,7 +112,7 @@ export default function App() {
               navigate("");
             }}
           >
-            <Logo />
+            <Logo animated />
           </a>
           <nav className="head-nav">
             {view === "landing" && (

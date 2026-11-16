@@ -1646,3 +1646,207 @@ a {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- Landing motion ---------- */
+
+/* 1. Sample card: each skill appears, its quote is checked, then it resolves. */
+.proof-row {
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.proof-row.is-pending {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.proof-scan {
+  border-radius: 4px;
+}
+
+/* The highlight exists only while a quote is being checked, then it is gone. */
+.proof-row.is-checking .proof-scan {
+  background-image: linear-gradient(90deg, transparent, rgba(141, 162, 251, 0.28), transparent);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: scan 0.9s ease-in-out forwards;
+}
+
+[dir="rtl"] .proof-row.is-checking .proof-scan {
+  animation-name: scan-rtl;
+}
+
+@keyframes scan {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes scan-rtl {
+  from {
+    background-position: -100% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.tag-checking {
+  color: var(--muted);
+  background: rgba(236, 238, 242, 0.06);
+}
+
+.proof-row.is-done .tag {
+  animation: tag-in 0.3s ease-out;
+}
+
+@keyframes tag-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+.spinner-sm {
+  width: 10px;
+  height: 10px;
+  border-width: 1.5px;
+  border-color: rgba(152, 160, 174, 0.3);
+  border-top-color: var(--muted);
+}
+
+/* 2. The logo draws its line, places its points, then the dot pulses once. */
+.logo-animated .logo-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: logo-draw 0.9s ease-out 0.1s forwards;
+}
+
+.logo-animated .logo-node,
+.logo-animated .logo-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: logo-pop 0.3s ease-out forwards;
+}
+
+.logo-animated .logo-node:nth-of-type(1) {
+  animation-delay: 0.1s;
+}
+
+.logo-animated .logo-node:nth-of-type(2) {
+  animation-delay: 0.35s;
+}
+
+.logo-animated .logo-node:nth-of-type(3) {
+  animation-delay: 0.6s;
+}
+
+.logo-animated .logo-dot {
+  animation: logo-pop 0.3s ease-out 0.85s forwards, logo-pulse 0.9s ease-in-out 1.2s;
+}
+
+@keyframes logo-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes logo-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes logo-pulse {
+  50% {
+    transform: scale(1.35);
+  }
+}
+
+/* 3. Sections fade up as they scroll in. Hidden only after the script arms them. */
+[data-reveal] {
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+
+.reveal-armed [data-reveal]:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+/* 4. A line joins the four steps and fills as the strip scrolls through. */
+.steps-grid {
+  position: relative;
+}
+
+.steps-line {
+  position: absolute;
+  inset-block-start: calc(1.75rem + 20px);
+  inset-inline-start: 20px;
+  inset-inline-end: calc(25% - 1.5rem - 20px);
+  height: 2px;
+  background: var(--line2);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.steps-line::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: calc(var(--progress, 0) * 100%);
+  background: var(--accent);
+  border-radius: inherit;
+}
+
+.steps-grid .icon-tile {
+  position: relative;
+  z-index: 1;
+  background: var(--bg2);
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.steps-grid .is-reached .icon-tile {
+  color: var(--ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+@media (max-width: 860px) {
+  .steps-line {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proof-row,
+  [data-reveal],
+  .steps-grid .icon-tile {
+    transition: none;
+  }
+
+  .proof-scan,
+  .proof-row .tag,
+  .logo-animated .logo-line,
+  .logo-animated .logo-node,
+  .logo-animated .logo-dot {
+    animation: none !important;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
