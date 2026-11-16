@@ -1,0 +1,138 @@
+{
+  "input": {
+    "postings_count": 2,
+    "skills": [
+      {
+        "name": "Python",
+        "category": "Programming languages",
+        "evidence": "Built the pipeline in Python",
+        "verified": true
+      },
+      {
+        "name": "Docker",
+        "category": "Other",
+        "evidence": "",
+        "verified": false
+      }
+    ],
+    "requirements": [
+      {
+        "name": "Python",
+        "category": "Programming languages",
+        "level": "required",
+        "frequency": 2,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Experience with Python"
+          },
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "Must have: Python"
+          }
+        ]
+      },
+      {
+        "name": "Docker",
+        "category": "Cloud & DevOps",
+        "level": "required",
+        "frequency": 2,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Comfortable with Docker"
+          },
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "Docker is required"
+          }
+        ]
+      },
+      {
+        "name": "AWS",
+        "category": "Cloud & DevOps",
+        "level": "preferred",
+        "frequency": 1,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "preferred",
+            "evidence": "Nice to have: AWS"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "summary": {
+      "postings_count": 2,
+      "required_total": 2,
+      "required_proven": 1,
+      "preferred_total": 1,
+      "preferred_proven": 0,
+      "have_count": 1,
+      "needs_proof_count": 1,
+      "missing_count": 1
+    },
+    "have": [
+      {
+        "name": "Python",
+        "category": "Programming languages",
+        "level": "required",
+        "frequency": 2,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Experience with Python"
+          },
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "Must have: Python"
+          }
+        ],
+        "cv_evidence": "Built the pipeline in Python"
+      }
+    ],
+    "needs_proof": [
+      {
+        "name": "Docker",
+        "category": "Cloud & DevOps",
+        "level": "required",
+        "frequency": 2,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Comfortable with Docker"
+          },
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "Docker is required"
+          }
+        ]
+      }
+    ],
+    "missing": [
+      {
+        "name": "AWS",
+        "category": "Cloud & DevOps",
+        "level": "preferred",
+        "frequency": 1,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "preferred",
+            "evidence": "Nice to have: AWS"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "input": {
+    "postings_count": 2,
+    "skills": [],
+    "requirements": [
+      {
+        "name": "AWS",
+        "category": "Cloud & DevOps",
+        "level": "preferred",
+        "frequency": 1,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "preferred",
+            "evidence": "Nice to have: AWS"
+          }
+        ]
+      },
+      {
+        "name": "React",
+        "category": "Frameworks",
+        "level": "required",
+        "frequency": 1,
+        "sources": [
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "React in real projects"
+          }
+        ]
+      },
+      {
+        "name": "Docker",
+        "category": "Cloud & DevOps",
+        "level": "required",
+        "frequency": 2,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Comfortable with Docker"
+          },
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "Docker is required"
+          }
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "Programming languages",
+        "level": "required",
+        "frequency": 2,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Experience with Python"
+          },
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "Must have: Python"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "summary": {
+      "postings_count": 2,
+      "required_total": 3,
+      "required_proven": 0,
+      "preferred_total": 1,
+      "preferred_proven": 0,
+      "have_count": 0,
+      "needs_proof_count": 0,
+      "missing_count": 4
+    },
+    "have": [],
+    "needs_proof": [],
+    "missing": [
+      {
+        "name": "Docker",
+        "category": "Cloud & DevOps",
+        "level": "required",
+        "frequency": 2,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Comfortable with Docker"
+          },
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "Docker is required"
+          }
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "Programming languages",
+        "level": "required",
+        "frequency": 2,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Experience with Python"
+          },
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "Must have: Python"
+          }
+        ]
+      },
+      {
+        "name": "React",
+        "category": "Frameworks",
+        "level": "required",
+        "frequency": 1,
+        "sources": [
+          {
+            "posting": 1,
+            "level": "required",
+            "evidence": "React in real projects"
+          }
+        ]
+      },
+      {
+        "name": "AWS",
+        "category": "Cloud & DevOps",
+        "level": "preferred",
+        "frequency": 1,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "preferred",
+            "evidence": "Nice to have: AWS"
+          }
+        ]
+      }
+    ]
+  }
+}

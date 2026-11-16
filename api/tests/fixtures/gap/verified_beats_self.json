@@ -1,0 +1,64 @@
+{
+  "input": {
+    "postings_count": 1,
+    "skills": [
+      {
+        "name": "JS",
+        "category": "Other",
+        "evidence": "",
+        "verified": false
+      },
+      {
+        "name": "JavaScript",
+        "category": "Programming languages",
+        "evidence": "Strong JavaScript in two projects",
+        "verified": true
+      }
+    ],
+    "requirements": [
+      {
+        "name": "JavaScript",
+        "category": "Programming languages",
+        "level": "required",
+        "frequency": 1,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Strong JavaScript skills"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "summary": {
+      "postings_count": 1,
+      "required_total": 1,
+      "required_proven": 1,
+      "preferred_total": 0,
+      "preferred_proven": 0,
+      "have_count": 1,
+      "needs_proof_count": 0,
+      "missing_count": 0
+    },
+    "have": [
+      {
+        "name": "JavaScript",
+        "category": "Programming languages",
+        "level": "required",
+        "frequency": 1,
+        "sources": [
+          {
+            "posting": 0,
+            "level": "required",
+            "evidence": "Strong JavaScript skills"
+          }
+        ],
+        "cv_evidence": "Strong JavaScript in two projects"
+      }
+    ],
+    "needs_proof": [],
+    "missing": []
+  }
+}

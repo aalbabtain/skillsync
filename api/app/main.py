@@ -1,13 +1,18 @@
 import logging
 from uuid import uuid4
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, Request, UploadFile
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 from app.agents import cv_skills, requirements
 from app.config import get_settings
+from app.gap import evaluate_gap
 from app.parsers.pdf import PdfExtractionError, extract
 from app.verification import aggregate, verify_requirements, verify_skills
 
@@ -233,3 +238,64 @@ def extract_requirements_route(payload: RequirementsRequest):
         ],
         "dropped_count": dropped,
     }
+
+
+MAX_GAP_SKILLS = 200
+MAX_GAP_REQUIREMENTS = 400
+
+
+class GapSkill(BaseModel):
+    name: str = Field(max_length=80)
+    category: str = Field(default="Other", max_length=40)
+    evidence: str = Field(default="", max_length=300)
+    verified: bool = False
+
+
+class GapSource(BaseModel):
+    posting: int = Field(ge=0, lt=MAX_POSTINGS)
+    level: Literal["required", "preferred"]
+    evidence: str = Field(max_length=300)
+
+
+class GapRequirement(BaseModel):
+    name: str = Field(max_length=80)
+    category: str = Field(max_length=40)
+    level: Literal["required", "preferred"]
+    frequency: int = Field(ge=1, le=MAX_POSTINGS)
+    sources: list[GapSource] = Field(min_length=1, max_length=MAX_POSTINGS)
+
+
+class GapRequest(BaseModel):
+    skills: list[GapSkill] = Field(max_length=MAX_GAP_SKILLS)
+    requirements: list[GapRequirement] = Field(max_length=MAX_GAP_REQUIREMENTS)
+    postings_count: int = Field(ge=1, le=MAX_POSTINGS)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request: Request, exc: RequestValidationError):
+    if request.url.path == "/api/gap":
+        return _error(422, "GAP_INVALID", "The skills or requirements are not in the expected shape.")
+    return JSONResponse(status_code=422, content={"detail": jsonable_encoder(exc.errors())})
+
+
+@app.post("/api/gap")
+def gap_route(payload: GapRequest):
+    if not payload.requirements:
+        return _error(422, "GAP_NO_REQUIREMENTS", "Extract requirements from postings first.")
+
+    if any(item.frequency > payload.postings_count for item in payload.requirements):
+        return _error(422, "GAP_INVALID", "A requirement appears in more postings than were sent.")
+
+    result = evaluate_gap(
+        [skill.model_dump() for skill in payload.skills],
+        [item.model_dump() for item in payload.requirements],
+        payload.postings_count,
+    )
+    summary = result["summary"]
+    logger.info(
+        "gap evaluation: %d have, %d need proof, %d missing",
+        summary["have_count"],
+        summary["needs_proof_count"],
+        summary["missing_count"],
+    )
+    return result
