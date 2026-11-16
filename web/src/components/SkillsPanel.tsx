@@ -2,6 +2,7 @@ import { useState, type CSSProperties, type FormEvent } from "react";
 
 import type { Skill } from "../api";
 import { useI18n } from "../i18n";
+import type { MessageKey } from "../i18n";
 
 const CATEGORY_ORDER = [
   "Programming languages",
@@ -28,6 +29,18 @@ function slug(name: string) {
     .toLowerCase()
     .replace(/[^a-z0-9\u0600-\u06ff]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+// Postings name skills in English (Docker, PostgreSQL), so a hand-added skill must too,
+// or it could never match a requirement in the gap.
+const SKILL_CHARACTERS = /^[A-Za-z0-9 +#./&()'-]*$/;
+const MAX_SKILL_CHARS = 40;
+
+function skillNameProblem(name: string): MessageKey | null {
+  if (!SKILL_CHARACTERS.test(name) && /[^\x00-\x7F]/.test(name)) return "add_english_only";
+  if (!SKILL_CHARACTERS.test(name) || name.length > MAX_SKILL_CHARS) return "add_invalid";
+  if (name && !/[A-Za-z]/.test(name)) return "add_invalid";
+  return null;
 }
 
 function groupOf(entry: Entry) {
@@ -71,6 +84,12 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
 
     if (!name) {
       setError(t("add_empty"));
+      return;
+    }
+
+    const problem = skillNameProblem(name);
+    if (problem) {
+      setError(t(problem));
       return;
     }
 
@@ -169,19 +188,27 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
 
       <form className="add-skill" onSubmit={add}>
         <label htmlFor="add-skill">{t("add_label")}</label>
+        <p className="add-skill-hint" id="add-skill-hint">
+          {t("add_hint")}
+        </p>
         <div className="add-skill-row">
           <input
             id="add-skill"
             value={draft}
             onChange={(event) => {
-              setDraft(event.target.value);
-              if (error) setError("");
+              const value = event.target.value;
+              setDraft(value);
+              // Say so as soon as a non-English letter is typed, not only on Add.
+              const problem = skillNameProblem(value.trim());
+              setError(problem === "add_english_only" ? t(problem) : "");
             }}
             placeholder={t("add_placeholder")}
-            dir={draft ? "auto" : undefined}
+            dir="ltr"
+            lang="en"
+            maxLength={MAX_SKILL_CHARS + 10}
             autoComplete="off"
             aria-invalid={Boolean(error)}
-            aria-describedby={error ? "add-skill-error" : undefined}
+            aria-describedby={error ? "add-skill-hint add-skill-error" : "add-skill-hint"}
           />
           <button className="btn btn-ghost" type="submit">
             {t("add_btn")}
