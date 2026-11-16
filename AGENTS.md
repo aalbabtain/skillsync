@@ -29,7 +29,7 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (176 tests, no network, no key). The frontend check is
+Runs `pytest` in `api` (181 tests, no network, no key). The frontend check is
 `cd web; npm run build`.
 
 ## Run every CV case
@@ -79,7 +79,7 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `.github/workflows/ci.yml` | CI: tests, web build and image build on every push |
 | `api/app/agents/cv_skills.py` | Agent 1, extraction: model call or demo mode |
 | `api/app/agents/requirements.py` | Agent 2, requirements from pasted job postings: model call or demo mode |
-| `api/app/agents/gemini.py` | The Gemini call: retries a busy model, then `GEMINI_FALLBACK_MODEL` |
+| `api/app/agents/gemini.py` | The Gemini call: retries a busy model, and on a busy model or a used-up quota moves through `GEMINI_FALLBACK_MODEL` in order |
 | `api/app/skills_catalog.py` | Every known skill with its category and spellings, and related skills: feeds the skill picker, suggestions and demo mode |
 | `api/app/agents/mock_extractor.py` | Demo mode: matches the skill catalog against CV and posting text |
 | `api/app/prompts/` | Agent prompts: `cv_assessor.md`, `requirements_extractor.md` |

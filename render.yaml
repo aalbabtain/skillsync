@@ -15,3 +15,7 @@ services:
       # GoatCounter site for anonymous visit counts; public anyway, since it is in the page.
       - key: GOATCOUNTER_CODE
         value: skillsync
+      # Tried in order when the main model is busy or its daily quota is used up; on the
+      # free tier each model has its own quota. A name the key cannot use is skipped.
+      - key: GEMINI_FALLBACK_MODEL
+        value: gemini-3.8-flash,gemini-3.5-flash-lite

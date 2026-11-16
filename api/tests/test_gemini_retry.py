@@ -115,3 +115,52 @@ def test_requirements_retry_and_report_busy(monkeypatch):
     with pytest.raises(requirements.RequirementsError) as error:
         requirements.extract("Requirements: Python")
     assert error.value.code == "REQUIREMENTS_BUSY"
+
+
+class WithTwoFallbacks(Settings):
+    gemini_fallback_model = "spare-model, lite-model"
+
+
+def test_a_used_up_quota_moves_to_the_fallback_at_once(monkeypatch, no_waiting):
+    # Each model has its own daily limit on the free tier, so the next one may still answer.
+    calls = []
+    use(monkeypatch, cv_skills, WithFallback, [ServerError(429), ok()], calls)
+
+    assert cv_skills.extract(CV) == []
+    assert calls == ["main-model", "spare-model"]
+    assert no_waiting == []
+
+
+def test_fallbacks_are_tried_in_order(monkeypatch):
+    calls = []
+    use(monkeypatch, cv_skills, WithTwoFallbacks, [ServerError(429), ServerError(429), ok()], calls)
+
+    assert cv_skills.extract(CV) == []
+    assert calls == ["main-model", "spare-model", "lite-model"]
+
+
+def test_a_model_name_the_key_cannot_use_is_skipped(monkeypatch):
+    calls = []
+    use(monkeypatch, cv_skills, WithTwoFallbacks, [ServerError(429), ServerError(404), ok()], calls)
+
+    assert cv_skills.extract(CV) == []
+    assert calls == ["main-model", "spare-model", "lite-model"]
+
+
+def test_quota_is_reported_when_every_model_is_used_up(monkeypatch):
+    calls = []
+    use(monkeypatch, cv_skills, WithTwoFallbacks, [ServerError(429)] * 3, calls)
+
+    with pytest.raises(cv_skills.SkillExtractionError) as error:
+        cv_skills.extract(CV)
+
+    assert error.value.code == "SKILLS_QUOTA_EXCEEDED"
+    assert calls == ["main-model", "spare-model", "lite-model"]
+
+
+def test_requirements_move_on_when_the_quota_is_used_up(monkeypatch):
+    calls = []
+    use(monkeypatch, requirements, WithTwoFallbacks, [ServerError(429), ok()], calls)
+
+    assert requirements.extract("Requirements: Python") == []
+    assert calls == ["main-model", "spare-model"]

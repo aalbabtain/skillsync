@@ -122,7 +122,7 @@ Copy `.env.example` to `api/.env`. On Render, set them under the service's **Env
 |----------|---------|
 | `GEMINI_API_KEY` | Server-side only, never sent to the browser. Empty means demo mode. |
 | `GEMINI_MODEL` | Model used for extraction. |
-| `GEMINI_FALLBACK_MODEL` | Optional second model, tried when the main one stays busy. |
+| `GEMINI_FALLBACK_MODEL` | Optional models, comma-separated, tried in order when the main one stays busy or its daily quota is used up. On the free tier each model has its own quota. |
 | `SKILLSYNC_EXTRACTOR` | `mock` or `gemini` to force one. Empty picks Gemini when a key is set. |
 | `SKILLSYNC_RATE_LIMIT` | Model requests per visitor address per hour (default 20; a CV counts 1, each posting 1). `0` turns it off. |
 | `SKILLSYNC_STATIC_DIR` | Folder with the built web app; set in the Docker image. |
@@ -179,9 +179,11 @@ list against CV and posting text.
 summary of required and preferred skills proven. No model; the same input always gives the same
 gap. Codes: `GAP_NO_REQUIREMENTS`, `GAP_INVALID`.
 
-**When Gemini is busy:** Google answers 500 to 504 when a model is overloaded. Each call is
-tried three times (waiting 1 then 2 seconds), then once more on `GEMINI_FALLBACK_MODEL` if set,
-before the route answers `SKILLS_BUSY` or `REQUIREMENTS_BUSY`.
+**When Gemini is busy or out of quota:** Google answers 500 to 504 when a model is overloaded.
+Each call is tried three times (waiting 1 then 2 seconds) before moving on. A used-up daily
+quota (429) or a model name the key cannot use (404) moves on at once. The models in
+`GEMINI_FALLBACK_MODEL` are tried in order; only when all fail does the route answer
+`SKILLS_BUSY`, `SKILLS_QUOTA_EXCEEDED` or their `REQUIREMENTS_` twins.
 
 **Limits:** the two model routes allow 20 model requests per visitor address per hour
 (`SKILLSYNC_RATE_LIMIT`), then answer `429 RATE_LIMITED` with a `Retry-After` header.
@@ -196,7 +198,7 @@ cd api
 python -m pytest
 ```
 
-176 tests, no network and no key: demo mode stands in for the model.
+181 tests, no network and no key: demo mode stands in for the model.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career

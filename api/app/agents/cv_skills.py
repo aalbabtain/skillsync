@@ -121,7 +121,7 @@ def extract(cv_text: str, extractor: str | None = None) -> list[dict[str, str]]:
     try:
         response = gemini.generate(
             client,
-            [settings.gemini_model, getattr(settings, "gemini_fallback_model", "")],
+            gemini.models_to_try(settings),
             contents=cv_text,
             config=types.GenerateContentConfig(
                 system_instruction=load_prompt(),

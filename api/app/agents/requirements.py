@@ -110,7 +110,7 @@ def extract(posting_text: str, extractor: str | None = None) -> list[dict[str, s
     try:
         response = gemini.generate(
             client,
-            [settings.gemini_model, getattr(settings, "gemini_fallback_model", "")],
+            gemini.models_to_try(settings),
             contents=posting_text,
             config=types.GenerateContentConfig(
                 system_instruction=load_prompt(),
