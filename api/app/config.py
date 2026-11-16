@@ -16,8 +16,6 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.6-flash"
     skillsync_extractor: str = ""
-    database_url: str = "sqlite:///./skillsync.db"
-    jwt_secret: str = ""
     skillsync_static_dir: str = ""
     # Model requests per client address per hour; 0 turns the limit off.
     skillsync_rate_limit: int = 20

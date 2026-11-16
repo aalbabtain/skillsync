@@ -46,7 +46,7 @@ if (-not (Test-Path $python)) {
 }
 
 Write-Step "Installing backend dependencies"
-& $python -m pip install --quiet --disable-pip-version-check -r (Join-Path $apiDir "requirements.txt")
+& $python -m pip install --quiet --disable-pip-version-check -r (Join-Path $apiDir "requirements-dev.txt")
 
 $envFile = Join-Path $apiDir ".env"
 if (-not (Test-Path $envFile)) {
