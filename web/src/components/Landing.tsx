@@ -1,5 +1,4 @@
 import {
-  BadgeCheck,
   Briefcase,
   CircleCheck,
   CircleHelp,
@@ -9,19 +8,18 @@ import {
   FileUp,
   GitCompareArrows,
   GraduationCap,
-  Lock,
-  Quote,
+  Pause,
+  Play,
   Route,
-  ScanSearch,
   Shuffle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useRef } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
-import { useReducedMotion, useRevealOnScroll, useScrollProgress, useTimeline } from "../motion";
+import { useReducedMotion } from "../motion";
+import { startChapterSnap } from "../chapters";
 import Logo from "./Logo";
 
 type Props = {
@@ -39,12 +37,6 @@ const STEPS: (Card & { soon?: boolean })[] = [
   { icon: Route, title: "st_plan", body: "s4", soon: true },
 ];
 
-const TRUST: Card[] = [
-  { icon: Quote, title: "trust1_h", body: "trust1" },
-  { icon: ScanSearch, title: "trust2_h", body: "trust2" },
-  { icon: Lock, title: "trust3_h", body: "trust3" },
-];
-
 const AUDIENCES: Card[] = [
   { icon: GraduationCap, title: "w1_h", body: "w1" },
   { icon: Shuffle, title: "w2_h", body: "w2" },
@@ -52,11 +44,12 @@ const AUDIENCES: Card[] = [
 ];
 
 const FAQ: { q: MessageKey; a: MessageKey }[] = [
-  { q: "q1", a: "a1" },
+  { q: "q0", a: "a0" },
   { q: "q2", a: "a2" },
   { q: "q3", a: "a3" },
   { q: "q4", a: "a4" },
   { q: "q5", a: "a5" },
+  { q: "q1", a: "a1" },
 ];
 
 const PREVIEW: {
@@ -70,26 +63,74 @@ const PREVIEW: {
   { id: "have", icon: CircleCheck, title: "grp_have_h", items: [{ name: "Python", n: 3 }, { name: "SQL", n: 2 }] },
 ];
 
-// The sample card checks one skill at a time: appear, check the quote, then resolve.
-const CARD_TIMELINE = [500, 900, 250, 900, 250, 900];
+const MOTION_KEY = "skillsync-motion";
 
-const stagger = (index: number) => ({ "--i": index }) as CSSProperties;
+/**
+ * Motion follows the system setting until the visitor chooses with the button; the choice is
+ * remembered on this device.
+ */
+function useMotionChoice() {
+  const reduced = useReducedMotion();
+  const [choice, setChoice] = useState<"on" | "off" | null>(() => {
+    try {
+      const saved = window.localStorage.getItem(MOTION_KEY);
+      return saved === "on" || saved === "off" ? saved : null;
+    } catch {
+      return null;
+    }
+  });
+  const playing = choice ? choice === "on" : !reduced;
+  const toggle = () => {
+    const next = playing ? "off" : "on";
+    setChoice(next);
+    try {
+      window.localStorage.setItem(MOTION_KEY, next);
+    } catch {
+      // Without storage the choice lasts for this visit only.
+    }
+  };
+  return { playing, toggle };
+}
 
 export default function Landing({ onStart }: Props) {
   const { t, lang } = useI18n();
-  const reduced = useReducedMotion();
   const root = useRef<HTMLDivElement>(null);
-  const steps = useRef<HTMLOListElement>(null);
-  const tick = useTimeline(CARD_TIMELINE, reduced, lang);
-  const progress = useScrollProgress(steps, reduced);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const { playing, toggle } = useMotionChoice();
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+  const [fieldReady, setFieldReady] = useState(false);
+  const cvWord = t("particles_cv");
 
-  useRevealOnScroll(root, reduced);
+  useEffect(() => {
+    const container = root.current;
+    const surface = canvas.current;
+    if (!container || !surface) return;
+    let stop = () => {};
+    let cancelled = false;
+    import("../particles")
+      .then(({ startField }) =>
+        startField({ root: container, canvas: surface, lang, cvWord, isPlaying: () => playingRef.current }),
+      )
+      .then((dispose) => {
+        if (cancelled) dispose();
+        else {
+          stop = dispose;
+          setFieldReady(true);
+        }
+      })
+      .catch(() => setFieldReady(false));
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, [lang, cvWord]);
 
-  const sample = [
-    { name: "Python", quote: t("sample_quote_python"), gap: false },
-    { name: "PostgreSQL", quote: t("sample_quote_postgres"), gap: false },
-    { name: "Docker", quote: t("gap_note"), gap: true },
-  ];
+  useEffect(() => {
+    const container = root.current;
+    if (!container) return;
+    return startChapterSnap(container, () => playingRef.current);
+  }, []);
 
   const startButton = (
     <button className="btn btn-primary btn-lg" onClick={onStart}>
@@ -98,128 +139,122 @@ export default function Landing({ onStart }: Props) {
   );
 
   return (
-    <div className="landing" ref={root}>
-      <section className="hero-split wrap" aria-labelledby="hero-title">
-        <div className="hero-copy">
-          <p className="eyebrow">{t("eyebrow")}</p>
-          <h1 id="hero-title">{t("hero")}</h1>
-          <p className="lead">{t("lead")}</p>
-          <div className="hero-cta">
+    <div
+      className={[
+        "landing",
+        playing && fieldReady ? "reveal-armed" : "",
+        fieldReady ? "has-field" : "",
+      ].join(" ")}
+      ref={root}
+    >
+      <canvas className="field" ref={canvas} aria-hidden="true" />
+      <div className="field-horizon" aria-hidden="true" />
+
+      <section className="chapter chapter-hero" aria-labelledby="hero-title">
+        <div className="ch-top" data-mask>
+          <div>
+            <p className="eyebrow rise">{t("eyebrow")}</p>
+            <h1 id="hero-title" className="rise d1">
+              {t("hero")}
+            </h1>
+          </div>
+        </div>
+        <div className="ch-stage" aria-hidden="true">
+          <span className="ch-fallback">
+            <Logo />
+          </span>
+        </div>
+        <div className="ch-bottom" data-mask>
+          <p className="lead rise d2">{t("lead")}</p>
+          <div className="hero-cta rise d2">
             {startButton}
             <a className="btn btn-ghost btn-lg" href="#how">
               {t("see_how")}
             </a>
           </div>
         </div>
-
-        <figure className="proof" aria-label={t("sample")}>
-          <figcaption className="proof-head">
-            <span>{t("sample")}</span>
-            <span>{t("sample_meta")}</span>
-          </figcaption>
-          {sample.map((item, index) => {
-            const shown = tick >= index * 2 + 1;
-            const done = tick >= index * 2 + 2;
-            const state = !shown ? "is-pending" : done ? "is-done" : "is-checking";
-            return (
-              <div className={`proof-row ${state}`} key={item.name}>
-                <div className="proof-top">
-                  <strong dir="ltr">{item.name}</strong>
-                  {!done ? (
-                    <span className="tag tag-checking">
-                      <span className="spinner spinner-sm" aria-hidden="true" /> {t("verifying")}
-                    </span>
-                  ) : item.gap ? (
-                    <span className="tag tag-gap">{t("gap_badge")}</span>
-                  ) : (
-                    <span className="tag tag-ok">
-                      <BadgeCheck size={13} aria-hidden="true" /> {t("verified")}
-                    </span>
-                  )}
-                </div>
-                <p className="proof-quote" dir="auto">
-                  <span className="proof-scan">{item.quote}</span>
-                </p>
-              </div>
-            );
-          })}
-        </figure>
       </section>
 
-      <section className="steps-strip" id="how" aria-labelledby="how-title">
-        <div className="wrap">
-          <h2 id="how-title" className="visually-hidden">
-            {t("how_h")}
-          </h2>
-          <ol
-            className="steps-grid"
-            ref={steps}
-            style={{ "--progress": progress } as CSSProperties}
-          >
-            <span className="steps-line" aria-hidden="true" />
-            {STEPS.map(({ icon: Icon, title, body, soon }, index) => (
-              <li
-                key={title}
-                className={progress >= index / (STEPS.length - 1) - 0.02 ? "is-reached" : ""}
-              >
-                <span className="icon-tile" aria-hidden="true">
-                  <Icon size={20} />
-                </span>
-                <span className="step-n">{t("step_n", { n: index + 1 })}</span>
-                <h3>
-                  {t(title)}
-                  {soon && <span className="stepper-soon">{t("st_soon")}</span>}
-                </h3>
-                <p>{t(body)}</p>
-              </li>
-            ))}
-          </ol>
+      <section className="chapter" id="how" aria-labelledby="how-title">
+        <div className="ch-top">
+          <div data-mask>
+            <p className="eyebrow rise">{t("how_label")}</p>
+            <h2 id="how-title" className="rise d1">
+              {t("how_title")}
+            </h2>
+          </div>
+          <p className="ch-note rise d2" data-mask>
+            {t("how_note")}
+          </p>
         </div>
-      </section>
-
-      <section className="wrap band" aria-labelledby="trust-title">
-        <h2 data-reveal id="trust-title">{t("trust_h")}</h2>
-        <ul className="card-grid">
-          {TRUST.map(({ icon: Icon, title, body }, index) => (
-            <li key={title} data-reveal style={stagger(index)}>
-              <span className="icon-tile" aria-hidden="true">
+        <div className="ch-stage" aria-hidden="true" />
+        <ol className="ch-track" data-mask>
+          <span className="ch-track-line" aria-hidden="true" />
+          {STEPS.map(({ icon: Icon, title, body, soon }, index) => (
+            <li key={title}>
+              <span className="ch-tile" aria-hidden="true">
                 <Icon size={20} />
               </span>
-              <h3>{t(title)}</h3>
+              <span className="step-n">{t("step_n", { n: index + 1 })}</span>
+              <h3>
+                {t(title)}
+                {soon && <span className="stepper-soon">{t("st_soon")}</span>}
+              </h3>
               <p>{t(body)}</p>
             </li>
           ))}
-        </ul>
+        </ol>
       </section>
 
-      <section className="wrap band" aria-labelledby="preview-title">
-        <div>
-          <h2 data-reveal id="preview-title">{t("preview_h")}</h2>
-          <p className="band-lead">{t("preview_lead")}</p>
+      <section className="chapter" id="result" aria-labelledby="result-title">
+        <div className="ch-top">
+          <div data-mask>
+            <p className="eyebrow rise">{t("preview_label")}</p>
+            <h2 id="result-title" className="rise d1">
+              {t("preview_h")}
+            </h2>
+          </div>
+          <p className="ch-note rise d2" data-mask>
+            {t("preview_note")}
+          </p>
         </div>
-        <div className="preview" aria-hidden="true" data-reveal>
+        <div className="ch-stage" aria-hidden="true" />
+        <div className="ch-groups" role="group" aria-label={t("preview_example")} data-mask>
           {PREVIEW.map(({ id, icon: Icon, title, items }) => (
-            <div className={`preview-col gap-${id}`} key={id}>
-              <p className="preview-title">
-                <Icon size={16} /> {t(title)}
+            <div className={`ch-group gap-${id}`} key={id}>
+              <p className="ch-group-title">
+                <Icon size={16} aria-hidden="true" /> {t(title)}
               </p>
-              {items.map((item) => (
-                <div className="preview-item" key={item.name}>
-                  <strong dir="ltr">{item.name}</strong>
-                  <span>{t("asked", { n: item.n, total: 3 })}</span>
-                </div>
-              ))}
+              <ul>
+                {items.map((item) => (
+                  <li key={item.name}>
+                    <strong dir="ltr">{item.name}</strong>
+                    <span>{t("asked", { n: item.n, total: 3 })}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="wrap band" id="who" aria-labelledby="who-title">
-        <h2 data-reveal id="who-title">{t("who_h")}</h2>
-        <ul className="card-grid">
-          {AUDIENCES.map(({ icon: Icon, title, body }, index) => (
-            <li key={title} data-reveal style={stagger(index)}>
-              <span className="icon-tile" aria-hidden="true">
+      <section className="chapter" id="who" aria-labelledby="who-title">
+        <div className="ch-top">
+          <div data-mask>
+            <p className="eyebrow rise">{t("who_label")}</p>
+            <h2 id="who-title" className="rise d1">
+              {t("who_h")}
+            </h2>
+          </div>
+          <p className="ch-note rise d2" data-mask>
+            {t("who_note")}
+          </p>
+        </div>
+        <div className="ch-stage" aria-hidden="true" />
+        <ul className="ch-cards" data-mask>
+          {AUDIENCES.map(({ icon: Icon, title, body }) => (
+            <li key={title}>
+              <span className="ch-tile" aria-hidden="true">
                 <Icon size={20} />
               </span>
               <h3>{t(title)}</h3>
@@ -229,24 +264,29 @@ export default function Landing({ onStart }: Props) {
         </ul>
       </section>
 
-      <section className="wrap band" id="faq" aria-labelledby="faq-title">
-        <h2 data-reveal id="faq-title">{t("faq_h")}</h2>
-        <div className="faq">
-          {FAQ.map(({ q, a }, index) => (
-            <details key={q} data-reveal style={stagger(index)}>
-              <summary>{t(q)}</summary>
-              <p>{t(a)}</p>
-            </details>
-          ))}
+      <section className="chapter" id="faq" aria-labelledby="faq-title">
+        <div className="ch-top">
+          <div data-mask>
+            <p className="eyebrow rise">{t("faq_label")}</p>
+            <h2 id="faq-title" className="rise d1">
+              {t("faq_h")}
+            </h2>
+          </div>
+          <div className="ch-note rise d2" data-mask>
+            {startButton}
+          </div>
         </div>
-      </section>
-
-      <section className="wrap closing" aria-labelledby="closing-title" data-reveal>
-        <div>
-          <h2 id="closing-title">{t("final_h")}</h2>
-          <p>{t("final")}</p>
+        <div className="ch-faq-layout">
+          <div className="ch-stage" aria-hidden="true" />
+          <div className="faq" data-mask>
+            {FAQ.map(({ q, a }) => (
+              <details key={q}>
+                <summary>{t(q)}</summary>
+                <p>{t(a)}</p>
+              </details>
+            ))}
+          </div>
         </div>
-        {startButton}
       </section>
 
       <footer className="site-foot wrap">
@@ -264,6 +304,13 @@ export default function Landing({ onStart }: Props) {
           <span dir="ltr">Ahmed Ababtain</span>
         </span>
       </footer>
+
+      {fieldReady && (
+        <button className="motion-toggle" type="button" onClick={toggle}>
+          {playing ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
+          <span className="motion-label">{playing ? t("motion_pause") : t("motion_play")}</span>
+        </button>
+      )}
     </div>
   );
 }

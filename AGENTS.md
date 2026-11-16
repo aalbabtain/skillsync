@@ -96,7 +96,8 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `api/tests/fixtures/cases/` | The CVs used by the case runner and the tests |
 | `web/src/` | React + Vite frontend |
 | `web/src/i18n.tsx` | Every user-facing string, in English and Arabic (right to left) |
-| `web/src/components/Landing.tsx` | The landing page shown before the service |
+| `web/src/components/Landing.tsx` | The landing page: five full-screen chapters around a particle object, with a motion button |
+| `web/src/particles.ts`, `web/src/chapters.ts` | The landing's three.js particle field (loaded only on the landing) and the one-scroll-per-chapter glide |
 
 ## Rules that must not break
 
