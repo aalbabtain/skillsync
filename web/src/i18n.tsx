@@ -159,6 +159,8 @@ const en = {
   err_REQUIREMENTS_MALFORMED: "The model returned an unusable answer. Try again.",
   err_REQUIREMENTS_UNAVAILABLE: "The requirements service is not available right now.",
   err_REQUIREMENTS_QUOTA_EXCEEDED: "The Gemini request limit is used up. Try again later.",
+  err_RATE_LIMITED:
+    "You have reached the hourly limit for extractions from your network. Try again in a little while.",
 };
 
 export type MessageKey = keyof typeof en;
@@ -318,6 +320,7 @@ const ar: Record<MessageKey, string> = {
   err_REQUIREMENTS_MALFORMED: "أعاد النموذج إجابة غير صالحة. حاول مرة أخرى.",
   err_REQUIREMENTS_UNAVAILABLE: "خدمة استخراج المتطلبات غير متاحة حاليًا.",
   err_REQUIREMENTS_QUOTA_EXCEEDED: "استُنفد حد طلبات Gemini. حاول مرة أخرى لاحقًا.",
+  err_RATE_LIMITED: "وصلت إلى الحد المسموح به من عمليات الاستخراج في الساعة. حاول مرة أخرى بعد قليل.",
 };
 
 const messages: Record<Lang, Record<MessageKey, string>> = { en, ar };

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./skillsync.db"
     jwt_secret: str = ""
     skillsync_static_dir: str = ""
+    # Model requests per client address per hour; 0 turns the limit off.
+    skillsync_rate_limit: int = 20
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 

@@ -132,7 +132,7 @@ export default function UploadPanel({ onSkills }: Props) {
         {extraction.kind === "error" && (
           <div className="upload-error" role="alert">
             <span>{describe(extraction)}</span>
-            {extraction.code !== "SKILLS_QUOTA_EXCEEDED" && (
+            {!["SKILLS_QUOTA_EXCEEDED", "RATE_LIMITED"].includes(extraction.code) && (
               <button className="btn btn-ghost" onClick={() => void runExtraction()}>
                 {t("retry")}
               </button>

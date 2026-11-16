@@ -15,6 +15,7 @@ from app.agents import cv_skills, requirements
 from app.config import get_settings
 from app.frontend import register_frontend
 from app.gap import evaluate_gap
+from app.rate_limit import RateLimiter, client_address
 from app.parsers.pdf import PdfExtractionError, extract
 from app.verification import aggregate, verify_requirements, verify_skills
 
@@ -54,6 +55,22 @@ STATUS_BY_SKILL_ERROR = {
 }
 
 logger = logging.getLogger("skillsync.runs")
+
+RATE_WINDOW_SECONDS = 3600
+rate_limiter = RateLimiter(limit=settings.skillsync_rate_limit, window_seconds=RATE_WINDOW_SECONDS)
+
+
+def _rate_limited(request: Request, units: int) -> JSONResponse | None:
+    wait = rate_limiter.take(client_address(request), units)
+    if wait is None:
+        return None
+    response = _error(
+        429,
+        "RATE_LIMITED",
+        "This address has used its hourly allowance of extractions. Try again later.",
+    )
+    response.headers["Retry-After"] = str(wait)
+    return response
 
 
 def _error(status: int, code: str, message: str) -> JSONResponse:
@@ -111,7 +128,7 @@ class SkillsRequest(BaseModel):
 
 
 @app.post("/api/skills/extract")
-def extract_skills_route(payload: SkillsRequest):
+def extract_skills_route(payload: SkillsRequest, request: Request):
     text = payload.text.strip()
 
     if len(text) < MIN_CV_TEXT_CHARS:
@@ -119,6 +136,9 @@ def extract_skills_route(payload: SkillsRequest):
 
     if len(text) > MAX_CV_TEXT_CHARS:
         return _error(413, "TEXT_TOO_LONG", "The CV text is too long to extract skills.")
+
+    if limited := _rate_limited(request, 1):
+        return limited
 
     try:
         candidates = cv_skills.extract(text)
@@ -196,9 +216,12 @@ def _check_postings(postings: list[Posting]) -> JSONResponse | None:
 
 
 @app.post("/api/requirements/extract")
-def extract_requirements_route(payload: RequirementsRequest):
+def extract_requirements_route(payload: RequirementsRequest, request: Request):
     if rejection := _check_postings(payload.postings):
         return rejection
+
+    if limited := _rate_limited(request, len(payload.postings)):
+        return limited
 
     per_posting = []
     dropped = 0
