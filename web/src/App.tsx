@@ -12,13 +12,31 @@ import type { StepId } from "./components/Stepper";
 import UploadPanel from "./components/UploadPanel";
 import { useI18n } from "./i18n";
 
-type View = "landing" | "service";
 type Step = "cv" | "skills" | "postings" | "gap";
+
+const STEPS: Step[] = ["cv", "skills", "postings", "gap"];
+
+type Route = { view: "landing"; anchor: string } | { view: "service"; step: Step };
+
+// The address is the source of truth, so Back, Forward and refresh behave as expected.
+function readRoute(): Route {
+  const hash = window.location.hash.slice(1);
+  if ((STEPS as string[]).includes(hash)) return { view: "service", step: hash as Step };
+  return { view: "landing", anchor: hash };
+}
+
+function navigate(hash: string) {
+  if (hash) {
+    window.location.hash = hash;
+    return;
+  }
+  window.history.pushState(null, "", window.location.pathname + window.location.search);
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
+}
 
 export default function App() {
   const { t, lang, setLang } = useI18n();
-  const [view, setView] = useState<View>("landing");
-  const [step, setStep] = useState<Step>("cv");
+  const [route, setRoute] = useState<Route>(readRoute);
   const [extraction, setExtraction] = useState<SkillsResult | null>(null);
   const [skillsKey, setSkillsKey] = useState(0);
   const [confirmed, setConfirmed] = useState<Skill[]>([]);
@@ -44,13 +62,40 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, [view, step]);
+    const sync = () => setRoute(readRoute());
+    window.addEventListener("hashchange", sync);
+    window.addEventListener("popstate", sync);
+    return () => {
+      window.removeEventListener("hashchange", sync);
+      window.removeEventListener("popstate", sync);
+    };
+  }, []);
 
   const reachable: StepId[] = ["cv"];
   if (extraction) reachable.push("skills");
   if (confirmed.length > 0) reachable.push("postings");
   if (confirmed.length > 0 && requirements) reachable.push("gap");
+
+  const view = route.view;
+  // A step that is not open yet (after a refresh, or a new CV) falls back to the last open one.
+  let step: Step = route.view === "service" ? route.step : "cv";
+  while (!reachable.includes(step)) step = STEPS[STEPS.indexOf(step) - 1];
+  const anchor = route.view === "landing" ? route.anchor : "";
+
+  useEffect(() => {
+    if (route.view === "service" && route.step !== step) {
+      window.history.replaceState(null, "", `#${step}`);
+      setRoute({ view: "service", step });
+    }
+  }, [route, step]);
+
+  useEffect(() => {
+    const target = anchor ? document.getElementById(anchor) : null;
+    if (target) target.scrollIntoView();
+    else window.scrollTo({ top: 0 });
+  }, [view, step, anchor]);
+
+  const goTo = (target: Step) => navigate(target);
 
   return (
     <div className="page">
@@ -62,7 +107,7 @@ export default function App() {
             aria-label={t("home_label")}
             onClick={(event) => {
               event.preventDefault();
-              setView("landing");
+              navigate("");
             }}
           >
             <Logo />
@@ -99,7 +144,7 @@ export default function App() {
       )}
 
       {view === "landing" ? (
-        <Landing onStart={() => setView("service")} />
+        <Landing onStart={() => goTo("cv")} />
       ) : (
         <main className="service">
           <Stepper
@@ -107,9 +152,7 @@ export default function App() {
             reachable={reachable}
             soon={["plan"]}
             onSelect={(target) => {
-              if (target !== "plan") {
-                setStep(target);
-              }
+              if (target !== "plan") goTo(target);
             }}
           />
 
@@ -123,7 +166,7 @@ export default function App() {
                   setSkillsKey((key) => key + 1);
                   setConfirmed([]);
                   setRequirements(null);
-                  setStep("skills");
+                  goTo("skills");
                 }}
               />
             </section>
@@ -134,10 +177,10 @@ export default function App() {
                   key={skillsKey}
                   initial={extraction.skills}
                   droppedCount={extraction.dropped_count}
-                  onBack={() => setStep("cv")}
+                  onBack={() => goTo("cv")}
                   onConfirm={(skills) => {
                     setConfirmed(skills);
-                    setStep("postings");
+                    goTo("postings");
                   }}
                 />
               </section>
@@ -151,12 +194,12 @@ export default function App() {
               {confirmed.length > 0 && (
                 <PostingsPanel
                   confirmedCount={confirmed.length}
-                  onBack={() => setStep("skills")}
+                  onBack={() => goTo("skills")}
                   onResult={(result, titles) => {
                     setRequirements(result);
                     setPostingTitles(titles);
                   }}
-                  onNext={() => setStep("gap")}
+                  onNext={() => goTo("gap")}
                 />
               )}
             </section>
@@ -167,7 +210,7 @@ export default function App() {
                   skills={confirmed}
                   requirements={requirements}
                   postingTitles={postingTitles}
-                  onBack={() => setStep("postings")}
+                  onBack={() => goTo("postings")}
                 />
               </section>
             )}
