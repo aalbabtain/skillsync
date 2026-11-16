@@ -59,6 +59,8 @@ const en = {
   upload_h: "Start with your CV",
   drop: "Drop your CV here",
   drop_hint: "PDF only, up to 5 MB and 10 pages.",
+  privacy_gemini:
+    "Your CV and the postings you paste are sent to Google Gemini for analysis. SkillSync does not store them or write them to its logs.",
   choose: "Choose a PDF",
   extracting_text: "Extracting text…",
   upload_meta: "Pages: {pages} · Characters: {chars}",
@@ -220,6 +222,8 @@ const ar: Record<MessageKey, string> = {
   upload_h: "ابدأ بسيرتك الذاتية",
   drop: "اسحب سيرتك الذاتية وأفلتها هنا",
   drop_hint: "ملف PDF فقط، بحد أقصى 5 ميجابايت و10 صفحات.",
+  privacy_gemini:
+    "تُرسَل سيرتك الذاتية والإعلانات التي تلصقها إلى Google Gemini لتحليلها. لا يحفظها SkillSync ولا يسجّلها.",
   choose: "اختر ملف PDF",
   extracting_text: "جارٍ استخراج النص…",
   upload_meta: "عدد الصفحات: {pages} · عدد الأحرف: {chars}",

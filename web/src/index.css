@@ -1411,3 +1411,11 @@ a {
   color: var(--accent);
   text-decoration-color: var(--accent);
 }
+
+.privacy-note {
+  margin: -0.4rem 0 1rem;
+  padding-inline-start: 0.7rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  border-inline-start: 2px solid var(--line2);
+}

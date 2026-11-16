@@ -22,7 +22,8 @@ export default function App() {
   const [extraction, setExtraction] = useState<SkillsResult | null>(null);
   const [skillsKey, setSkillsKey] = useState(0);
   const [confirmed, setConfirmed] = useState<Skill[]>([]);
-  const [demoMode, setDemoMode] = useState(false);
+  const [extractor, setExtractor] = useState("");
+  const demoMode = extractor === "mock";
   const [requirements, setRequirements] = useState<RequirementsResult | null>(null);
   const [postingTitles, setPostingTitles] = useState<string[]>([]);
 
@@ -31,10 +32,10 @@ export default function App() {
 
     getHealth()
       .then((health) => {
-        if (active) setDemoMode(health.extractor === "mock");
+        if (active) setExtractor(health.extractor);
       })
       .catch(() => {
-        if (active) setDemoMode(false);
+        if (active) setExtractor("");
       });
 
     return () => {
@@ -115,6 +116,7 @@ export default function App() {
           <div className="wrap">
             <section className="panel" aria-labelledby="upload-title" hidden={step !== "cv"}>
               <h2 id="upload-title">{t("upload_h")}</h2>
+              {extractor === "gemini" && <p className="privacy-note">{t("privacy_gemini")}</p>}
               <UploadPanel
                 onSkills={(result) => {
                   setExtraction(result);
