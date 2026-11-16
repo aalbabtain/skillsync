@@ -122,13 +122,36 @@ PREFERRED_MARKERS = tuple(
 )
 
 
+def _is_preferred(line: str) -> bool:
+    folded = normalize(line)
+    return any(_mentions(folded, marker) for marker in PREFERRED_MARKERS)
+
+
+def _preferred_lines(posting_text: str) -> set[str]:
+    """Lines that sit under a heading such as "Nice to have:", until the next heading."""
+    preferred: set[str] = set()
+    in_preferred_section = False
+
+    for raw in posting_text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if line.endswith(":"):
+            in_preferred_section = _is_preferred(line)
+        elif in_preferred_section:
+            preferred.add(line[:MAX_EVIDENCE_CHARS])
+
+    return preferred
+
+
 def extract_requirements(posting_text: str) -> list[dict[str, str]]:
     """Match the skill dictionary against a posting and guess each skill's level."""
+    under_preferred_heading = _preferred_lines(posting_text)
     found = []
 
     for item in extract(posting_text):
-        line = normalize(item["evidence"])
-        preferred = any(_mentions(line, marker) for marker in PREFERRED_MARKERS)
+        line = item["evidence"]
+        preferred = line in under_preferred_heading or _is_preferred(line)
         found.append({**item, "level": "preferred" if preferred else "required"})
 
     return found

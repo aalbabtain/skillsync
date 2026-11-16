@@ -1,0 +1,13 @@
+Backend Developer - Riyadh
+We are a fintech startup building payment services for local merchants.
+
+Requirements:
+- 2+ years building REST APIs with Python and FastAPI
+- Strong experience with PostgreSQL and query optimization
+- Comfortable with Docker in development and production
+- Version control with Git
+
+Nice to have:
+- Experience with AWS or another cloud provider
+
+We offer a competitive salary and medical insurance.

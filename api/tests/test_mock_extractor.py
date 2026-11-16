@@ -61,3 +61,10 @@ def test_requirements_default_to_required():
         "level": "required",
         "evidence": "Experience with Python",
     }
+
+
+def test_requirements_follow_a_nice_to_have_heading():
+    text = "Requirements:\n- Python\nNice to have:\n- AWS\nQualifications:\n- Docker"
+    levels = {item["name"]: item["level"] for item in mock_extractor.extract_requirements(text)}
+
+    assert levels == {"Python": "required", "AWS": "preferred", "Docker": "required"}
