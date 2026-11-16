@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     skillsync_static_dir: str = ""
     # Model requests per client address per hour; 0 turns the limit off.
     skillsync_rate_limit: int = 20
+    # GoatCounter site code for anonymous visit counts; empty turns counting off.
+    goatcounter_code: str = ""
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 

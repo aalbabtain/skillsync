@@ -29,7 +29,7 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (168 tests, no network, no key). The frontend check is
+Runs `pytest` in `api` (171 tests, no network, no key). The frontend check is
 `cd web; npm run build`.
 
 ## Run every CV case
@@ -98,6 +98,7 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `web/src/i18n.tsx` | Every user-facing string, in English and Arabic (right to left) |
 | `web/src/components/Landing.tsx` | The landing page: five full-screen chapters around a particle object, with a motion button |
 | `web/src/particles.ts`, `web/src/chapters.ts` | The landing's three.js particle field (loaded only on the landing) and the one-scroll-per-chapter glide |
+| `web/src/analytics.ts` | Anonymous GoatCounter visit and step counts, on only when `GOATCOUNTER_CODE` is set |
 
 ## Rules that must not break
 

@@ -67,6 +67,8 @@ export type Health = {
   status: string;
   model: string;
   extractor: string;
+  /** GoatCounter site code; empty when counting is off. */
+  analytics?: string;
 };
 
 export async function getHealth(): Promise<Health> {

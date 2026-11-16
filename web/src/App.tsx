@@ -1,6 +1,7 @@
 import { CircleHelp, Users, Workflow } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { startAnalytics, track } from "./analytics";
 import { getHealth } from "./api";
 import type { RequirementsResult, Skill, SkillsResult } from "./api";
 import GapPanel from "./components/GapPanel";
@@ -54,7 +55,9 @@ export default function App() {
 
     getHealth()
       .then((health) => {
-        if (active) setExtractor(health.extractor);
+        if (!active) return;
+        setExtractor(health.extractor);
+        startAnalytics(health.analytics ?? "");
       })
       .catch(() => {
         if (active) setExtractor("");
@@ -98,6 +101,10 @@ export default function App() {
     if (target) target.scrollIntoView();
     else window.scrollTo({ top: 0 });
   }, [view, step, anchor]);
+
+  useEffect(() => {
+    if (view === "service" && step === "gap") track("gap");
+  }, [view, step]);
 
   const goTo = (target: Step) => navigate(target);
 
@@ -154,7 +161,12 @@ export default function App() {
       )}
 
       {view === "landing" ? (
-        <Landing onStart={() => goTo("cv")} />
+        <Landing
+          onStart={() => {
+            track("start");
+            goTo("cv");
+          }}
+        />
       ) : (
         <main className="service">
           <Stepper
@@ -172,6 +184,7 @@ export default function App() {
               {extractor === "gemini" && <p className="privacy-note">{t("privacy_gemini")}</p>}
               <UploadPanel
                 onSkills={(result) => {
+                  track("skills");
                   setExtraction(result);
                   setEntries(result.skills.map((skill) => ({ ...skill, source: "verified" })));
                   setConfirmed([]);
@@ -206,6 +219,7 @@ export default function App() {
                   confirmedCount={confirmed.length}
                   onBack={() => goTo("skills")}
                   onResult={(result, titles) => {
+                    track("postings");
                     setRequirements(result);
                     setPostingTitles(titles);
                   }}

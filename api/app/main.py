@@ -1,4 +1,5 @@
 import logging
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -86,12 +87,18 @@ def _error(status: int, code: str, message: str) -> JSONResponse:
     )
 
 
+# A GoatCounter code is a plain lowercase name; it becomes part of the counter's address.
+GOATCOUNTER_CODE = re.compile(r"[a-z0-9][a-z0-9-]{0,49}")
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
+    code = settings.goatcounter_code.strip().lower()
     return {
         "status": "ok",
         "model": settings.gemini_model,
         "extractor": cv_skills.extractor_mode(),
+        "analytics": code if GOATCOUNTER_CODE.fullmatch(code) else "",
     }
 
 
