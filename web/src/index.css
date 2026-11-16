@@ -144,24 +144,12 @@ a {
   color: var(--accent);
 }
 
-.badge {
-  font-family: var(--font-display);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: rgba(236, 238, 242, 0.03);
-  border: 1px solid var(--line2);
-  border-radius: 999px;
-  padding: 0.35rem 0.8rem;
-}
 
 /* ---------- Demo mode ---------- */
 
 .demo-note {
   max-width: var(--maxw);
-  margin: 1.5rem auto 0;
+  margin: 1.25rem auto 0;
   padding: 0.7rem 1rem;
   font-size: 0.85rem;
   color: var(--muted);
@@ -234,6 +222,7 @@ a {
 .dropzone-active {
   border-color: var(--accent);
   background: rgba(141, 162, 251, 0.06);
+  box-shadow: 0 0 0 4px rgba(141, 162, 251, 0.12), 0 0 40px rgba(141, 162, 251, 0.12);
 }
 
 .dropzone .btn {
@@ -267,6 +256,10 @@ a {
 }
 
 .upload-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
   margin-top: 0.8rem;
   font-size: 0.9rem;
   color: #f0a3a3;
@@ -291,13 +284,6 @@ a {
   margin-bottom: 0.9rem;
   font-size: 0.88rem;
   color: var(--accent);
-}
-
-.upload-error {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
 }
 
 .upload-error .btn {
@@ -999,10 +985,6 @@ a {
     opacity: 0;
     transform: translateY(-4px);
   }
-}
-
-.demo-note {
-  margin-top: 1.25rem;
 }
 
 /* ---------- Landing ---------- */
@@ -1968,11 +1950,6 @@ a {
   background: var(--accent-soft);
   border-radius: 14px;
   transition: transform 0.2s ease;
-}
-
-.dropzone-active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(141, 162, 251, 0.12), 0 0 40px rgba(141, 162, 251, 0.12);
 }
 
 .dropzone-active .dropzone-icon {
