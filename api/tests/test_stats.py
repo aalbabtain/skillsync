@@ -93,6 +93,25 @@ def test_the_api_key_reads_the_dashboard_count(monkeypatch):
     assert seen["auth"] == "Bearer secret-key"
 
 
+def test_the_api_is_asked_with_times_on_the_hour(monkeypatch):
+    from urllib.parse import parse_qs, urlparse
+
+    monkeypatch.setattr(main.settings, "goatcounter_api_key", "secret-key")
+    monkeypatch.setattr(main.time, "time", lambda: 1_700_000_123.0)  # 2023-11-14 22:15:23 UTC
+    seen = {}
+
+    def urlopen(request, timeout):
+        seen["query"] = parse_qs(urlparse(request.full_url).query)
+        return FakeResponse({"hits": []})
+
+    monkeypatch.setattr(main.urllib.request, "urlopen", urlopen)
+    main._read_goatcounter("skillsync", "step-skills")
+
+    assert seen["query"]["start"] == ["2020-01-01T00:00:00Z"]
+    assert seen["query"]["end"] == ["2023-11-14T23:00:00Z"]
+    assert "filter" not in seen["query"]
+
+
 def test_the_api_reports_zero_when_the_step_has_no_hits(monkeypatch):
     monkeypatch.setattr(main.settings, "goatcounter_api_key", "secret-key")
     monkeypatch.setattr(main.urllib.request, "urlopen", lambda request, timeout: FakeResponse({"hits": []}))

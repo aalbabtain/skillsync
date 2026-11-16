@@ -142,8 +142,10 @@ def _read_goatcounter(code: str, path: str) -> int:
     else the public counter (needs "Allow adding visitor counts on your website")."""
     token = settings.goatcounter_api_key.strip()
     if token:
-        end = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        query = urllib.parse.urlencode({"start": "2020-01-01T00:00:00Z", "end": end, "filter": path})
+        # The API takes times on the hour; the end is the next full hour, so today counts.
+        next_hour = (int(time.time()) // 3600 + 1) * 3600
+        end = time.strftime("%Y-%m-%dT%H:00:00Z", time.gmtime(next_hour))
+        query = urllib.parse.urlencode({"start": "2020-01-01T00:00:00Z", "end": end, "limit": 100})
         try:
             body = _get_json(f"https://{code}.goatcounter.com/api/v0/stats/hits?{query}", token)
             return sum(int(hit.get("count") or 0) for hit in body.get("hits", []) if hit.get("path") == path)
