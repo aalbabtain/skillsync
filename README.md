@@ -1,68 +1,75 @@
 # SkillSync
 
-**Aligning student skills with the technology job market.**
+[![CI](https://github.com/aalbabtain/skillsync/actions/workflows/ci.yml/badge.svg)](https://github.com/aalbabtain/skillsync/actions/workflows/ci.yml)
 
-SkillSync is a multi-agent system that takes a student's CV and real job postings and returns a
-personalized, prioritized learning plan — built only on skills the student can actually prove.
+**See which skills the jobs you want are asking for.**
 
-> Status: early scaffolding. The pipeline is designed; the API and UI are being built.
+SkillSync reads a CV, keeps only the skills the CV proves, compares them with the job postings
+the person is aiming for, and shows the gap. The site works in Arabic (right to left) and English.
+
+**Live:** <https://skillsync-d9r7.onrender.com> (free plan: the first visit after a quiet spell
+takes about a minute while the server wakes up).
 
 ---
 
 ## The problem
 
 Saudi Vision 2030's Human Capability Development Program calls for alignment between the labor
-market and education outcomes. Students still graduate without knowing which market skills they
-actually lack, and employers struggle to filter candidates by concrete, verifiable skills.
+market and education outcomes. Students, graduates and people changing careers often don't know
+which skills the market asks for that they can't yet prove, and employers struggle to filter
+candidates by concrete, verifiable skills.
 
 ## How it works
 
-A student uploads a CV. Four agents run in sequence and hand their output to the next one:
+Four agents run one after another, each handing its output to the next. Three are built.
 
-| # | Agent | Job | LLM? |
-|---|-------|-----|------|
-| 1 | **CV & Fit Assessor** | Parses the CV, verifies each claimed skill against project evidence and a short skill check, then screens job postings for fit. Only verified skills move forward. | yes |
-| 2 | **Requirements Extractor** | Extracts required skills from the matched postings with RAG over the posting text, normalizes skill names, and counts how often each appears. | yes |
-| 3 | **Gap Evaluator** | Compares verified skills with required skills and computes the gap. Deterministic code — the same input always yields the same gap. | no |
-| 4 | **Plan Builder** | Orders the gap by how often each skill appears in the postings and drafts a learning plan from a curated resource list. | yes |
+| # | Agent | What it does | Model? | Status |
+|---|-------|--------------|--------|--------|
+| 1 | **CV & Fit Assessor** | Reads the CV and returns each skill with a verbatim quote that proves it. Code checks every quote against the CV and drops what it cannot find. The person reviews the list and can add skills by hand. | Gemini | Built |
+| 2 | **Requirements Extractor** | Reads the postings the person pastes and returns the skills each one asks for, with a quote and a level (required or preferred). Code checks the quotes and counts how many postings ask for each skill. | Gemini | Built |
+| 3 | **Gap Evaluator** | Sorts every required skill into *you have it*, *needs proof* (added by hand, not shown in the CV) or *missing*. | No, plain code | Built |
+| 4 | **Plan Builder** | Orders the gap by demand and drafts a learning plan the person approves, edits or rejects. | Gemini | Planned |
 
-**Human-in-the-loop:** nothing is finalized until the student approves the plan. They can approve,
-edit, or reject the draft.
+The model never decides what is verified: `api/app/verification.py` does, by matching each quote
+against the CV or posting text.
 
 ## Tech stack
 
-- **Backend** — FastAPI (Python), SQLite, JWT auth, Google Gemini for extraction and planning
-- **Frontend** — React + Vite, TypeScript
-- **Agents** — one Gemini model plus embeddings for steps 1, 2 and 4; step 3 is plain Python
-- **Storage** — SQLite for users, runs and the approved plan
-- **Quality** — pytest with fixture-based golden tests, secrets and dependency scanning
+- **Backend:** FastAPI (Python), Google Gemini for extraction, PyMuPDF for PDF text
+- **Frontend:** React + Vite, TypeScript, one dictionary file for Arabic and English
+- **Quality:** pytest with golden fixtures, CI on GitHub Actions
+- **Hosting:** one Docker container on Render, deployed from `main`
+
+Planned with Agent 4: SQLite for saved plans, and accounts.
 
 ## Repository layout
 
 ```
 skillsync/
-  api/                  FastAPI service
+  api/                      FastAPI service
     app/
-      main.py           app entrypoint and routes
-      pipeline.py       runs the agents in order, streams progress
-      agents/           one module per agent
-      parsers/          CV text extraction
-      prompts/          agent system prompts, one markdown file each
-      models/           DB models and Pydantic schemas
+      main.py               routes, limits, error codes
+      agents/               cv_skills.py (Agent 1), requirements.py (Agent 2), mock_extractor.py
+      gap.py                Agent 3, plain code
+      verification.py       quote checks, name normalization, counting
+      parsers/pdf.py        PDF text extraction, both Arabic layouts
+      prompts/              one system prompt per agent
+      frontend.py           serves the built web app in production
+      rate_limit.py         per-visitor limit on model requests
+      expectations.py       checks CV cases against expected.json
     tests/
-      fixtures/cases/  the CVs used by the tests and the case runner
-    scripts/
-      run_cases.py    case runner CLI
-    requirements.txt
-  web/                  React + Vite frontend
-    src/
-    package.json
-  schemas/              shared JSON contracts between agents
-  reports/              case runner output, gitignored
-  run.ps1               one-command setup and run
-  AGENTS.md             how to run this repo in DevAI Desktop
-  .env.example
-  README.md
+      fixtures/cases/       fictional CVs and expected.json
+      fixtures/postings/    sample job postings
+      fixtures/gap/         golden input/output pairs for Agent 3
+    scripts/                run_cases.py, check_gemini.py
+    requirements.txt        runtime dependencies
+    requirements-dev.txt    plus test tools
+  web/src/                  React app; i18n.tsx holds every string in both languages
+  Dockerfile, render.yaml   production build and Render service
+  .github/workflows/ci.yml  tests, web build, image build
+  run.ps1                   one-command setup and run on Windows
+  AGENTS.md                 how to run this repo, for people and coding agents
+  docs/                     design specs and implementation plans
 ```
 
 ## Getting started
@@ -71,43 +78,30 @@ skillsync/
 
 - Python 3.11+
 - Node.js 20+
-- A Gemini API key from Google AI Studio — optional, see demo mode below
+- A Gemini API key from Google AI Studio: optional, see demo mode below
 
-### One command (Windows, and DevAI Desktop)
+### One command (Windows)
 
 ```powershell
 .\run.ps1          # set up and run the app
-.\run.ps1 -Cases    # run every CV case and write the reports
-.\run.ps1 -Tests    # run the backend test suite
+.\run.ps1 -Cases   # run every CV case and check it against expected.json
+.\run.ps1 -Tests   # run the backend test suite
 ```
 
-Without a Gemini key the app starts in **demo mode**: skills are matched from a
-built-in list in `api/app/agents/mock_extractor.py` instead of the model, and the web app
-says so above the page. Evidence verification is unchanged. `AGENTS.md` has the details
-for running this repo inside DevAI Desktop.
+Without a Gemini key the app starts in **demo mode**: skills are matched from a built-in list
+in `api/app/agents/mock_extractor.py` instead of the model, and the site says so at the top.
+Quote verification and the gap are unchanged.
 
-### Backend
+### By hand
 
 ```bash
 cd api
 python -m venv .venv
-.venv\Scripts\activate        # Windows
-pip install -r requirements.txt
-copy ..\.env.example .env       # then fill in GEMINI_API_KEY
+.venv\Scripts\activate          # Windows; on macOS/Linux: source .venv/bin/activate
+pip install -r requirements-dev.txt
+copy ..\.env.example .env        # then fill in GEMINI_API_KEY, or leave it empty for demo mode
 uvicorn app.main:app --reload --port 8000
 ```
-
-API docs are served at `http://localhost:8000/docs`.
-
-Check the Gemini key before running the pipeline:
-
-```bash
-.venv\Scripts\python scripts/check_gemini.py
-```
-
-It prints `OK: <model> replied 'OK'` or the error, and never prints the key.
-
-### Frontend
 
 ```bash
 cd web
@@ -115,131 +109,120 @@ npm install
 npm run dev
 ```
 
-The dev server runs at `http://localhost:5173` and proxies `/api` to the backend.
+Open <http://localhost:5173>. The dev server forwards `/api` to the backend; API docs are at
+<http://localhost:8000/docs>. Check a Gemini key with `python scripts/check_gemini.py`: it prints
+`OK: <model> replied 'OK'` or the error, never the key.
 
 ### Environment variables
 
-Copy `.env.example` to `api/.env` and set:
+Copy `.env.example` to `api/.env`. On Render, set them under the service's **Environment** tab.
 
 | Variable | Purpose |
 |----------|---------|
-| `GEMINI_API_KEY` | Server-side only. Never exposed to the browser. |
-| `GEMINI_MODEL` | Model used for extraction and planning. |
-| `SKILLSYNC_EXTRACTOR` | `mock` or `gemini`. Empty picks Gemini when a key is set, demo mode otherwise. |
-| `DATABASE_URL` | SQLite path, e.g. `sqlite:///./skillsync.db`. |
-| `JWT_SECRET` | Signing key for auth tokens. |
+| `GEMINI_API_KEY` | Server-side only, never sent to the browser. Empty means demo mode. |
+| `GEMINI_MODEL` | Model used for extraction. |
+| `SKILLSYNC_EXTRACTOR` | `mock` or `gemini` to force one. Empty picks Gemini when a key is set. |
+| `SKILLSYNC_RATE_LIMIT` | Model requests per visitor address per hour (default 20; a CV counts 1, each posting 1). `0` turns it off. |
+| `SKILLSYNC_STATIC_DIR` | Folder with the built web app; set in the Docker image. |
 
 ## API
 
+Every error uses `{"detail": {"code", "message"}}`, and the site shows each code in both languages.
+
 | Method | Path | Purpose |
 |--------|------|---------|
-| `POST` | `/api/auth/register` | Create a student or instructor account |
-| `POST` | `/api/auth/login` | Get a JWT |
-| `POST` | `/api/runs` | Upload a CV and start the pipeline |
-| `GET` | `/api/runs/{id}` | Fetch the run result |
-| `GET` | `/api/runs/{id}/events` | Stream pipeline progress (SSE) |
-| `POST` | `/api/runs/{id}/approve` | Approve, edit, or reject the draft plan |
-| `POST` | `/api/skills/extract` | Extract skills from CV text and verify each one |
-| `POST` | `/api/requirements/extract` | Extract and count the skills that pasted job postings ask for |
-| `POST` | `/api/gap` | Compare confirmed skills with the requirements (no model) |
+| `GET` | `/api/health` | Status, model and whether demo mode is on |
+| `POST` | `/api/runs` | Upload a CV PDF and get its text |
+| `POST` | `/api/skills/extract` | Agent 1: skills from CV text, each verified against a quote |
+| `POST` | `/api/requirements/extract` | Agent 2: skills the pasted postings ask for, counted |
+| `POST` | `/api/gap` | Agent 3: confirmed skills against the requirements |
 
-`POST /api/runs` currently accepts a multipart `file` field with a PDF up to 5 MB and 10 pages,
-extracts the text in memory, and returns it with a `run_id`. The file and its text are never
-written to disk or logged. Rejections use `{"detail": {"code", "message"}}` with the codes
-`EMPTY_UPLOAD`, `NOT_A_PDF`, `NOT_A_PDF_MAGIC`, `PDF_TOO_LARGE`, `PDF_ENCRYPTED`,
-`PDF_CORRUPTED`, `PDF_TOO_MANY_PAGES` and `PDF_NO_TEXT_LAYER`.
+**`POST /api/runs`** takes a multipart `file`: a PDF up to 5 MB and 10 pages. The text is read in
+memory and returned; the file and its text are never written to disk or logged. Codes:
+`EMPTY_UPLOAD`, `NOT_A_PDF`, `NOT_A_PDF_MAGIC`, `PDF_TOO_LARGE`, `PDF_ENCRYPTED`, `PDF_CORRUPTED`,
+`PDF_TOO_MANY_PAGES`, `PDF_NO_TEXT_LAYER`. Arabic CVs work in both layouts PDFs use: reading order
+(Chrome, Google Docs) and letters stored backwards (some generators); the parser tells them apart
+before reordering. Scanned CVs with no text layer are rejected, not OCR'd.
 
-Arabic CVs are supported: the parser restores right-to-left runs from the visual order PDF stores
-them in. Punctuation that sits between two Arabic words can land on the neighbouring word, and a
-scanned CV with no text layer is rejected rather than OCR'd.
+**`POST /api/skills/extract`** takes `{"text"}` of 40 to 50,000 characters and returns
+`{"skills": [{"name", "category", "evidence"}], "dropped_count"}`. Codes: `TEXT_TOO_SHORT`,
+`TEXT_TOO_LONG`, `SKILLS_MALFORMED`, `SKILLS_UNAVAILABLE`, `SKILLS_QUOTA_EXCEEDED`, `RATE_LIMITED`.
+Prompt: `api/app/prompts/cv_assessor.md`.
 
-`POST /api/skills/extract` takes `{"text": "..."}` between 40 and 50,000 characters and returns
-`{"skills": [{"name", "category", "evidence"}], "dropped_count": n}`. The model proposes a skill
-only with a verbatim quote from the CV; plain code then normalizes both, requires a whole-word match,
-merges aliases, and drops anything it cannot prove. The model never decides what is verified.
-Rejections use `TEXT_TOO_SHORT`, `TEXT_TOO_LONG`, `SKILLS_MALFORMED` and `SKILLS_UNAVAILABLE`.
-The prompt lives in `api/app/prompts/cv_assessor.md`, and the CV text is never logged or stored.
-
-`POST /api/requirements/extract` (Agent 2) takes `{"postings": [{"title", "text"}]}`: 1 to 10
-postings the student pasted, each 80 to 20,000 characters, title up to 120. Each posting goes to
-the model on its own (prompt: `api/app/prompts/requirements_extractor.md`); every skill must come
-with a verbatim quote from that posting and a level, `required` or `preferred`. Code then verifies
-the quotes with the same normalization as Agent 1, merges aliases, counts how many postings ask
-for each skill (`frequency`) and ranks by frequency, then required before preferred. It returns
-`{"postings_count", "requirements": [{"name", "category", "level", "frequency", "sources":
-[{"posting", "level", "evidence"}]}], "dropped_count"}`. Rejections use `POSTINGS_EMPTY`,
+**`POST /api/requirements/extract`** takes `{"postings": [{"title", "text"}]}`: 1 to 10 postings,
+each 80 to 20,000 characters, title up to 120. Each posting goes to the model on its own; code
+verifies the quotes, merges aliases, counts how many postings ask for each skill (`frequency`) and
+ranks by frequency, then required before preferred. Returns `{"postings_count", "requirements":
+[{"name", "category", "level", "frequency", "sources": [{"posting", "level", "evidence"}]}],
+"dropped_count"}`. If any posting fails, the whole request fails. Codes: `POSTINGS_EMPTY`,
 `POSTINGS_TOO_MANY`, `POSTING_TOO_SHORT`, `POSTING_TOO_LONG`, `POSTING_TITLE_TOO_LONG`,
-`REQUIREMENTS_MALFORMED`, `REQUIREMENTS_UNAVAILABLE` and `REQUIREMENTS_QUOTA_EXCEEDED`; if any
-posting fails, the whole request fails. Posting text is never logged or stored. In demo mode the
-skill dictionary is matched instead, and a skill is `preferred` when its line, or the heading above
-it, says "nice to have", "preferred", "bonus", "يفضل" and similar.
+`REQUIREMENTS_MALFORMED`, `REQUIREMENTS_UNAVAILABLE`, `REQUIREMENTS_QUOTA_EXCEEDED`, `RATE_LIMITED`.
+Prompt: `api/app/prompts/requirements_extractor.md`.
 
-`POST /api/gap` (Agent 3) takes `{"skills": [{"name", "category", "evidence", "verified"}],
-"requirements": [...Agent 2 items], "postings_count"}` and sorts every requirement into `have`
-(a verified skill with CV evidence matches it), `needs_proof` (only a skill the student added by
-hand matches it) or `missing`, with a summary of required and preferred skills proven. It is plain
-Python in `api/app/gap.py`: no model, the same input always gives the same gap, and the golden
-cases in `api/tests/fixtures/gap/` pin the output. Rejections use `GAP_NO_REQUIREMENTS` and
-`GAP_INVALID`.
+**`POST /api/gap`** takes `{"skills": [{"name", "category", "evidence", "verified"}],
+"requirements": [...], "postings_count"}` and returns `have`, `needs_proof` and `missing` with a
+summary of required and preferred skills proven. No model; the same input always gives the same
+gap. Codes: `GAP_NO_REQUIREMENTS`, `GAP_INVALID`.
+
+**Limits:** the two model routes allow 20 model requests per visitor address per hour
+(`SKILLSYNC_RATE_LIMIT`), then answer `429 RATE_LIMITED` with a `Retry-After` header.
+
+**Planned with Agent 4:** saving runs (`GET /api/runs/{id}`), approving, editing or rejecting the
+plan, and accounts.
+
+## Testing
+
+```bash
+cd api
+python -m pytest
+```
+
+137 tests, no network and no key: demo mode stands in for the model.
+
+- **CV cases.** `api/tests/fixtures/cases/` holds 11 fictional CVs: English, Arabic and mixed;
+  printed by Chrome like browser and Google Docs exports; two pages; a career changer; a CV that
+  mentions tools the person does not have yet; a scanned and a password-protected PDF.
+  `expected.json` says what each must and must not produce, and for some the expected gap.
+  `python scripts/run_cases.py` (or `.\run.ps1 -Cases`) prints PASS or FAIL per case and writes
+  `reports/`; add `--extractor gemini` to check the model on the same CVs.
+- **Agent 3.** Golden input/output pairs in `api/tests/fixtures/gap/`.
+- **CI.** Every push runs the tests, the web build and the Docker build.
 
 ## Deployment
 
-The site runs as one container: the `Dockerfile` builds the React app, then FastAPI serves it
-next to `/api` from the same address (`SKILLSYNC_STATIC_DIR` points at the build). `render.yaml`
-describes a free Render web service that rebuilds on every push to `main`, with
+One container: the `Dockerfile` builds the React app, then FastAPI serves it next to `/api`.
+`render.yaml` describes a free Render web service that redeploys on every push to `main`, with
 `/api/health` as its health check.
 
 1. On Render, choose **New → Blueprint** and pick this repository.
 2. Deploy. The site starts in demo mode.
-3. To use Gemini, add `GEMINI_API_KEY` under the service's **Environment** tab.
+3. Add `GEMINI_API_KEY` under the service's **Environment** tab to use the model.
 
-The free plan sleeps after 15 minutes without traffic, so the first visit after that takes
-about a minute.
-
-To run the production image locally:
+Run the production image locally:
 
 ```bash
 docker build -t skillsync .
 docker run -p 8000:8000 skillsync
 ```
 
-## Testing
-
-```bash
-cd api
-.venv\Scripts\python -m pytest
-```
-
-Agent tests use recorded fixtures in `api/tests/fixtures/cases/` so they run without a
-Gemini key. The Gap Evaluator is covered by golden tests against the same input/output pairs.
-
-Every fixture CV can be run through the whole pipeline at once:
-
-```powershell
-.\run.ps1 -Cases
-```
-
-It prints one line per case and writes `reports/<case>.md` (skill, category, the CV line that
-proves it) and `reports/summary.json`. A PDF with no text layer is reported as a failed case
-rather than skipped.
-
 ## Roadmap
 
-- [x] Repo scaffolding, `.env.example`, CI
-- [x] CV upload and PDF text extraction
-- [x] Agent 1 — skill extraction with automatic evidence verification
-- [ ] Agent 1 — short skill check and posting screening
-- [x] Agent 2 — Requirements Extractor (pasted postings, verified quotes, counted by code)
-- [x] Agent 3 — Gap Evaluator (deterministic, golden tests)
-- [ ] Agent 4 — Plan Builder
-- [x] Landing page and full Arabic (right to left) / English site
-- [ ] Human-in-the-loop approve / edit / reject
-- [ ] Deploy frontend and backend
+- [x] CV upload and PDF text extraction, including Arabic
+- [x] Agent 1: skill extraction with automatic evidence verification
+- [x] Agent 2: requirements from pasted postings, verified and counted
+- [x] Agent 3: gap evaluation, golden tests
+- [x] Landing page and full Arabic / English site
+- [x] Deployment on Render, CI, per-visitor limit
+- [x] Fictional CV cases with an expectations file
+- [ ] Agent 4: learning plan, approve / edit / reject
+- [ ] Saved runs and accounts
+- [ ] Agent 1: short skill check for skills without evidence
 
 ## Author
 
-Ahmed Ababtain — SWE 485, Advanced Software Engineering with AI, King Saud University.
+Ahmed Ababtain. SWE 485, Advanced Software Engineering with AI, King Saud University.
 
 ## License
 
-Course project, not licensed for reuse yet.
+Course project, not licensed for reuse yet. SkillSync uses PyMuPDF, which is licensed under the
+AGPL; the source of the deployed site is this public repository.
