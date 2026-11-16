@@ -141,6 +141,7 @@ Copy `.env.example` to `api/.env` and set:
 | `POST` | `/api/runs/{id}/approve` | Approve, edit, or reject the draft plan |
 | `POST` | `/api/skills/extract` | Extract skills from CV text and verify each one |
 | `POST` | `/api/requirements/extract` | Extract and count the skills that pasted job postings ask for |
+| `POST` | `/api/gap` | Compare confirmed skills with the requirements (no model) |
 
 `POST /api/runs` currently accepts a multipart `file` field with a PDF up to 5 MB and 10 pages,
 extracts the text in memory, and returns it with a `run_id`. The file and its text are never
@@ -173,6 +174,14 @@ posting fails, the whole request fails. Posting text is never logged or stored. 
 skill dictionary is matched instead, and a skill is `preferred` when its line, or the heading above
 it, says "nice to have", "preferred", "bonus", "يفضل" and similar.
 
+`POST /api/gap` (Agent 3) takes `{"skills": [{"name", "category", "evidence", "verified"}],
+"requirements": [...Agent 2 items], "postings_count"}` and sorts every requirement into `have`
+(a verified skill with CV evidence matches it), `needs_proof` (only a skill the student added by
+hand matches it) or `missing`, with a summary of required and preferred skills proven. It is plain
+Python in `api/app/gap.py`: no model, the same input always gives the same gap, and the golden
+cases in `api/tests/fixtures/gap/` pin the output. Rejections use `GAP_NO_REQUIREMENTS` and
+`GAP_INVALID`.
+
 ## Testing
 
 ```bash
@@ -200,7 +209,7 @@ rather than skipped.
 - [x] Agent 1 — skill extraction with automatic evidence verification
 - [ ] Agent 1 — short skill check and posting screening
 - [x] Agent 2 — Requirements Extractor (pasted postings, verified quotes, counted by code)
-- [ ] Agent 3 — Gap Evaluator (deterministic, tested)
+- [x] Agent 3 — Gap Evaluator (deterministic, golden tests)
 - [ ] Agent 4 — Plan Builder
 - [x] Landing page and full Arabic (right to left) / English site
 - [ ] Human-in-the-loop approve / edit / reject

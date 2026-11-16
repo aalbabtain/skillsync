@@ -37,6 +37,7 @@ export type Skill = {
   name: string;
   category: string;
   evidence: string;
+  verified?: boolean;
 };
 
 export type SkillsResult = {
@@ -121,4 +122,52 @@ export async function extractRequirements(
   }
 
   return payload as RequirementsResult;
+}
+
+export type GapItem = Requirement & { cv_evidence?: string };
+
+export type GapResult = {
+  summary: {
+    postings_count: number;
+    required_total: number;
+    required_proven: number;
+    preferred_total: number;
+    preferred_proven: number;
+    have_count: number;
+    needs_proof_count: number;
+    missing_count: number;
+  };
+  have: GapItem[];
+  needs_proof: GapItem[];
+  missing: GapItem[];
+};
+
+export async function evaluateGap(
+  skills: Skill[],
+  requirements: RequirementsResult,
+): Promise<GapResult> {
+  const response = await fetch("/api/gap", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      skills: skills.map((skill) => ({
+        name: skill.name,
+        category: skill.category,
+        evidence: skill.evidence,
+        verified: Boolean(skill.verified),
+      })),
+      requirements: requirements.requirements,
+      postings_count: requirements.postings_count,
+    }),
+  });
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new ApiRequestError(
+      payload?.detail?.code ?? "UNKNOWN",
+      payload?.detail?.message ?? "Gap evaluation failed.",
+    );
+  }
+
+  return payload as GapResult;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { getHealth } from "./api";
 import type { RequirementsResult, Skill, SkillsResult } from "./api";
+import GapPanel from "./components/GapPanel";
 import Landing from "./components/Landing";
 import Logo from "./components/Logo";
 import PostingsPanel from "./components/PostingsPanel";
@@ -12,7 +13,7 @@ import UploadPanel from "./components/UploadPanel";
 import { useI18n } from "./i18n";
 
 type View = "landing" | "service";
-type Step = "cv" | "skills" | "postings";
+type Step = "cv" | "skills" | "postings" | "gap";
 
 export default function App() {
   const { t, lang, setLang } = useI18n();
@@ -22,8 +23,8 @@ export default function App() {
   const [skillsKey, setSkillsKey] = useState(0);
   const [confirmed, setConfirmed] = useState<Skill[]>([]);
   const [demoMode, setDemoMode] = useState(false);
-  // Kept for Agent 3, which compares these with the confirmed skills.
-  const [, setRequirements] = useState<RequirementsResult | null>(null);
+  const [requirements, setRequirements] = useState<RequirementsResult | null>(null);
+  const [postingTitles, setPostingTitles] = useState<string[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -48,6 +49,7 @@ export default function App() {
   const reachable: StepId[] = ["cv"];
   if (extraction) reachable.push("skills");
   if (confirmed.length > 0) reachable.push("postings");
+  if (confirmed.length > 0 && requirements) reachable.push("gap");
 
   return (
     <div className="page">
@@ -102,9 +104,9 @@ export default function App() {
           <Stepper
             current={step}
             reachable={reachable}
-            soon={["gap", "plan"]}
+            soon={["plan"]}
             onSelect={(target) => {
-              if (target === "cv" || target === "skills" || target === "postings") {
+              if (target !== "plan") {
                 setStep(target);
               }
             }}
@@ -118,6 +120,7 @@ export default function App() {
                   setExtraction(result);
                   setSkillsKey((key) => key + 1);
                   setConfirmed([]);
+                  setRequirements(null);
                   setStep("skills");
                 }}
               />
@@ -147,10 +150,25 @@ export default function App() {
                 <PostingsPanel
                   confirmedCount={confirmed.length}
                   onBack={() => setStep("skills")}
-                  onResult={setRequirements}
+                  onResult={(result, titles) => {
+                    setRequirements(result);
+                    setPostingTitles(titles);
+                  }}
+                  onNext={() => setStep("gap")}
                 />
               )}
             </section>
+
+            {step === "gap" && requirements && (
+              <section className="panel" aria-labelledby="gap-title">
+                <GapPanel
+                  skills={confirmed}
+                  requirements={requirements}
+                  postingTitles={postingTitles}
+                  onBack={() => setStep("postings")}
+                />
+              </section>
+            )}
           </div>
         </main>
       )}

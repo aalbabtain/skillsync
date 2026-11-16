@@ -29,7 +29,7 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (87 tests, no network, no key). The frontend check is
+Runs `pytest` in `api` (103 tests, no network, no key). The frontend check is
 `cd web; npm run build`.
 
 ## Run every CV case
@@ -71,6 +71,7 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `api/app/agents/mock_extractor.py` | Offline skill dictionary used in demo mode by Agents 1 and 2 |
 | `api/app/prompts/` | Agent prompts: `cv_assessor.md`, `requirements_extractor.md` |
 | `api/tests/fixtures/postings/` | Sample job postings written for the tests |
+| `api/app/gap.py` | Agent 3, gap evaluation: plain code, no model, golden tests in `api/tests/fixtures/gap/` |
 | `api/app/verification.py` | Deterministic evidence check, runs in both modes |
 | `api/app/parsers/pdf.py` | PDF text extraction, including Arabic line order |
 | `api/app/cases.py` | Case runner logic and report rendering |

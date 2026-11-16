@@ -12,7 +12,8 @@ type Draft = PostingInput & { id: number };
 type Props = {
   confirmedCount: number;
   onBack: () => void;
-  onResult: (result: RequirementsResult) => void;
+  onResult: (result: RequirementsResult, titles: string[]) => void;
+  onNext: () => void;
 };
 
 let nextId = 1;
@@ -21,7 +22,7 @@ function emptyDraft(): Draft {
   return { id: nextId++, title: "", text: "" };
 }
 
-export default function PostingsPanel({ confirmedCount, onBack, onResult }: Props) {
+export default function PostingsPanel({ confirmedCount, onBack, onResult, onNext }: Props) {
   const [drafts, setDrafts] = useState<Draft[]>(() => [emptyDraft()]);
   const [titles, setTitles] = useState<string[]>([]);
   const [result, setResult] = useState<RequirementsResult | null>(null);
@@ -47,7 +48,10 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult }: Prop
       const extracted = await extractRequirements(postings);
       setTitles(postings.map((posting) => posting.title));
       setResult(extracted);
-      onResult(extracted);
+      onResult(
+        extracted,
+        postings.map((posting) => posting.title),
+      );
     } catch (caught) {
       setError(
         caught instanceof ApiRequestError
@@ -200,6 +204,14 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult }: Prop
                 </li>
               ))}
             </ul>
+          )}
+
+          {result.requirements.length > 0 && (
+            <div className="skills-actions">
+              <button className="btn btn-primary" onClick={onNext}>
+                {t("next_gap")} <span className="arrow" aria-hidden="true">→</span>
+              </button>
+            </div>
           )}
         </section>
       )}

@@ -185,7 +185,12 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
           disabled={entries.length === 0}
           onClick={() =>
             onConfirm(
-              entries.map(({ name, category, evidence }) => ({ name, category, evidence })),
+              entries.map(({ name, category, evidence, source }) => ({
+                name,
+                category,
+                evidence,
+                verified: source === "verified",
+              })),
             )
           }
         >
