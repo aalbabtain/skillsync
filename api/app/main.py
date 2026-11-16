@@ -131,10 +131,17 @@ def _read_goatcounter(code: str, path: str) -> int:
     else the public counter (needs "Allow adding visitor counts on your website")."""
     token = settings.goatcounter_api_key.strip()
     if token:
-        query = urllib.parse.urlencode({"start": "2020-01-01", "filter": path, "limit": 100})
-        body = _get_json(f"https://{code}.goatcounter.com/api/v0/stats/hits?{query}", token)
-        return sum(int(hit.get("count") or 0) for hit in body.get("hits", []) if hit.get("path") == path)
-    body = _get_json(f"https://{code}.goatcounter.com/counter/{path}.json")
+        query = urllib.parse.urlencode({"start": "2020-01-01T00:00:00Z", "filter": path, "limit": 100})
+        try:
+            body = _get_json(f"https://{code}.goatcounter.com/api/v0/stats/hits?{query}", token)
+            return sum(int(hit.get("count") or 0) for hit in body.get("hits", []) if hit.get("path") == path)
+        except (OSError, ValueError) as error:
+            # Never the key: only which address failed and how.
+            logger.warning("GoatCounter API /api/v0/stats/hits failed: %s; using the public counter", error)
+    try:
+        body = _get_json(f"https://{code}.goatcounter.com/counter/{path}.json")
+    except (OSError, ValueError) as error:
+        raise OSError(f"public counter /counter/{path}.json: {error}") from error
     return int("".join(ch for ch in str(body.get("count", "")) if ch.isdigit()))
 
 

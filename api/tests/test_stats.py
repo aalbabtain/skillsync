@@ -112,3 +112,19 @@ def test_without_an_api_key_the_public_counter_is_read(monkeypatch):
 
     assert main._read_goatcounter("skillsync", "step-skills") == 1234
     assert seen["url"] == "https://skillsync.goatcounter.com/counter/step-skills.json"
+
+
+def test_a_failing_api_falls_back_to_the_public_counter(monkeypatch):
+    monkeypatch.setattr(main.settings, "goatcounter_api_key", "secret-key")
+    seen = []
+
+    def urlopen(request, timeout):
+        seen.append(request.full_url)
+        if "/api/v0/" in request.full_url:
+            raise OSError("HTTP Error 404: Not Found")
+        return FakeResponse({"count": "3"})
+
+    monkeypatch.setattr(main.urllib.request, "urlopen", urlopen)
+
+    assert main._read_goatcounter("skillsync", "step-skills") == 3
+    assert seen[-1] == "https://skillsync.goatcounter.com/counter/step-skills.json"

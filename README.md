@@ -199,7 +199,7 @@ cd api
 python -m pytest
 ```
 
-184 tests, no network and no key: demo mode stands in for the model.
+185 tests, no network and no key: demo mode stands in for the model.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career
