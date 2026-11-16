@@ -109,3 +109,26 @@ export function useTimeline(delays: number[], reduced: boolean, key: unknown = n
 
   return tick;
 }
+
+/** Counts from 0 up to `target` over `duration` ms, easing out. Shows `target` at once when reduced. */
+export function useCountUp(target: number, reduced: boolean, duration = 700): number {
+  const [value, setValue] = useState(reduced ? target : 0);
+
+  useEffect(() => {
+    if (reduced || target === 0) {
+      setValue(target);
+      return;
+    }
+    let frame = 0;
+    const started = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - started) / duration);
+      setValue(Math.round(target * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [target, reduced, duration]);
+
+  return value;
+}

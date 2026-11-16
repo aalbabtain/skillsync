@@ -1,3 +1,4 @@
+import { Check, FileUp } from "lucide-react";
 import { useRef, useState } from "react";
 
 import {
@@ -132,9 +133,20 @@ export default function UploadPanel({ onSkills }: Props) {
         </div>
 
         {extraction.kind === "running" && (
-          <p className="upload-status" role="status">
-            {extraction.stage === "extracting" ? t("extracting_skills") : t("verifying")}
-          </p>
+          <ol className="stages" role="status" aria-live="polite">
+            {(["stage_read", "stage_find", "stage_check"] as const).map((key, index) => {
+              const current = extraction.stage === "extracting" ? 1 : 2;
+              const state = index < current ? "is-done" : index === current ? "is-active" : "";
+              return (
+                <li className={state} key={key}>
+                  <span className="stage-mark" aria-hidden="true">
+                    {index < current ? <Check size={13} /> : index === current ? <span className="spinner spinner-sm" /> : null}
+                  </span>
+                  {t(key)}
+                </li>
+              );
+            })}
+          </ol>
         )}
 
         {extraction.kind === "error" && (
@@ -180,6 +192,9 @@ export default function UploadPanel({ onSkills }: Props) {
           </>
         ) : (
           <>
+            <span className="dropzone-icon" aria-hidden="true">
+              <FileUp size={26} />
+            </span>
             <p className="dropzone-title">{t("drop")}</p>
             <p className="dropzone-hint">{t("drop_hint")}</p>
             <button className="btn btn-primary" onClick={() => inputRef.current?.click()}>

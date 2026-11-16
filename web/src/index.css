@@ -1850,3 +1850,146 @@ a {
     stroke-dashoffset: 0;
   }
 }
+
+/* ---------- Service motion ---------- */
+
+/* 5. A step slides in from the side the visitor is heading to, mirrored in Arabic. */
+.step-stage {
+  --dx: 28px;
+}
+
+.step-stage[data-direction="back"] {
+  --dx: -28px;
+}
+
+[dir="rtl"] .step-stage {
+  --dx: -28px;
+}
+
+[dir="rtl"] .step-stage[data-direction="back"] {
+  --dx: 28px;
+}
+
+.step-stage > .panel:not([hidden]) {
+  animation: step-in 0.32s ease-out;
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--dx));
+  }
+}
+
+/* 6. Chips arrive one after another and shrink away when removed. */
+.chip {
+  animation: chip-in 0.3s ease-out backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.chip.is-leaving {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+}
+
+/* 8. Extraction shows its real stages. */
+.stages {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.stages li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  transition: color 0.2s ease;
+}
+
+.stages li.is-active {
+  color: var(--text);
+}
+
+.stages li.is-done {
+  color: var(--ok);
+}
+
+.stage-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--line2);
+  border-radius: 50%;
+}
+
+.stages li.is-done .stage-mark {
+  border-color: rgba(127, 209, 168, 0.45);
+  background: rgba(127, 209, 168, 0.12);
+}
+
+/* 9. Small touches: the arrow nudges forward, the drop zone answers a dragged file. */
+.btn .arrow {
+  display: inline-block;
+  transition: transform 0.18s ease;
+}
+
+.btn:hover .arrow {
+  transform: translateX(3px);
+}
+
+[dir="rtl"] .btn:hover .arrow {
+  transform: scaleX(-1) translateX(3px);
+}
+
+.dropzone {
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dropzone-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 0.4rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 14px;
+  transition: transform 0.2s ease;
+}
+
+.dropzone-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(141, 162, 251, 0.12), 0 0 40px rgba(141, 162, 251, 0.12);
+}
+
+.dropzone-active .dropzone-icon {
+  transform: translateY(-4px) scale(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-stage > .panel:not([hidden]),
+  .chip {
+    animation: none;
+  }
+
+  .chip,
+  .stages li,
+  .btn .arrow,
+  .dropzone,
+  .dropzone-icon {
+    transition: none;
+  }
+}

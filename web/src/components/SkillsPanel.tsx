@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type CSSProperties, type FormEvent } from "react";
 
 import type { Skill } from "../api";
 import { useI18n } from "../i18n";
@@ -41,6 +41,8 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
   );
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
+  const [leaving, setLeaving] = useState<Set<string>>(() => new Set());
+  const order = new Map(entries.map((entry, index) => [entry.name, index]));
 
   const verified = entries.filter((entry) => entry.source === "verified").length;
   const selfReported = entries.length - verified;
@@ -51,7 +53,16 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
   })).filter((group) => group.skills.length > 0);
 
   function remove(name: string) {
-    setEntries((current) => current.filter((entry) => entry.name !== name));
+    // Let the chip shrink away before it leaves the list.
+    setLeaving((current) => new Set(current).add(name));
+    window.setTimeout(() => {
+      setEntries((current) => current.filter((entry) => entry.name !== name));
+      setLeaving((current) => {
+        const next = new Set(current);
+        next.delete(name);
+        return next;
+      });
+    }, 180);
   }
 
   function add(event: FormEvent<HTMLFormElement>) {
@@ -107,7 +118,11 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
               <h3>{category(group.category)}</h3>
               <ul className="chips">
                 {group.skills.map((skill) => (
-                  <li className="chip" key={skill.name}>
+                  <li
+                    className={leaving.has(skill.name) ? "chip is-leaving" : "chip"}
+                    key={skill.name}
+                    style={{ "--i": Math.min(order.get(skill.name) ?? 0, 14) } as CSSProperties}
+                  >
                     <span className="chip-name" dir="auto">
                       {skill.name}
                     </span>
@@ -185,7 +200,9 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
           disabled={entries.length === 0}
           onClick={() =>
             onConfirm(
-              entries.map(({ name, category, evidence, source }) => ({
+              entries
+                .filter((entry) => !leaving.has(entry.name))
+                .map(({ name, category, evidence, source }) => ({
                 name,
                 category,
                 evidence,

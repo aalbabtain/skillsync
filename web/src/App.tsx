@@ -1,5 +1,5 @@
 import { CircleHelp, Users, Workflow } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getHealth } from "./api";
 import type { RequirementsResult, Skill, SkillsResult } from "./api";
@@ -99,6 +99,13 @@ export default function App() {
 
   const goTo = (target: Step) => navigate(target);
 
+  // Forward or back, so the next panel slides in from the side the visitor is heading to.
+  const lastStep = useRef<Step>(step);
+  const direction = STEPS.indexOf(step) >= STEPS.indexOf(lastStep.current) ? "forward" : "back";
+  useEffect(() => {
+    lastStep.current = step;
+  }, [step]);
+
   return (
     <div className="page">
       <header className="site-head">
@@ -157,7 +164,7 @@ export default function App() {
             }}
           />
 
-          <div className="wrap">
+          <div className="wrap step-stage" data-direction={direction}>
             <section className="panel" aria-labelledby="upload-title" hidden={step !== "cv"}>
               <h2 id="upload-title">{t("upload_h")}</h2>
               {extractor === "gemini" && <p className="privacy-note">{t("privacy_gemini")}</p>}

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ApiRequestError, evaluateGap } from "../api";
 import type { GapItem, GapResult, RequirementsResult, Skill } from "../api";
 import { useI18n } from "../i18n";
+import { useCountUp, useReducedMotion } from "../motion";
 import type { MessageKey } from "../i18n";
 
 type Props = {
@@ -45,6 +46,9 @@ export default function GapPanel({ skills, requirements, postingTitles, onBack }
     };
   }, [skills, requirements]);
 
+  const reduced = useReducedMotion();
+  const requiredProven = useCountUp(result?.summary.required_proven ?? 0, reduced);
+  const preferredProven = useCountUp(result?.summary.preferred_proven ?? 0, reduced);
   const total = requirements.postings_count;
   const postingName = (index: number) =>
     postingTitles[index] || t("posting_n", { n: index + 1 });
@@ -94,7 +98,7 @@ export default function GapPanel({ skills, requirements, postingTitles, onBack }
               <dt>{t("gap_required")}</dt>
               <dd>
                 {t("asked", {
-                  n: result.summary.required_proven,
+                  n: requiredProven,
                   total: result.summary.required_total,
                 })}
               </dd>
@@ -104,7 +108,7 @@ export default function GapPanel({ skills, requirements, postingTitles, onBack }
                 <dt>{t("gap_preferred")}</dt>
                 <dd>
                   {t("asked", {
-                    n: result.summary.preferred_proven,
+                    n: preferredProven,
                     total: result.summary.preferred_total,
                   })}
                 </dd>
