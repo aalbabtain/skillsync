@@ -31,8 +31,8 @@ export function track(step: "start" | "skills" | "postings" | "gap") {
   counter.count({ path: `step-${step}`, title: `Step: ${step}`, event: true });
 }
 
-/** Shown only from this many, so a new site does not advertise a handful of users. */
-export const MIN_SHOWN = 10;
+/** Shown from this many. Raise it if a small number looks weak on the landing. */
+export const MIN_SHOWN = 1;
 
 /**
  * How many visits reached a step, from GoatCounter's public counter. Needs "Allow adding
