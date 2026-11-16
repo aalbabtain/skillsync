@@ -12,3 +12,6 @@ services:
       # Empty: demo mode until a GEMINI_API_KEY is added in the Render dashboard.
       - key: SKILLSYNC_EXTRACTOR
         value: ""
+      # GoatCounter site for anonymous visit counts; public anyway, since it is in the page.
+      - key: GOATCOUNTER_CODE
+        value: skillsync
