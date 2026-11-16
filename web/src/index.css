@@ -1710,7 +1710,7 @@ a {
   margin-top: 1.5rem;
 }
 
-/* How many CVs were checked, from GoatCounter; a soft pulse marks it as live. */
+/* Visits so far, from GoatCounter; a soft pulse marks it as live. */
 .hero-stat {
   display: flex;
   align-items: center;
