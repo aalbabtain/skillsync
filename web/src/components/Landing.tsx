@@ -5,13 +5,14 @@ type Props = {
   onStart: () => void;
 };
 
-const SAMPLE = [
-  { name: "Python", quote: "Built the SkillSync pipeline in Python and FastAPI" },
-  { name: "PostgreSQL", quote: "صممتُ قاعدة بيانات PostgreSQL لنظام الحجوزات" },
-];
 
 export default function Landing({ onStart }: Props) {
   const { t } = useI18n();
+
+  const sample = [
+    { name: "Python", quote: t("sample_quote_python") },
+    { name: "PostgreSQL", quote: t("sample_quote_postgres") },
+  ];
 
   const steps = [
     { title: t("s1_h"), body: t("s1") },
@@ -52,7 +53,7 @@ export default function Landing({ onStart }: Props) {
             <span>{t("sample")}</span>
             <span>{t("sample_meta")}</span>
           </figcaption>
-          {SAMPLE.map((item) => (
+          {sample.map((item) => (
             <div className="proof-row" key={item.name}>
               <div className="proof-top">
                 <strong dir="ltr">{item.name}</strong>
