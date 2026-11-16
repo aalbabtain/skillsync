@@ -52,7 +52,7 @@ skillsync/
       agents/               cv_skills.py (Agent 1), requirements.py (Agent 2), mock_extractor.py
       gap.py                Agent 3, plain code
       verification.py       quote checks, name normalization, counting
-      parsers/pdf.py        PDF text extraction, both Arabic layouts
+      parsers/              file type detection, PDF (both Arabic layouts) and Word .docx
       prompts/              one system prompt per agent
       frontend.py           serves the built web app in production
       rate_limit.py         per-visitor limit on model requests
@@ -132,15 +132,19 @@ Every error uses `{"detail": {"code", "message"}}`, and the site shows each code
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET` | `/api/health` | Status, model and whether demo mode is on |
-| `POST` | `/api/runs` | Upload a CV PDF and get its text |
+| `POST` | `/api/runs` | Upload a CV (PDF or Word .docx) and get its text |
 | `POST` | `/api/skills/extract` | Agent 1: skills from CV text, each verified against a quote |
 | `POST` | `/api/requirements/extract` | Agent 2: skills the pasted postings ask for, counted |
 | `POST` | `/api/gap` | Agent 3: confirmed skills against the requirements |
 
-**`POST /api/runs`** takes a multipart `file`: a PDF up to 5 MB and 10 pages. The text is read in
-memory and returned; the file and its text are never written to disk or logged. Codes:
-`EMPTY_UPLOAD`, `NOT_A_PDF`, `NOT_A_PDF_MAGIC`, `PDF_TOO_LARGE`, `PDF_ENCRYPTED`, `PDF_CORRUPTED`,
-`PDF_TOO_MANY_PAGES`, `PDF_NO_TEXT_LAYER`. Arabic CVs work in both layouts PDFs use: reading order
+**`POST /api/runs`** takes a multipart `file` up to 5 MB: a PDF (up to 10 pages) or a Word
+`.docx`. The type is read from the file's first bytes, not its name, because browsers label
+`.docx` files inconsistently. Word files are read with the standard library (body, tables, text
+boxes and the header, where names often sit). The text is read in memory and returned; the file
+and its text are never written to disk or logged. Codes: `EMPTY_UPLOAD`, `UNSUPPORTED_FILE`,
+`WORD_LEGACY_OR_PROTECTED` (an old `.doc` or a password-protected Office file), `FILE_TOO_LARGE`,
+`DOCX_CORRUPTED`, `DOCX_NO_TEXT`, `PDF_ENCRYPTED`, `PDF_CORRUPTED`, `PDF_TOO_MANY_PAGES`,
+`PDF_NO_TEXT_LAYER`. Arabic CVs work in both layouts PDFs use: reading order
 (Chrome, Google Docs) and letters stored backwards (some generators); the parser tells them apart
 before reordering. Scanned CVs with no text layer are rejected, not OCR'd.
 
@@ -177,11 +181,12 @@ cd api
 python -m pytest
 ```
 
-137 tests, no network and no key: demo mode stands in for the model.
+156 tests, no network and no key: demo mode stands in for the model.
 
-- **CV cases.** `api/tests/fixtures/cases/` holds 11 fictional CVs: English, Arabic and mixed;
-  printed by Chrome like browser and Google Docs exports; two pages; a career changer; a CV that
-  mentions tools the person does not have yet; a scanned and a password-protected PDF.
+- **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
+  printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career
+  changer; a CV that mentions tools the person does not have yet; a scanned and a
+  password-protected PDF.
   `expected.json` says what each must and must not produce, and for some the expected gap.
   `python scripts/run_cases.py` (or `.\run.ps1 -Cases`) prints PASS or FAIL per case and writes
   `reports/`; add `--extractor gemini` to check the model on the same CVs.

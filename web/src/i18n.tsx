@@ -58,10 +58,10 @@ const en = {
 
   upload_h: "Start with your CV",
   drop: "Drop your CV here",
-  drop_hint: "PDF only, up to 5 MB and 10 pages.",
+  drop_hint: "PDF or Word (.docx), up to 5 MB and 10 pages.",
   privacy_gemini:
     "Your CV and the postings you paste are sent to Google Gemini for analysis. SkillSync does not store them or write them to its logs.",
-  choose: "Choose a PDF",
+  choose: "Choose a file",
   extracting_text: "Extracting text…",
   upload_meta: "Pages: {pages} · Characters: {chars}",
   extract_skills: "Extract skills",
@@ -140,9 +140,13 @@ const en = {
 
   err_network: "Could not reach the server.",
   err_EMPTY_UPLOAD: "The file is empty.",
-  err_NOT_A_PDF: "Only PDF files are accepted.",
-  err_NOT_A_PDF_MAGIC: "The file is not a valid PDF.",
-  err_PDF_TOO_LARGE: "The PDF is larger than 5 MB.",
+  err_UNSUPPORTED_FILE: "Only PDF and Word (.docx) files are accepted.",
+  err_WORD_LEGACY_OR_PROTECTED:
+    "This looks like an old Word file (.doc) or a password-protected document. Save it as .docx without a password, or as PDF, and try again.",
+  err_FILE_TOO_LARGE: "The file is larger than 5 MB.",
+  err_DOCX_CORRUPTED: "The Word document could not be read. It may be damaged.",
+  err_DOCX_NO_TEXT:
+    "The Word document has almost no text. Check that the CV is typed, not pasted in as a picture.",
   err_PDF_ENCRYPTED: "The PDF is password-protected. Remove the password and try again.",
   err_PDF_CORRUPTED: "The PDF could not be read. It may be damaged.",
   err_PDF_TOO_MANY_PAGES: "The PDF has more than 10 pages.",
@@ -221,10 +225,10 @@ const ar: Record<MessageKey, string> = {
 
   upload_h: "ابدأ بسيرتك الذاتية",
   drop: "اسحب سيرتك الذاتية وأفلتها هنا",
-  drop_hint: "ملف PDF فقط، بحد أقصى 5 ميجابايت و10 صفحات.",
+  drop_hint: "ملف PDF أو Word بصيغة docx، بحد أقصى 5 ميجابايت و10 صفحات.",
   privacy_gemini:
     "تُرسَل سيرتك الذاتية والإعلانات التي تلصقها إلى Google Gemini لتحليلها. لا يحفظها SkillSync ولا يسجّلها.",
-  choose: "اختر ملف PDF",
+  choose: "اختر ملفًا",
   extracting_text: "جارٍ استخراج النص…",
   upload_meta: "عدد الصفحات: {pages} · عدد الأحرف: {chars}",
   extract_skills: "استخراج المهارات",
@@ -303,9 +307,12 @@ const ar: Record<MessageKey, string> = {
 
   err_network: "تعذّر الاتصال بالخادم.",
   err_EMPTY_UPLOAD: "الملف فارغ.",
-  err_NOT_A_PDF: "يُقبل ملف PDF فقط.",
-  err_NOT_A_PDF_MAGIC: "الملف ليس ملف PDF صالحًا.",
-  err_PDF_TOO_LARGE: "حجم الملف أكبر من 5 ميجابايت.",
+  err_UNSUPPORTED_FILE: "يُقبل ملف PDF أو Word بصيغة docx فقط.",
+  err_WORD_LEGACY_OR_PROTECTED:
+    "يبدو أن الملف بصيغة Word القديمة doc أو محمي بكلمة مرور. احفظه بصيغة docx دون كلمة مرور، أو بصيغة PDF، ثم حاول مرة أخرى.",
+  err_FILE_TOO_LARGE: "حجم الملف أكبر من 5 ميجابايت.",
+  err_DOCX_CORRUPTED: "تعذّرت قراءة مستند Word، وقد يكون تالفًا.",
+  err_DOCX_NO_TEXT: "لا يحتوي مستند Word على نص تقريبًا. تأكد أن السيرة مكتوبة نصًا وليست صورة ملصقة.",
   err_PDF_ENCRYPTED: "الملف محمي بكلمة مرور. أزل كلمة المرور ثم حاول مرة أخرى.",
   err_PDF_CORRUPTED: "تعذّرت قراءة الملف، وقد يكون تالفًا.",
   err_PDF_TOO_MANY_PAGES: "يتجاوز الملف 10 صفحات.",

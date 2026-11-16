@@ -5,11 +5,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.agents import cv_skills
+from app.parsers import extract_document
 from app.parsers.pdf import PdfExtractionError
-from app.parsers.pdf import extract as extract_pdf
 from app.verification import verify_skills
 
 OK = "ok"
+CV_SUFFIXES = {".pdf", ".docx"}
 FAILED = "failed"
 
 
@@ -27,7 +28,7 @@ class CaseResult:
 
 def run_case(path: Path, extractor: str | None = None) -> CaseResult:
     try:
-        document = extract_pdf(path.read_bytes())
+        document = extract_document(path.read_bytes())
     except PdfExtractionError as error:
         return CaseResult(name=path.stem, status=FAILED, code=error.code, message=error.message)
 
@@ -59,7 +60,8 @@ def run_case(path: Path, extractor: str | None = None) -> CaseResult:
 
 
 def run_all(cases_dir: Path, extractor: str | None = None) -> list[CaseResult]:
-    return [run_case(path, extractor=extractor) for path in sorted(cases_dir.glob("*.pdf"))]
+    paths = sorted(p for p in cases_dir.iterdir() if p.suffix in CV_SUFFIXES)
+    return [run_case(path, extractor=extractor) for path in paths]
 
 
 def render_markdown(result: CaseResult) -> str:

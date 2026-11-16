@@ -23,6 +23,18 @@ type Extraction =
   | ({ kind: "error" } & Failure);
 
 const MAX_BYTES = 5 * 1024 * 1024;
+const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const ACCEPT = `.pdf,.docx,application/pdf,${DOCX_TYPE}`;
+
+// The server reads the file's bytes to decide; this only catches obvious mistakes early.
+function fileProblem(file: File): string | null {
+  const extension = file.name.toLowerCase().split(".").pop() ?? "";
+  if (extension === "doc") return "WORD_LEGACY_OR_PROTECTED";
+  const known = ["pdf", "docx"].includes(extension) || [DOCX_TYPE, "application/pdf"].includes(file.type);
+  if (!known) return "UNSUPPORTED_FILE";
+  if (file.size > MAX_BYTES) return "FILE_TOO_LARGE";
+  return null;
+}
 const VERIFY_DELAY_MS = 1200;
 
 type Props = {
@@ -47,13 +59,9 @@ export default function UploadPanel({ onSkills }: Props) {
     errorMessage(failure.code, failure.message || t("err_network"));
 
   async function start(file: File) {
-    if (file.type !== "application/pdf") {
-      setState({ kind: "error", code: "NOT_A_PDF", message: "" });
-      return;
-    }
-
-    if (file.size > MAX_BYTES) {
-      setState({ kind: "error", code: "PDF_TOO_LARGE", message: "" });
+    const problem = fileProblem(file);
+    if (problem) {
+      setState({ kind: "error", code: problem, message: "" });
       return;
     }
 
@@ -184,7 +192,7 @@ export default function UploadPanel({ onSkills }: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf,.pdf"
+        accept={ACCEPT}
         hidden
         onChange={(event) => {
           const file = event.target.files?.[0];

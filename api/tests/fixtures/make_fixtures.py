@@ -81,6 +81,30 @@ def write_encrypted(source: Path, path: Path) -> None:
     writer.encrypt("fixture-only")
     writer.write(path)
 
+def write_word_cv(path: Path) -> None:
+    """A bilingual CV as Word saves it: name in the header, skills in a table."""
+    import sys
+
+    sys.path.insert(0, str(HERE.parent.parent))
+    from tests.docx_builder import build_docx, paragraph
+
+    cell = "<w:tc>{}</w:tc>"
+    table = (
+        "<w:tbl>"
+        "<w:tr>" + cell.format(paragraph("اللغات")) + cell.format(paragraph("Python, SQL")) + "</w:tr>"
+        "<w:tr>" + cell.format(paragraph("Tools")) + cell.format(paragraph("Docker, Git, Power BI")) + "</w:tr>"
+        "</w:tbl>"
+    )
+    body = (
+        paragraph("محللة بيانات - Data Analyst", rtl=True)
+        + paragraph("الخبرات", rtl=True)
+        + paragraph("بنيت لوحات متابعة المبيعات باستخدام Power BI وربطتها بقاعدة PostgreSQL", rtl=True)
+        + paragraph("Automated weekly reports with Python and Pandas.")
+        + paragraph("المهارات", rtl=True)
+        + table
+    )
+    path.write_bytes(build_docx(body, header=paragraph("ريم القحطاني - Reem Alqahtani", rtl=True), pages=1))
+
 if __name__ == "__main__":
     CASES.mkdir(exist_ok=True)
     write_lines(CASES / "english_cv.pdf", ENGLISH)
@@ -91,4 +115,5 @@ if __name__ == "__main__":
     write_lines(CASES / "graduate_cv.pdf", GRADUATE)
     write_scanned(CASES / "scanned.pdf")
     write_encrypted(CASES / "english_cv.pdf", CASES / "encrypted.pdf")
+    write_word_cv(CASES / "word_mixed.docx")
     print("fixtures written to", CASES)

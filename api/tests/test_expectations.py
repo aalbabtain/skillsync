@@ -12,22 +12,27 @@ CASES_DIR = FIXTURES / "cases"
 EXPECTED = expectations.load(CASES_DIR / "expected.json")
 
 
-def test_every_pdf_has_an_expectation_and_back():
-    pdfs = {path.stem for path in CASES_DIR.glob("*.pdf")}
+def case_file(name: str) -> Path:
+    """The case's PDF or Word file."""
+    return next(path for path in CASES_DIR.glob(f"{name}.*") if path.suffix in cases.CV_SUFFIXES)
 
-    assert pdfs == set(EXPECTED)
+
+def test_every_pdf_has_an_expectation_and_back():
+    files = {path.stem for path in CASES_DIR.iterdir() if path.suffix in cases.CV_SUFFIXES}
+
+    assert files == set(EXPECTED)
 
 
 @pytest.mark.parametrize("name", sorted(EXPECTED))
 def test_case_meets_its_expectation(name):
-    result = cases.run_case(CASES_DIR / f"{name}.pdf", extractor=cv_skills.MOCK)
+    result = cases.run_case(case_file(name), extractor=cv_skills.MOCK)
 
     assert expectations.check_case(result, EXPECTED[name], cv_skills.MOCK) == []
 
 
 @pytest.mark.parametrize("name", sorted(n for n, e in EXPECTED.items() if "gap" in e))
 def test_case_gap_meets_its_expectation(name):
-    result = cases.run_case(CASES_DIR / f"{name}.pdf", extractor=cv_skills.MOCK)
+    result = cases.run_case(case_file(name), extractor=cv_skills.MOCK)
 
     problems = expectations.check_gap(
         result, EXPECTED[name]["gap"], FIXTURES / "postings", cv_skills.MOCK

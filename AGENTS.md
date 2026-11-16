@@ -17,7 +17,7 @@ The script creates `api\.venv`, installs the backend and frontend dependencies, 
 on <http://localhost:8000> and the web app on <http://localhost:5173>, and stops both when
 you press Enter.
 
-Open <http://localhost:5173>, press **Start with your CV**, drop a PDF, press **Extract skills**.
+Open <http://localhost:5173>, press **Start with your CV**, drop a PDF or Word (.docx) CV, press **Extract skills**.
 The header button switches the whole site between English and Arabic. A "Demo mode" note appears
 above the page when no key is configured.
 
@@ -29,7 +29,7 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (137 tests, no network, no key). The frontend check is
+Runs `pytest` in `api` (156 tests, no network, no key). The frontend check is
 `cd web; npm run build`.
 
 ## Run every CV case
@@ -50,10 +50,10 @@ Each line ends in PASS or FAIL, and the script exits with 1 if any case fails. R
 `--extractor gemini` to check the model's quality on the same CVs: traps such as "I want to
 learn Kubernetes" are only checked against the model.
 
-The 11 cases (all fictional) cover English, Arabic and mixed CVs, CVs printed by Chrome like
-browser and Google Docs exports, a two-page CV, a career changer, a CV with trap mentions, a
+The 12 cases (all fictional) cover English, Arabic and mixed CVs, CVs printed by Chrome like
+browser and Google Docs exports, a Word (.docx) CV, a two-page CV, a career changer, a CV with trap mentions, a
 scanned PDF (`PDF_NO_TEXT_LAYER`) and a password-protected PDF (`PDF_ENCRYPTED`). To add a
-case, drop a PDF in the folder and add its entry to `expected.json`; a test fails until both
+case, drop a PDF or .docx in the folder and add its entry to `expected.json`; a test fails until both
 exist.
 
 By hand:
@@ -88,7 +88,7 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `Dockerfile`, `render.yaml` | One-container production build, deployed on Render from `main` |
 | `api/app/gap.py` | Agent 3, gap evaluation: plain code, no model, golden tests in `api/tests/fixtures/gap/` |
 | `api/app/verification.py` | Deterministic evidence check, runs in both modes |
-| `api/app/parsers/pdf.py` | PDF text extraction, including Arabic line order |
+| `api/app/parsers/` | Reads the upload: detects PDF or Word from its bytes; `pdf.py` handles both Arabic layouts, `docx.py` reads .docx with the standard library |
 | `api/app/cases.py` | Case runner logic and report rendering |
 | `api/scripts/run_cases.py` | Case runner CLI |
 | `api/tests/fixtures/cases/` | The CVs used by the case runner and the tests |

@@ -16,7 +16,8 @@ from app.config import get_settings
 from app.frontend import register_frontend
 from app.gap import evaluate_gap
 from app.rate_limit import RateLimiter, client_address
-from app.parsers.pdf import PdfExtractionError, extract
+from app.parsers import extract_document
+from app.parsers.pdf import PdfExtractionError
 from app.verification import aggregate, verify_requirements, verify_skills
 
 settings = get_settings()
@@ -41,8 +42,11 @@ MAX_CV_TEXT_CHARS = 50_000
 MIN_CV_TEXT_CHARS = 40
 STATUS_BY_CODE = {
     "EMPTY_UPLOAD": 400,
-    "NOT_A_PDF": 415,
+    "UNSUPPORTED_FILE": 415,
+    "WORD_LEGACY_OR_PROTECTED": 415,
     "NOT_A_PDF_MAGIC": 415,
+    "DOCX_CORRUPTED": 400,
+    "DOCX_NO_TEXT": 422,
     "PDF_ENCRYPTED": 400,
     "PDF_CORRUPTED": 400,
     "PDF_TOO_MANY_PAGES": 422,
@@ -91,17 +95,15 @@ def health() -> dict[str, str]:
 
 @app.post("/api/runs")
 async def create_run(file: UploadFile = File(...)):
-    if file.content_type != "application/pdf":
-        return _error(415, "NOT_A_PDF", "Only PDF files are accepted.")
-
+    # The type is read from the file's first bytes: browsers label .docx files inconsistently.
     buffer = bytearray()
     while chunk := await file.read(CHUNK_BYTES):
         buffer.extend(chunk)
         if len(buffer) > MAX_UPLOAD_BYTES:
-            return _error(413, "PDF_TOO_LARGE", "The PDF is larger than 5 MB.")
+            return _error(413, "FILE_TOO_LARGE", "The file is larger than 5 MB.")
 
     try:
-        document = extract(bytes(buffer))
+        document = extract_document(bytes(buffer))
     except PdfExtractionError as error:
         return _error(STATUS_BY_CODE[error.code], error.code, error.message)
 
@@ -116,7 +118,7 @@ async def create_run(file: UploadFile = File(...)):
 
     return {
         "run_id": run_id,
-        "filename": file.filename or "cv.pdf",
+        "filename": file.filename or "cv",
         "pages": document.pages,
         "characters": document.characters,
         "text": document.text,

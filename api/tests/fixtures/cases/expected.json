@@ -1,6 +1,6 @@
 {
   "_about": [
-    "What every CV in this folder should produce. Read by api/tests/test_expectations.py",
+    "What every CV in this folder (PDF or Word) should produce. Read by api/tests/test_expectations.py",
     "(demo mode) and by scripts/run_cases.py (demo mode or Gemini).",
     "must_have: skills that must be extracted. 'A|B' accepts either name.",
     "must_not_have: skills that must never be extracted, in any mode.",
@@ -98,6 +98,13 @@
       "about": "Password protected. Rejected, not read.",
       "status": "failed",
       "code": "PDF_ENCRYPTED"
+    },
+    "word_mixed": {
+      "about": "Word (.docx), Arabic and English: name in the header, skills in a table.",
+      "status": "ok",
+      "pages": 1,
+      "must_have": ["Python", "SQL", "Pandas", "Power BI", "PostgreSQL", "Docker", "Git"],
+      "must_not_have": ["React", "Java"]
     }
   }
 }
