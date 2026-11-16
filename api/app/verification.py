@@ -101,3 +101,105 @@ def verify_skills(
         skills.append(VerifiedSkill(name=display, category=category, evidence=evidence))
 
     return VerificationResult(skills=skills, dropped_count=dropped)
+
+
+@dataclass(frozen=True)
+class VerifiedRequirement:
+    name: str
+    category: str
+    level: str
+    evidence: str
+
+
+@dataclass(frozen=True)
+class Source:
+    posting: int
+    level: str
+    evidence: str
+
+
+@dataclass(frozen=True)
+class Requirement:
+    name: str
+    category: str
+    level: str
+    frequency: int
+    sources: list[Source]
+
+
+REQUIRED = "required"
+PREFERRED = "preferred"
+
+
+def _stronger(first: str, second: str) -> str:
+    return REQUIRED if REQUIRED in (first, second) else PREFERRED
+
+
+def verify_requirements(
+    candidates: list[dict[str, str]],
+    posting_text: str,
+) -> tuple[list[VerifiedRequirement], int]:
+    """Keep each requirement whose evidence is quoted in the posting, one per skill."""
+    haystack = normalize(posting_text)
+    kept: dict[str, VerifiedRequirement] = {}
+    dropped = 0
+
+    for candidate in candidates:
+        name = str(candidate.get("name", "")).strip()
+        evidence = str(candidate.get("evidence", "")).strip()
+        category = str(candidate.get("category", "")).strip() or "Other"
+        level = str(candidate.get("level", "")).strip().lower()
+        level = level if level in (REQUIRED, PREFERRED) else REQUIRED
+        needle = normalize(evidence)
+
+        if not name or not needle or not _contains(haystack, needle):
+            dropped += 1
+            continue
+
+        display = canonical_name(name)
+        key = normalize(display)
+        if key in kept:
+            first = kept[key]
+            kept[key] = VerifiedRequirement(
+                first.name, first.category, _stronger(first.level, level), first.evidence
+            )
+            continue
+
+        kept[key] = VerifiedRequirement(display, category, level, evidence)
+
+    return list(kept.values()), dropped
+
+
+def aggregate(per_posting: list[list[VerifiedRequirement]]) -> list[Requirement]:
+    """Count how many postings ask for each skill and rank the result. No model involved."""
+    merged: dict[str, dict] = {}
+
+    for index, items in enumerate(per_posting):
+        for item in items:
+            display = canonical_name(item.name)
+            key = normalize(display)
+            entry = merged.setdefault(
+                key,
+                {"name": display, "category": item.category, "level": PREFERRED, "sources": []},
+            )
+
+            if entry["sources"] and entry["sources"][-1].posting == index:
+                last = entry["sources"][-1]
+                entry["sources"][-1] = Source(index, _stronger(last.level, item.level), last.evidence)
+            else:
+                entry["sources"].append(Source(index, item.level, item.evidence))
+
+            entry["level"] = _stronger(entry["level"], item.level)
+
+    results = [
+        Requirement(
+            name=entry["name"],
+            category=entry["category"],
+            level=entry["level"],
+            frequency=len(entry["sources"]),
+            sources=entry["sources"],
+        )
+        for entry in merged.values()
+    ]
+    results.sort(key=lambda r: (-r.frequency, r.level != REQUIRED, r.name.lower()))
+    return results
