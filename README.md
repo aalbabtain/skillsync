@@ -182,6 +182,27 @@ Python in `api/app/gap.py`: no model, the same input always gives the same gap, 
 cases in `api/tests/fixtures/gap/` pin the output. Rejections use `GAP_NO_REQUIREMENTS` and
 `GAP_INVALID`.
 
+## Deployment
+
+The site runs as one container: the `Dockerfile` builds the React app, then FastAPI serves it
+next to `/api` from the same address (`SKILLSYNC_STATIC_DIR` points at the build). `render.yaml`
+describes a free Render web service that rebuilds on every push to `main`, with
+`/api/health` as its health check.
+
+1. On Render, choose **New → Blueprint** and pick this repository.
+2. Deploy. The site starts in demo mode.
+3. To use Gemini, add `GEMINI_API_KEY` under the service's **Environment** tab.
+
+The free plan sleeps after 15 minutes without traffic, so the first visit after that takes
+about a minute.
+
+To run the production image locally:
+
+```bash
+docker build -t skillsync .
+docker run -p 8000:8000 skillsync
+```
+
 ## Testing
 
 ```bash

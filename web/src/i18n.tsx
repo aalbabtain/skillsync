@@ -13,6 +13,7 @@ const en = {
   nav_how: "How it works",
   nav_who: "Who it's for",
   foot_vision: "Aligned with the Human Capability Development Program, Saudi Vision 2030",
+  source_code: "Source code",
 
   eyebrow: "Skills, checked against the market",
   hero: "See which skills the jobs you want are asking for.",
@@ -169,6 +170,7 @@ const ar: Record<MessageKey, string> = {
   nav_how: "كيف يعمل",
   nav_who: "لمن صُمّم",
   foot_vision: "يتوافق مع برنامج تنمية القدرات البشرية ضمن رؤية السعودية 2030",
+  source_code: "الشيفرة المصدرية",
 
   eyebrow: "مهاراتك في ميزان سوق العمل",
   hero: "اعرف المهارات التي تطلبها الوظائف التي تستهدفها.",

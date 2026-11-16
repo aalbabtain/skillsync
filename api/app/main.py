@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Request, UploadFile
@@ -12,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from app.agents import cv_skills, requirements
 from app.config import get_settings
+from app.frontend import register_frontend
 from app.gap import evaluate_gap
 from app.parsers.pdf import PdfExtractionError, extract
 from app.verification import aggregate, verify_requirements, verify_skills
@@ -299,3 +301,8 @@ def gap_route(payload: GapRequest):
         summary["missing_count"],
     )
     return result
+
+
+# Registered last so every API route above takes precedence over the site's catch-all.
+if settings.skillsync_static_dir:
+    register_frontend(app, Path(settings.skillsync_static_dir))

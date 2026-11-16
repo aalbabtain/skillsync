@@ -113,7 +113,12 @@ export default function Landing({ onStart }: Props) {
       <footer className="site-foot wrap">
         <Logo />
         <span>{t("foot_vision")}</span>
-        <span dir="ltr">Ahmed Ababtain</span>
+        <span className="foot-meta">
+          <a className="foot-link" href="https://github.com/aalbabtain/skillsync" target="_blank" rel="noreferrer">
+            {t("source_code")}
+          </a>
+          <span dir="ltr">Ahmed Ababtain</span>
+        </span>
       </footer>
     </div>
   );

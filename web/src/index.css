@@ -1392,3 +1392,22 @@ a {
 .gap-next {
   align-items: center;
 }
+
+.foot-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.foot-link {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--line2);
+  text-underline-offset: 3px;
+}
+
+.foot-link:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
