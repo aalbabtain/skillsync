@@ -1,0 +1,103 @@
+{
+  "_about": [
+    "What every CV in this folder should produce. Read by api/tests/test_expectations.py",
+    "(demo mode) and by scripts/run_cases.py (demo mode or Gemini).",
+    "must_have: skills that must be extracted. 'A|B' accepts either name.",
+    "must_not_have: skills that must never be extracted, in any mode.",
+    "model_must_not_have: traps the model must avoid. Demo mode matches words without",
+    "  reading them, so these are only checked with Gemini.",
+    "gap: run the CV against postings from ../postings and check the Agent 3 groups.",
+    "Every name and detail in these CVs is fictional."
+  ],
+  "cases": {
+    "english_cv": {
+      "about": "Short English CV, one skills line.",
+      "status": "ok",
+      "pages": 1,
+      "must_have": ["Python", "FastAPI", "React", "TypeScript", "SQL"],
+      "must_not_have": ["Java", "Docker"]
+    },
+    "arabic_cv": {
+      "about": "Arabic CV whose PDF stores each word's letters backwards.",
+      "status": "ok",
+      "pages": 1,
+      "must_have": ["Python", "FastAPI", "React", "TypeScript"],
+      "must_not_have": ["Java"]
+    },
+    "backend_cv": {
+      "about": "Backend engineer, matched against an English backend posting.",
+      "status": "ok",
+      "pages": 1,
+      "must_have": ["Python", "Django", "PostgreSQL", "Docker", "AWS", "Redis", "Git", "GitHub Actions", "Linux"],
+      "must_not_have": ["React", "Java"],
+      "gap": {
+        "postings": ["backend_en.txt"],
+        "have_includes": ["Python", "PostgreSQL", "Docker", "Git"],
+        "missing_includes": ["FastAPI"]
+      }
+    },
+    "graduate_cv": {
+      "about": "Fresh graduate: coursework skills and soft skills.",
+      "status": "ok",
+      "pages": 1,
+      "must_have": ["Java", "SQL", "MySQL", "HTML/CSS|HTML", "Teamwork", "Communication"],
+      "must_not_have": ["Python", "React"]
+    },
+    "data_analyst_en": {
+      "about": "Printed by Chrome. Skills spread across experience, projects and a skills line.",
+      "status": "ok",
+      "pages": 1,
+      "must_have": ["Python", "SQL", "Pandas", "Power BI", "Excel", "scikit-learn"],
+      "must_not_have": ["React", "Docker", "Java"]
+    },
+    "career_changer_en": {
+      "about": "Printed by Chrome. An accountant moving into data: few technical skills.",
+      "status": "ok",
+      "pages": 1,
+      "must_have": ["Excel", "SQL", "Leadership", "Communication", "Time Management"],
+      "must_not_have": ["Python", "Power BI", "React", "Docker"]
+    },
+    "traps_en": {
+      "about": "Printed by Chrome. Mentions tools the person does not have yet.",
+      "status": "ok",
+      "pages": 1,
+      "must_have": ["PHP", "MySQL", "Git", "HTML/CSS|HTML"],
+      "must_not_have": ["Python", "React"],
+      "model_must_not_have": ["Kubernetes", "Docker", "AWS"]
+    },
+    "frontend_mixed": {
+      "about": "Printed by Chrome, right to left. Arabic and English in the same lines.",
+      "status": "ok",
+      "pages": 1,
+      "must_have": ["React", "TypeScript", "Next.js", "Tailwind CSS", "Git", "Figma", "Jira"],
+      "must_not_have": ["Vue", "Angular", "Python"],
+      "gap": {
+        "postings": ["arabic.txt"],
+        "have_includes": ["React", "TypeScript", "Figma"],
+        "missing_includes": []
+      }
+    },
+    "senior_arabic": {
+      "about": "Printed by Chrome, right to left, two pages. Arabic with English tool names.",
+      "status": "ok",
+      "pages": 2,
+      "must_have": ["Java", "Spring Boot", "Docker", "Kubernetes", "AWS", "PostgreSQL", "Redis", "Leadership"],
+      "must_not_have": ["React", "Python"],
+      "gap": {
+        "postings": ["backend_en.txt", "mixed_preferred.txt"],
+        "have_includes": ["PostgreSQL", "Docker", "Kubernetes", "AWS", "Redis"],
+        "missing_includes": ["Python", "FastAPI", "React"]
+      }
+    },
+    "scanned": {
+      "about": "An image with no text layer. Rejected, not read.",
+      "status": "failed",
+      "code": "PDF_NO_TEXT_LAYER"
+    },
+    "encrypted": {
+      "about": "Password protected. Rejected, not read.",
+      "status": "failed",
+      "code": "PDF_ENCRYPTED"
+    }
+  }
+}

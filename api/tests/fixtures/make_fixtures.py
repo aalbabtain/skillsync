@@ -1,4 +1,6 @@
-"""Regenerates the committed PDF fixtures. Dev-only; needs `pip install fpdf2`.
+"""Regenerates the committed PDF fixtures. Dev-only; needs `pip install fpdf2 pypdf`.
+
+The CVs printed by Chrome come from make_chrome_fixtures.mjs instead.
 
 The generated PDFs are committed, so the test suite never runs this script.
 The Arabic fixture embeds Noto Naskh Arabic (OFL), downloaded on demand.
@@ -72,6 +74,13 @@ def write_scanned(path: Path) -> None:
     pdf.output(str(path))
 
 
+def write_encrypted(source: Path, path: Path) -> None:
+    from pypdf import PdfReader, PdfWriter
+
+    writer = PdfWriter(clone_from=PdfReader(source))
+    writer.encrypt("fixture-only")
+    writer.write(path)
+
 if __name__ == "__main__":
     CASES.mkdir(exist_ok=True)
     write_lines(CASES / "english_cv.pdf", ENGLISH)
@@ -81,4 +90,5 @@ if __name__ == "__main__":
     write_lines(CASES / "backend_cv.pdf", BACKEND)
     write_lines(CASES / "graduate_cv.pdf", GRADUATE)
     write_scanned(CASES / "scanned.pdf")
+    write_encrypted(CASES / "english_cv.pdf", CASES / "encrypted.pdf")
     print("fixtures written to", CASES)

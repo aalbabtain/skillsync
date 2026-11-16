@@ -29,7 +29,7 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (109 tests, no network, no key). The frontend check is
+Runs `pytest` in `api` (129 tests, no network, no key). The frontend check is
 `cd web; npm run build`.
 
 ## Run every CV case
@@ -44,8 +44,17 @@ verification, prints one line per case, and writes:
 - `reports/<case>.md` — one table per CV: skill, category, the CV line that proves it.
 - `reports/summary.json` — every case with counts, and the error code for failures.
 
-The cases are `arabic_cv`, `backend_cv`, `english_cv`, `graduate_cv` and `scanned`
-(a PDF with no text layer, expected to fail with `PDF_NO_TEXT_LAYER`).
+Every case is also checked against `api/tests/fixtures/cases/expected.json`, which says what
+each CV must and must not produce, and for some, the expected gap against sample postings.
+Each line ends in PASS or FAIL, and the script exits with 1 if any case fails. Run it with
+`--extractor gemini` to check the model's quality on the same CVs: traps such as "I want to
+learn Kubernetes" are only checked against the model.
+
+The 11 cases (all fictional) cover English, Arabic and mixed CVs, CVs printed by Chrome like
+browser and Google Docs exports, a two-page CV, a career changer, a CV with trap mentions, a
+scanned PDF (`PDF_NO_TEXT_LAYER`) and a password-protected PDF (`PDF_ENCRYPTED`). To add a
+case, drop a PDF in the folder and add its entry to `expected.json`; a test fails until both
+exist.
 
 By hand:
 

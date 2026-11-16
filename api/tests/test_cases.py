@@ -28,15 +28,9 @@ def test_reports_a_pdf_without_a_text_layer_as_failed():
 def test_runs_every_pdf_in_the_cases_directory():
     results = cases.run_all(FIXTURES, extractor="mock")
 
-    assert [result.name for result in results] == [
-        "arabic_cv",
-        "backend_cv",
-        "english_cv",
-        "graduate_cv",
-        "scanned",
-        "senior_arabic",
-    ]
-    assert [result.status for result in results].count(cases.FAILED) == 1
+    assert [result.name for result in results] == sorted(p.stem for p in FIXTURES.glob("*.pdf"))
+    failed = {result.name for result in results if result.status == cases.FAILED}
+    assert failed == {"encrypted", "scanned"}
 
 
 def test_markdown_report_lists_skills_with_evidence():
