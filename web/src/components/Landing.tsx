@@ -171,6 +171,8 @@ export default function Landing({ onStart, counterCode }: Props) {
             <p className="eyebrow rise">{t("eyebrow")}</p>
             <h1 id="hero-title" className="rise d1">
               {t("hero")}
+              <br />
+              <span className="hero-accent">{t("hero_accent")}</span>
             </h1>
           </div>
         </div>

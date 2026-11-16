@@ -28,7 +28,8 @@ const en = {
   source_code: "Source code",
 
   eyebrow: "Skills, checked against the market",
-  hero: "See which skills the jobs you want are asking for.",
+  hero: "Know your skills.",
+  hero_accent: "See what's missing.",
   lead:
     "Upload your CV and paste the job postings you are aiming for. SkillSync keeps only the skills your CV proves, finds what the postings ask for that you don't have yet, and builds a learning plan for the gap.",
   start: "Start with your CV",
@@ -224,7 +225,8 @@ const ar: Record<MessageKey, string> = {
   source_code: "الشيفرة المصدرية",
 
   eyebrow: "مهاراتك في ميزان سوق العمل",
-  hero: "اعرف المهارات التي تطلبها الوظائف التي تستهدفها.",
+  hero: "اعرف مهاراتك.",
+  hero_accent: "واعرف ما ينقصك.",
   lead:
     "ارفع سيرتك الذاتية والصق إعلانات الوظائف التي تستهدفها. يحتفظ SkillSync بالمهارات التي تثبتها سيرتك فقط، ويحدد ما تطلبه الإعلانات ولا تملكه بعد، ثم يبني لك خطة تعلّم لسد هذه الفجوة.",
   start: "ابدأ بسيرتك الذاتية",
