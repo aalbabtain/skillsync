@@ -1125,10 +1125,6 @@ a {
   border-inline-end: 1px solid var(--line);
 }
 
-.steps-grid li:first-of-type {
-  padding-inline-start: 0;
-}
-
 .steps-grid li:last-of-type {
   border-inline-end: 0;
   padding-inline-end: 0;
@@ -1778,7 +1774,8 @@ a {
 .steps-line {
   position: absolute;
   inset-block-start: calc(1.75rem + 20px);
-  inset-inline-start: 20px;
+  /* Every step has the same inner margin, so the icons sit one column apart. */
+  inset-inline-start: calc(1.5rem + 20px);
   /* Runs one column (25%) past the last icon, the same length as the gap between steps. */
   inset-inline-end: calc(-1.5rem - 20px);
   height: 2px;
