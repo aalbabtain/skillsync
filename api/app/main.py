@@ -110,13 +110,17 @@ def health() -> dict[str, str]:
 
 
 STATS_TTL_SECONDS = 300
+# A failed read is retried sooner, so a GoatCounter hiccup does not hide the count for long.
+STATS_RETRY_SECONDS = 60
 _stats_cache: dict = {"at": 0.0, "checked": None}
 
 
 def _read_goatcounter(code: str, path: str) -> int:
     """One count from GoatCounter's public counter (needs "Allow adding visitor counts")."""
     url = f"https://{code}.goatcounter.com/counter/{path}.json"
-    with urllib.request.urlopen(url, timeout=4) as response:
+    # A plain client name: some hosts turn away requests that do not say who is asking.
+    request = urllib.request.Request(url, headers={"User-Agent": "SkillSync/1.0", "Accept": "application/json"})
+    with urllib.request.urlopen(request, timeout=4) as response:
         body = json.loads(response.read().decode("utf-8"))
     return int("".join(ch for ch in str(body.get("count", "")) if ch.isdigit()))
 
@@ -129,12 +133,14 @@ def stats() -> dict[str, int | None]:
     if not code:
         return {"checked": None}
     now = time.monotonic()
-    if _stats_cache["at"] and now - _stats_cache["at"] < STATS_TTL_SECONDS:
+    ttl = STATS_TTL_SECONDS if _stats_cache["checked"] is not None else STATS_RETRY_SECONDS
+    if _stats_cache["at"] and now - _stats_cache["at"] < ttl:
         return {"checked": _stats_cache["checked"]}
     try:
         checked = _read_goatcounter(code, "step-skills")
-    except (OSError, ValueError):
-        # A 404 (nothing counted yet) or an outage; the landing then shows nothing.
+    except (OSError, ValueError) as error:
+        # The counter setting off, GoatCounter refusing or down; the landing then shows nothing.
+        logger.warning("GoatCounter count unavailable: %s", error)
         checked = None
     _stats_cache.update(at=now, checked=checked)
     return {"checked": checked}
