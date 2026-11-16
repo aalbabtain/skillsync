@@ -9,6 +9,7 @@ import LanguageMenu from "./components/LanguageMenu";
 import Logo from "./components/Logo";
 import PostingsPanel from "./components/PostingsPanel";
 import SkillsPanel from "./components/SkillsPanel";
+import type { Entry } from "./components/SkillsPanel";
 import Stepper from "./components/Stepper";
 import type { StepId } from "./components/Stepper";
 import UploadPanel from "./components/UploadPanel";
@@ -40,7 +41,8 @@ export default function App() {
   const { t } = useI18n();
   const [route, setRoute] = useState<Route>(readRoute);
   const [extraction, setExtraction] = useState<SkillsResult | null>(null);
-  const [skillsKey, setSkillsKey] = useState(0);
+  // One list for the skills page and the gap page, so a skill added on either shows on both.
+  const [entries, setEntries] = useState<Entry[]>([]);
   const [confirmed, setConfirmed] = useState<Skill[]>([]);
   const [extractor, setExtractor] = useState("");
   const demoMode = extractor === "mock";
@@ -171,7 +173,7 @@ export default function App() {
               <UploadPanel
                 onSkills={(result) => {
                   setExtraction(result);
-                  setSkillsKey((key) => key + 1);
+                  setEntries(result.skills.map((skill) => ({ ...skill, source: "verified" })));
                   setConfirmed([]);
                   setRequirements(null);
                   goTo("skills");
@@ -182,8 +184,8 @@ export default function App() {
             {extraction && (
               <section className="panel" aria-labelledby="skills-title" hidden={step !== "skills"}>
                 <SkillsPanel
-                  key={skillsKey}
-                  initial={extraction.skills}
+                  entries={entries}
+                  onEntriesChange={setEntries}
                   droppedCount={extraction.dropped_count}
                   onBack={() => goTo("cv")}
                   onConfirm={(skills) => {
@@ -219,6 +221,17 @@ export default function App() {
                   requirements={requirements}
                   postingTitles={postingTitles}
                   onBack={() => goTo("postings")}
+                  onClaim={(item) => {
+                    const added: Entry = { name: item.name, category: item.category, evidence: "", source: "user" };
+                    setEntries((current) => [...current, added]);
+                    setConfirmed((current) => [...current, { ...added, verified: false }]);
+                  }}
+                  onUnclaim={(name) => {
+                    const isHandAdded = (skill: { name: string; evidence: string }) =>
+                      skill.name === name && !skill.evidence;
+                    setEntries((current) => current.filter((entry) => !isHandAdded(entry)));
+                    setConfirmed((current) => current.filter((skill) => !isHandAdded(skill)));
+                  }}
                 />
               </section>
             )}

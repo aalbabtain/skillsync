@@ -1,8 +1,10 @@
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 
-import type { Skill } from "../api";
+import { getSkillCatalog } from "../api";
+import type { CatalogSkill, Skill, SkillCatalog } from "../api";
 import { useI18n } from "../i18n";
-import type { MessageKey } from "../i18n";
+import SkillPicker from "./SkillPicker";
 
 const CATEGORY_ORDER = [
   "Programming languages",
@@ -15,61 +17,85 @@ const CATEGORY_ORDER = [
   "Other",
 ];
 
-type Entry = Skill & { source: "verified" | "user" };
+const MAX_SUGGESTIONS = 8;
+
+export type Entry = Skill & { source: "verified" | "user" };
 
 type Props = {
-  initial: Skill[];
+  entries: Entry[];
+  onEntriesChange: (update: (current: Entry[]) => Entry[]) => void;
   droppedCount: number;
   onConfirm: (skills: Skill[]) => void;
   onBack: () => void;
 };
 
-function slug(name: string) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\u0600-\u06ff]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-// Postings name skills in English (Docker, PostgreSQL), so a hand-added skill must too,
-// or it could never match a requirement in the gap.
-const SKILL_CHARACTERS = /^[A-Za-z0-9 +#./&()'-]*$/;
-const MAX_SKILL_CHARS = 40;
-
-function skillNameProblem(name: string): MessageKey | null {
-  if (!SKILL_CHARACTERS.test(name) && /[^\x00-\x7F]/.test(name)) return "add_english_only";
-  if (!SKILL_CHARACTERS.test(name) || name.length > MAX_SKILL_CHARS) return "add_invalid";
-  if (name && !/[A-Za-z]/.test(name)) return "add_invalid";
-  return null;
-}
-
 function groupOf(entry: Entry) {
   return CATEGORY_ORDER.includes(entry.category) ? entry.category : "Other";
 }
 
-export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }: Props) {
+/** Skills often asked for alongside the ones already listed, most connected first. */
+function suggestionsFor(entries: Entry[], catalog: SkillCatalog | null): CatalogSkill[] {
+  if (!catalog) return [];
+  const taken = new Set(entries.map((entry) => entry.name.toLowerCase()));
+  const votes = new Map<string, number>();
+  for (const entry of entries) {
+    for (const related of catalog.related[entry.name] ?? []) {
+      if (!taken.has(related.toLowerCase())) votes.set(related, (votes.get(related) ?? 0) + 1);
+    }
+  }
+  const order = new Map(catalog.skills.map((skill, index) => [skill.name, index]));
+  return [...votes.entries()]
+    .sort((a, b) => b[1] - a[1] || (order.get(a[0]) ?? 0) - (order.get(b[0]) ?? 0))
+    .slice(0, MAX_SUGGESTIONS)
+    .map(([name]) => catalog.skills.find((skill) => skill.name === name))
+    .filter((skill): skill is CatalogSkill => Boolean(skill));
+}
+
+export default function SkillsPanel({
+  entries,
+  onEntriesChange,
+  droppedCount,
+  onConfirm,
+  onBack,
+}: Props) {
   const { t, category } = useI18n();
-  const [entries, setEntries] = useState<Entry[]>(() =>
-    initial.map((skill) => ({ ...skill, source: "verified" })),
-  );
-  const [draft, setDraft] = useState("");
-  const [error, setError] = useState("");
+  const [catalog, setCatalog] = useState<SkillCatalog | null>(null);
+  const [catalogFailed, setCatalogFailed] = useState(false);
   const [leaving, setLeaving] = useState<Set<string>>(() => new Set());
   const order = new Map(entries.map((entry, index) => [entry.name, index]));
 
+  const loadCatalog = useCallback(() => {
+    setCatalogFailed(false);
+    getSkillCatalog()
+      .then(setCatalog)
+      .catch(() => setCatalogFailed(true));
+  }, []);
+
+  useEffect(loadCatalog, [loadCatalog]);
+
   const verified = entries.filter((entry) => entry.source === "verified").length;
   const selfReported = entries.length - verified;
+  const taken = useMemo(() => new Set(entries.map((entry) => entry.name.toLowerCase())), [entries]);
+  const suggestions = useMemo(() => suggestionsFor(entries, catalog), [entries, catalog]);
 
   const groups = CATEGORY_ORDER.map((category) => ({
     category,
     skills: entries.filter((entry) => groupOf(entry) === category),
   })).filter((group) => group.skills.length > 0);
 
+  function add(skill: CatalogSkill) {
+    onEntriesChange((current) =>
+      current.some((entry) => entry.name.toLowerCase() === skill.name.toLowerCase())
+        ? current
+        : [...current, { name: skill.name, category: skill.category, evidence: "", source: "user" }],
+    );
+  }
+
   function remove(name: string) {
     // Let the chip shrink away before it leaves the list.
     setLeaving((current) => new Set(current).add(name));
     window.setTimeout(() => {
-      setEntries((current) => current.filter((entry) => entry.name !== name));
+      onEntriesChange((current) => current.filter((entry) => entry.name !== name));
       setLeaving((current) => {
         const next = new Set(current);
         next.delete(name);
@@ -78,42 +104,12 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
     }, 180);
   }
 
-  function add(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const name = draft.trim();
-
-    if (!name) {
-      setError(t("add_empty"));
-      return;
-    }
-
-    const problem = skillNameProblem(name);
-    if (problem) {
-      setError(t(problem));
-      return;
-    }
-
-    if (entries.some((entry) => entry.name.toLowerCase() === name.toLowerCase())) {
-      setError(t("add_dup", { name }));
-      return;
-    }
-
-    setEntries((current) => [
-      ...current,
-      { name, category: "Other", evidence: "", source: "user" },
-    ]);
-    setDraft("");
-    setError("");
-  }
-
   return (
     <div className="skills">
       <div className="skills-head">
         <div>
           <h2 id="skills-title">{t("skills_h")}</h2>
-          <p className="skills-count">
-            {t("skills_count", { verified, self: selfReported })}
-          </p>
+          <p className="skills-count">{t("skills_count", { verified, self: selfReported })}</p>
         </div>
         <button className="btn btn-ghost" onClick={onBack}>
           {t("back")}
@@ -121,15 +117,11 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
       </div>
 
       {droppedCount > 0 && (
-        <p className="skills-note">
-          {t("skills_dropped", { n: droppedCount })}
-        </p>
+        <p className="skills-note">{t("skills_dropped", { n: droppedCount })}</p>
       )}
 
       {entries.length === 0 ? (
-        <p className="skills-empty">
-          {t("skills_empty")}
-        </p>
+        <p className="skills-empty">{t("skills_empty")}</p>
       ) : (
         <div className="skills-groups">
           {groups.map((group) => (
@@ -186,40 +178,35 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
         </div>
       )}
 
-      <form className="add-skill" onSubmit={add}>
-        <label htmlFor="add-skill">{t("add_label")}</label>
-        <p className="add-skill-hint" id="add-skill-hint">
-          {t("add_hint")}
-        </p>
-        <div className="add-skill-row">
-          <input
-            id="add-skill"
-            value={draft}
-            onChange={(event) => {
-              const value = event.target.value;
-              setDraft(value);
-              // Say so as soon as a non-English letter is typed, not only on Add.
-              const problem = skillNameProblem(value.trim());
-              setError(problem === "add_english_only" ? t(problem) : "");
-            }}
-            placeholder={t("add_placeholder")}
-            dir="ltr"
-            lang="en"
-            maxLength={MAX_SKILL_CHARS + 10}
-            autoComplete="off"
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? "add-skill-hint add-skill-error" : "add-skill-hint"}
-          />
-          <button className="btn btn-ghost" type="submit">
-            {t("add_btn")}
-          </button>
-        </div>
-        {error && (
-          <p className="upload-error" id="add-skill-error" role="alert">
-            {error}
-          </p>
-        )}
-      </form>
+      <SkillPicker
+        catalog={catalog?.skills ?? null}
+        failed={catalogFailed}
+        onRetry={loadCatalog}
+        taken={taken}
+        onPick={add}
+      />
+
+      {suggestions.length > 0 && (
+        <section className="suggest" aria-labelledby="suggest-title">
+          <h3 id="suggest-title">{t("suggest_h")}</h3>
+          <p>{t("suggest_lead")}</p>
+          <ul className="suggest-list">
+            {suggestions.map((skill) => (
+              <li key={skill.name}>
+                <button
+                  type="button"
+                  className="suggest-chip"
+                  onClick={() => add(skill)}
+                  aria-label={t("suggest_add", { name: skill.name })}
+                >
+                  <span dir="ltr">{skill.name}</span>
+                  <Plus size={14} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="skills-actions">
         <button
@@ -230,11 +217,11 @@ export default function SkillsPanel({ initial, droppedCount, onConfirm, onBack }
               entries
                 .filter((entry) => !leaving.has(entry.name))
                 .map(({ name, category, evidence, source }) => ({
-                name,
-                category,
-                evidence,
-                verified: source === "verified",
-              })),
+                  name,
+                  category,
+                  evidence,
+                  verified: source === "verified",
+                })),
             )
           }
         >

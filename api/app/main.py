@@ -16,6 +16,7 @@ from app.config import get_settings
 from app.frontend import register_frontend
 from app.gap import evaluate_gap
 from app.rate_limit import RateLimiter, client_address
+from app.skills_catalog import CATALOG, RELATED
 from app.parsers import extract_document
 from app.parsers.pdf import PdfExtractionError
 from app.verification import aggregate, verify_requirements, verify_skills
@@ -124,6 +125,26 @@ async def create_run(file: UploadFile = File(...)):
         "characters": document.characters,
         "text": document.text,
     }
+
+
+# Built once: the picker and suggestions on the skills page read this list.
+SKILL_CATALOG = {
+    "skills": [
+        {
+            "name": name,
+            "category": category,
+            # The picker takes English names only, so Arabic spellings stay server-side.
+            "aliases": [alias for alias in aliases if alias.isascii()],
+        }
+        for name, category, aliases in CATALOG
+    ],
+    "related": {skill: list(related) for skill, related in RELATED.items()},
+}
+
+
+@app.get("/api/skills/catalog")
+def skill_catalog():
+    return JSONResponse(SKILL_CATALOG, headers={"Cache-Control": "public, max-age=3600"})
 
 
 class SkillsRequest(BaseModel):

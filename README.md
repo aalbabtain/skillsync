@@ -52,6 +52,7 @@ skillsync/
       agents/               cv_skills.py (Agent 1), requirements.py (Agent 2), mock_extractor.py
       gap.py                Agent 3, plain code
       verification.py       quote checks, name normalization, counting
+      skills_catalog.py     every known skill, its category and spellings, and related skills
       parsers/              file type detection, PDF (both Arabic layouts) and Word .docx
       prompts/              one system prompt per agent
       frontend.py           serves the built web app in production
@@ -133,6 +134,7 @@ Every error uses `{"detail": {"code", "message"}}`, and the site shows each code
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET` | `/api/health` | Status, model and whether demo mode is on |
+| `GET` | `/api/skills/catalog` | Every skill the picker offers, with its category, and related skills for suggestions |
 | `POST` | `/api/runs` | Upload a CV (PDF or Word .docx) and get its text |
 | `POST` | `/api/skills/extract` | Agent 1: skills from CV text, each verified against a quote |
 | `POST` | `/api/requirements/extract` | Agent 2: skills the pasted postings ask for, counted |
@@ -164,6 +166,12 @@ ranks by frequency, then required before preferred. Returns `{"postings_count", 
 `REQUIREMENTS_MALFORMED`, `REQUIREMENTS_UNAVAILABLE`, `REQUIREMENTS_BUSY`, `REQUIREMENTS_QUOTA_EXCEEDED`, `RATE_LIMITED`.
 Prompt: `api/app/prompts/requirements_extractor.md`.
 
+**`GET /api/skills/catalog`** returns the 129 skills in `api/app/skills_catalog.py`, each with its
+category and English spellings, and a map of related skills. The skills page uses it for a
+LinkedIn-style picker (people pick from the list, so a hand-added skill always uses the name
+postings use, in the right category) and for "Suggested for you". Demo mode matches the same
+list against CV and posting text.
+
 **`POST /api/gap`** takes `{"skills": [{"name", "category", "evidence", "verified"}],
 "requirements": [...], "postings_count"}` and returns `have`, `needs_proof` and `missing` with a
 summary of required and preferred skills proven. No model; the same input always gives the same
@@ -186,7 +194,7 @@ cd api
 python -m pytest
 ```
 
-162 tests, no network and no key: demo mode stands in for the model.
+168 tests, no network and no key: demo mode stands in for the model.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career

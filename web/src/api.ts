@@ -171,3 +171,32 @@ export async function evaluateGap(
 
   return payload as GapResult;
 }
+
+export type CatalogSkill = {
+  name: string;
+  category: string;
+  aliases: string[];
+};
+
+export type SkillCatalog = {
+  skills: CatalogSkill[];
+  related: Record<string, string[]>;
+};
+
+let catalogRequest: Promise<SkillCatalog> | null = null;
+
+/** The list the skill picker offers. Fetched once per visit; a failed fetch can be retried. */
+export function getSkillCatalog(): Promise<SkillCatalog> {
+  if (!catalogRequest) {
+    catalogRequest = fetch("/api/skills/catalog")
+      .then((response) => {
+        if (!response.ok) throw new ApiRequestError("UNKNOWN", "The skill list could not be loaded.");
+        return response.json() as Promise<SkillCatalog>;
+      })
+      .catch((error) => {
+        catalogRequest = null;
+        throw error;
+      });
+  }
+  return catalogRequest;
+}

@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ApiRequestError, evaluateGap } from "../api";
@@ -11,6 +12,9 @@ type Props = {
   requirements: RequirementsResult;
   postingTitles: string[];
   onBack: () => void;
+  /** "I have this skill" on a missing skill: adds it by hand, so it moves to needs proof. */
+  onClaim: (item: GapItem) => void;
+  onUnclaim: (name: string) => void;
 };
 
 type Group = {
@@ -20,7 +24,14 @@ type Group = {
   items: GapItem[];
 };
 
-export default function GapPanel({ skills, requirements, postingTitles, onBack }: Props) {
+export default function GapPanel({
+  skills,
+  requirements,
+  postingTitles,
+  onBack,
+  onClaim,
+  onUnclaim,
+}: Props) {
   const { t, category, errorMessage } = useI18n();
   const [result, setResult] = useState<GapResult | null>(null);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
@@ -127,6 +138,7 @@ export default function GapPanel({ skills, requirements, postingTitles, onBack }
                   {t(group.title)} <span className="gap-count">{group.items.length}</span>
                 </h3>
                 <p>{t(group.description)}</p>
+                {group.id === "needs_proof" && <p>{t("gap_added_note")}</p>}
               </div>
 
               {group.items.length === 0 ? (
@@ -145,6 +157,7 @@ export default function GapPanel({ skills, requirements, postingTitles, onBack }
                       <span className={`req-level req-level-${item.level}`}>
                         {item.level === "required" ? t("level_required") : t("level_preferred")}
                       </span>
+                      <div className="req-foot">
                       <details className="req-quotes">
                         <summary>{t("show_evidence")}</summary>
                         <ul>
@@ -168,6 +181,27 @@ export default function GapPanel({ skills, requirements, postingTitles, onBack }
                           ))}
                         </ul>
                       </details>
+                      {group.id === "missing" && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm gap-action"
+                          onClick={() => onClaim(item)}
+                          aria-label={t("claim_btn_for", { name: item.name })}
+                        >
+                          <Plus size={14} aria-hidden="true" /> {t("claim_btn")}
+                        </button>
+                      )}
+                      {group.id === "needs_proof" && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm gap-action"
+                          onClick={() => onUnclaim(item.name)}
+                          aria-label={t("remove_skill", { name: item.name })}
+                        >
+                          {t("claim_remove")}
+                        </button>
+                      )}
+                      </div>
                     </li>
                   ))}
                 </ul>
