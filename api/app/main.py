@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -126,22 +127,34 @@ def _get_json(url: str, token: str = ""):
         return json.loads(response.read().decode("utf-8"))
 
 
+def _error_body(error: Exception) -> str:
+    """The start of an HTTP error's reply, where GoatCounter says what it did not accept."""
+    if isinstance(error, urllib.error.HTTPError):
+        try:
+            return error.read(300).decode("utf-8", "replace")
+        except OSError:
+            return ""
+    return ""
+
+
 def _read_goatcounter(code: str, path: str) -> int:
     """One count from GoatCounter: the dashboard's numbers through the API when a key is set,
     else the public counter (needs "Allow adding visitor counts on your website")."""
     token = settings.goatcounter_api_key.strip()
     if token:
-        query = urllib.parse.urlencode({"start": "2020-01-01T00:00:00Z", "filter": path, "limit": 100})
+        end = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        query = urllib.parse.urlencode({"start": "2020-01-01T00:00:00Z", "end": end, "filter": path})
         try:
             body = _get_json(f"https://{code}.goatcounter.com/api/v0/stats/hits?{query}", token)
             return sum(int(hit.get("count") or 0) for hit in body.get("hits", []) if hit.get("path") == path)
         except (OSError, ValueError) as error:
-            # Never the key: only which address failed and how.
-            logger.warning("GoatCounter API /api/v0/stats/hits failed: %s; using the public counter", error)
+            # Never the key: only which address failed, how, and GoatCounter's own reason.
+            reason = _error_body(error)
+            logger.warning("GoatCounter API /api/v0/stats/hits failed: %s %s; using the public counter", error, reason)
     try:
         body = _get_json(f"https://{code}.goatcounter.com/counter/{path}.json")
     except (OSError, ValueError) as error:
-        raise OSError(f"public counter /counter/{path}.json: {error}") from error
+        raise OSError(f"public counter /counter/{path}.json: {error} {_error_body(error)}") from error
     return int("".join(ch for ch in str(body.get("count", "")) if ch.isdigit()))
 
 

@@ -128,3 +128,21 @@ def test_a_failing_api_falls_back_to_the_public_counter(monkeypatch):
 
     assert main._read_goatcounter("skillsync", "step-skills") == 3
     assert seen[-1] == "https://skillsync.goatcounter.com/counter/step-skills.json"
+
+
+def test_goatcounters_reason_is_logged_without_the_key(monkeypatch, caplog):
+    import io
+    import urllib.error
+
+    monkeypatch.setattr(main.settings, "goatcounter_api_key", "secret-key")
+
+    def urlopen(request, timeout):
+        if "/api/v0/" in request.full_url:
+            raise urllib.error.HTTPError(request.full_url, 400, "Bad Request", {}, io.BytesIO(b'{"error":"start: invalid"}'))
+        return FakeResponse({"count": "2"})
+
+    monkeypatch.setattr(main.urllib.request, "urlopen", urlopen)
+
+    assert main._read_goatcounter("skillsync", "step-skills") == 2
+    assert 'start: invalid' in caplog.text
+    assert "secret-key" not in caplog.text
