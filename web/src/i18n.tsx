@@ -4,8 +4,7 @@ import type { ReactNode } from "react";
 export type Lang = "en" | "ar";
 
 const en = {
-  lang_switch: "العربية",
-  lang_switch_label: "Switch to Arabic",
+  lang_menu_label: "Language",
   home_label: "SkillSync, back to the home page",
   demo_title: "Demo mode.",
   demo_body:
@@ -172,8 +171,7 @@ const en = {
 export type MessageKey = keyof typeof en;
 
 const ar: Record<MessageKey, string> = {
-  lang_switch: "English",
-  lang_switch_label: "التبديل إلى الإنجليزية",
+  lang_menu_label: "اللغة",
   home_label: "SkillSync، العودة إلى الصفحة الرئيسية",
   demo_title: "الوضع التجريبي.",
   demo_body: "لم يُضبط مفتاح Gemini، لذلك تُطابَق المهارات من قائمة مدمجة بدلًا من النموذج.",

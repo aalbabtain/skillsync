@@ -4,6 +4,7 @@ import { getHealth } from "./api";
 import type { RequirementsResult, Skill, SkillsResult } from "./api";
 import GapPanel from "./components/GapPanel";
 import Landing from "./components/Landing";
+import LanguageMenu from "./components/LanguageMenu";
 import Logo from "./components/Logo";
 import PostingsPanel from "./components/PostingsPanel";
 import SkillsPanel from "./components/SkillsPanel";
@@ -35,7 +36,7 @@ function navigate(hash: string) {
 }
 
 export default function App() {
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
   const [route, setRoute] = useState<Route>(readRoute);
   const [extraction, setExtraction] = useState<SkillsResult | null>(null);
   const [skillsKey, setSkillsKey] = useState(0);
@@ -123,14 +124,7 @@ export default function App() {
                 </a>
               </>
             )}
-            <button
-              className="lang-btn"
-              onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-              aria-label={t("lang_switch_label")}
-              lang={lang === "ar" ? "en" : "ar"}
-            >
-              {t("lang_switch")}
-            </button>
+            <LanguageMenu />
           </nav>
         </div>
       </header>
