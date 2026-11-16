@@ -1,3 +1,4 @@
+import { CircleHelp, Users, Workflow } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { getHealth } from "./api";
@@ -117,10 +118,16 @@ export default function App() {
             {view === "landing" && (
               <>
                 <a className="head-link" href="#how">
+                  <Workflow size={16} aria-hidden="true" />
                   {t("nav_how")}
                 </a>
                 <a className="head-link" href="#who">
+                  <Users size={16} aria-hidden="true" />
                   {t("nav_who")}
+                </a>
+                <a className="head-link" href="#faq">
+                  <CircleHelp size={16} aria-hidden="true" />
+                  {t("nav_faq")}
                 </a>
               </>
             )}
