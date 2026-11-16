@@ -6,6 +6,7 @@ import {
   CircleX,
   ClipboardList,
   FileCheck2,
+  FileUp,
   GitCompareArrows,
   GraduationCap,
   Lock,
@@ -29,11 +30,13 @@ type Props = {
 
 type Card = { icon: LucideIcon; title: MessageKey; body: MessageKey };
 
-const STEPS: Card[] = [
-  { icon: FileCheck2, title: "s1_h", body: "s1" },
-  { icon: ClipboardList, title: "s2_h", body: "s2" },
-  { icon: GitCompareArrows, title: "s3_h", body: "s3" },
-  { icon: Route, title: "s4_h", body: "s4" },
+// The same five steps as the service's step bar, with the same names.
+const STEPS: (Card & { soon?: boolean })[] = [
+  { icon: FileUp, title: "st_cv", body: "s0" },
+  { icon: FileCheck2, title: "st_skills", body: "s1" },
+  { icon: ClipboardList, title: "st_postings", body: "s2" },
+  { icon: GitCompareArrows, title: "st_gap", body: "s3" },
+  { icon: Route, title: "st_plan", body: "s4", soon: true },
 ];
 
 const TRUST: Card[] = [
@@ -154,7 +157,7 @@ export default function Landing({ onStart }: Props) {
             style={{ "--progress": progress } as CSSProperties}
           >
             <span className="steps-line" aria-hidden="true" />
-            {STEPS.map(({ icon: Icon, title, body }, index) => (
+            {STEPS.map(({ icon: Icon, title, body, soon }, index) => (
               <li
                 key={title}
                 className={progress >= index / (STEPS.length - 1) - 0.02 ? "is-reached" : ""}
@@ -163,7 +166,10 @@ export default function Landing({ onStart }: Props) {
                   <Icon size={20} />
                 </span>
                 <span className="step-n">{t("step_n", { n: index + 1 })}</span>
-                <h3>{t(title)}</h3>
+                <h3>
+                  {t(title)}
+                  {soon && <span className="stepper-soon">{t("st_soon")}</span>}
+                </h3>
                 <p>{t(body)}</p>
               </li>
             ))}

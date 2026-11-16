@@ -1110,8 +1110,9 @@ a {
 }
 
 .steps-grid {
+  --step-pad: 1.25rem;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1121,8 +1122,16 @@ a {
   display: grid;
   align-content: start;
   gap: 0.35rem;
-  padding: 1.75rem 1.5rem;
+  padding: 1.75rem var(--step-pad);
   border-inline-end: 1px solid var(--line);
+}
+
+.steps-grid h3 .stepper-soon {
+  margin-inline-start: 0.4rem;
+  vertical-align: middle;
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: var(--muted);
 }
 
 .steps-grid li:last-of-type {
@@ -1294,28 +1303,26 @@ a {
   }
 
   .steps-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: 0.5rem;
   }
 
-  .steps-grid li,
-  .steps-grid li:first-of-type,
-  .steps-grid li:last-of-type {
-    padding: 1.4rem 0;
+  .steps-grid li {
+    position: relative;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: 1rem;
+    row-gap: 0.25rem;
+    padding: 1rem 0;
     border-inline-end: 0;
-    border-bottom: 1px solid var(--line);
   }
 
-  .steps-grid li:nth-of-type(odd) {
-    padding-inline-end: 1.25rem;
-    border-inline-end: 1px solid var(--line);
+  .steps-grid li > :not(.icon-tile) {
+    grid-column: 2;
   }
 
-  .steps-grid li:nth-of-type(even) {
-    padding-inline-start: 1.25rem;
-  }
-
-  .steps-grid li:nth-last-of-type(-n + 2) {
-    border-bottom: 0;
+  .steps-grid li .icon-tile {
+    grid-row: 1 / span 3;
+    margin: 0;
   }
 
   .card-grid {
@@ -1332,21 +1339,6 @@ a {
     display: none;
   }
 
-  .steps-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .steps-grid li,
-  .steps-grid li:nth-of-type(odd),
-  .steps-grid li:nth-of-type(even) {
-    padding-inline: 0;
-    border-inline-end: 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .steps-grid li:last-of-type {
-    border-bottom: 0;
-  }
 
   .hero-cta .btn,
   .closing .btn {
@@ -1766,7 +1758,7 @@ a {
   transform: translateY(18px);
 }
 
-/* 4. A line joins the four steps and fills as the strip scrolls through. */
+/* 4. A line joins the five steps and fills as the strip scrolls through. */
 .steps-grid {
   position: relative;
 }
@@ -1774,10 +1766,10 @@ a {
 .steps-line {
   position: absolute;
   inset-block-start: calc(1.75rem + 20px);
-  /* Every step has the same inner margin, so the icons sit one column apart. */
-  inset-inline-start: calc(1.5rem + 20px);
-  /* Runs one column (25%) past the last icon, the same length as the gap between steps. */
-  inset-inline-end: calc(-1.5rem - 20px);
+  /* From the centre of the first icon to the centre of the last: icons sit one column
+     (20%) apart, so steps 2 to 4 fall evenly along it. */
+  inset-inline-start: calc(var(--step-pad) + 20px);
+  inset-inline-end: calc(20% - var(--step-pad) - 20px);
   height: 2px;
   background: var(--line2);
   border-radius: 2px;
@@ -1810,6 +1802,22 @@ a {
 @media (max-width: 860px) {
   .steps-line {
     display: none;
+  }
+
+  /* Each step draws the segment down to the next icon's centre. */
+  .steps-grid li:not(:last-of-type)::before {
+    content: "";
+    position: absolute;
+    inset-block-start: calc(1rem + 20px);
+    inset-block-end: calc(-1rem - 20px);
+    inset-inline-start: 19px;
+    width: 2px;
+    background: var(--line2);
+    transition: background 0.3s ease;
+  }
+
+  .steps-grid li.is-reached:has(+ li.is-reached)::before {
+    background: var(--accent);
   }
 }
 
