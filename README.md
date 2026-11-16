@@ -125,6 +125,7 @@ Copy `.env.example` to `api/.env`. On Render, set them under the service's **Env
 | `GEMINI_FALLBACK_MODEL` | Optional models, comma-separated, tried in order when the main one stays busy or its daily quota is used up. On the free tier each model has its own quota. |
 | `SKILLSYNC_EXTRACTOR` | `mock` or `gemini` to force one. Empty picks Gemini when a key is set. |
 | `SKILLSYNC_RATE_LIMIT` | Model requests per visitor address per hour (default 20; a CV counts 1, each posting 1). `0` turns it off. |
+| `GOATCOUNTER_API_KEY` | Optional, secret: a GoatCounter API key with read access. The landing then shows the dashboard's count; without it, the public counter, which can lag. |
 | `SKILLSYNC_STATIC_DIR` | Folder with the built web app; set in the Docker image. |
 | `GOATCOUNTER_CODE` | Optional GoatCounter site code (the name before `.goatcounter.com`). Counts visits and the steps reached (start, skills, postings, gap) anonymously, without cookies or any CV text. With **Allow adding visitor counts on your website** on in the GoatCounter settings, the landing shows how many CVs were checked, starting from 0. Empty turns counting off. |
 
@@ -198,7 +199,7 @@ cd api
 python -m pytest
 ```
 
-181 tests, no network and no key: demo mode stands in for the model.
+184 tests, no network and no key: demo mode stands in for the model.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career

@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import time
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from uuid import uuid4
@@ -115,13 +116,25 @@ STATS_RETRY_SECONDS = 60
 _stats_cache: dict = {"at": 0.0, "checked": None}
 
 
-def _read_goatcounter(code: str, path: str) -> int:
-    """One count from GoatCounter's public counter (needs "Allow adding visitor counts")."""
-    url = f"https://{code}.goatcounter.com/counter/{path}.json"
+def _get_json(url: str, token: str = ""):
     # A plain client name: some hosts turn away requests that do not say who is asking.
-    request = urllib.request.Request(url, headers={"User-Agent": "SkillSync/1.0", "Accept": "application/json"})
+    headers = {"User-Agent": "SkillSync/1.0", "Accept": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(request, timeout=4) as response:
-        body = json.loads(response.read().decode("utf-8"))
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _read_goatcounter(code: str, path: str) -> int:
+    """One count from GoatCounter: the dashboard's numbers through the API when a key is set,
+    else the public counter (needs "Allow adding visitor counts on your website")."""
+    token = settings.goatcounter_api_key.strip()
+    if token:
+        query = urllib.parse.urlencode({"start": "2020-01-01", "filter": path, "limit": 100})
+        body = _get_json(f"https://{code}.goatcounter.com/api/v0/stats/hits?{query}", token)
+        return sum(int(hit.get("count") or 0) for hit in body.get("hits", []) if hit.get("path") == path)
+    body = _get_json(f"https://{code}.goatcounter.com/counter/{path}.json")
     return int("".join(ch for ch in str(body.get("count", "")) if ch.isdigit()))
 
 

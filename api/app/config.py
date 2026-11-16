@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     skillsync_rate_limit: int = 20
     # GoatCounter site code for anonymous visit counts; empty turns counting off.
     goatcounter_code: str = ""
+    # Optional GoatCounter API key with read access: the landing then shows the dashboard's own
+    # count instead of the public counter's, which can lag behind it.
+    goatcounter_api_key: str = ""
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 
