@@ -31,22 +31,20 @@ export function track(step: "start" | "skills" | "postings" | "gap") {
   counter.count({ path: `step-${step}`, title: `Step: ${step}`, event: true });
 }
 
-/** Shown from this many. Raise it if a small number looks weak on the landing. */
-export const MIN_SHOWN = 1;
-
 /**
- * Visits to the whole site, from GoatCounter's public counter (the TOTAL path). Needs "Allow
- * adding visitor counts on your website" in the GoatCounter settings; null when off,
- * unreachable or still zero.
+ * How many visits reached a step, from GoatCounter's public counter. Zero is a real answer and
+ * is shown; null means the counter is off ("Allow adding visitor counts on your website" in the
+ * GoatCounter settings) or unreachable, and the landing then shows nothing.
  */
-export async function fetchVisits(code: string): Promise<number | null> {
+export async function fetchStepCount(code: string, step: "skills"): Promise<number | null> {
   if (!code) return null;
   try {
-    const response = await fetch(`https://${code}.goatcounter.com/counter/TOTAL.json`);
+    const response = await fetch(`https://${code}.goatcounter.com/counter/step-${step}.json`);
     if (!response.ok) return null;
     const body = (await response.json()) as { count?: string };
-    const value = Number(String(body.count ?? "").replace(/[^0-9]/g, ""));
-    return Number.isFinite(value) && value > 0 ? value : null;
+    const digits = String(body.count ?? "").replace(/[^0-9]/g, "");
+    if (!digits) return null;
+    return Number(digits);
   } catch {
     return null;
   }

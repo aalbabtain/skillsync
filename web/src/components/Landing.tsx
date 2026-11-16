@@ -16,7 +16,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { fetchVisits, MIN_SHOWN } from "../analytics";
+import { fetchStepCount } from "../analytics";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { useCountUp, useReducedMotion } from "../motion";
@@ -25,7 +25,7 @@ import Logo from "./Logo";
 
 type Props = {
   onStart: () => void;
-  /** GoatCounter site code; when set, the hero shows how many visits the site has had. */
+  /** GoatCounter site code; when set, the hero shows how many CVs were checked. */
   counterCode: string;
 };
 
@@ -104,13 +104,13 @@ export default function Landing({ onStart, counterCode }: Props) {
   playingRef.current = playing;
   const [fieldReady, setFieldReady] = useState(false);
   const cvWord = t("particles_cv");
-  const [visits, setVisits] = useState<number | null>(null);
-  const shownVisits = useCountUp(visits ?? 0, !playing);
+  const [checked, setChecked] = useState<number | null>(null);
+  const shownChecked = useCountUp(checked ?? 0, !playing);
 
   useEffect(() => {
     let active = true;
-    fetchVisits(counterCode).then((count) => {
-      if (active) setVisits(count !== null && count >= MIN_SHOWN ? count : null);
+    fetchStepCount(counterCode, "skills").then((count) => {
+      if (active) setChecked(count);
     });
     return () => {
       active = false;
@@ -189,13 +189,13 @@ export default function Landing({ onStart, counterCode }: Props) {
               {t("see_how")}
             </a>
           </div>
-          {visits !== null && (
+          {checked !== null && (
             <p className="hero-stat rise d2">
               <span className="hero-stat-dot" aria-hidden="true" />
               <span className="hero-stat-n" dir="ltr">
-                {shownVisits.toLocaleString("en-US")}
+                {shownChecked.toLocaleString("en-US")}
               </span>
-              <span className="hero-stat-label">{t(visits === 1 ? "stat_visits_one" : "stat_visits")}</span>
+              <span className="hero-stat-label">{t(checked === 1 ? "stat_checked_one" : "stat_checked")}</span>
             </p>
           )}
         </div>

@@ -126,7 +126,7 @@ Copy `.env.example` to `api/.env`. On Render, set them under the service's **Env
 | `SKILLSYNC_EXTRACTOR` | `mock` or `gemini` to force one. Empty picks Gemini when a key is set. |
 | `SKILLSYNC_RATE_LIMIT` | Model requests per visitor address per hour (default 20; a CV counts 1, each posting 1). `0` turns it off. |
 | `SKILLSYNC_STATIC_DIR` | Folder with the built web app; set in the Docker image. |
-| `GOATCOUNTER_CODE` | Optional GoatCounter site code (the name before `.goatcounter.com`). Counts visits and the steps reached (start, skills, postings, gap) anonymously, without cookies or any CV text. With **Allow adding visitor counts on your website** on in the GoatCounter settings, the landing shows the number of visits. Empty turns counting off. |
+| `GOATCOUNTER_CODE` | Optional GoatCounter site code (the name before `.goatcounter.com`). Counts visits and the steps reached (start, skills, postings, gap) anonymously, without cookies or any CV text. With **Allow adding visitor counts on your website** on in the GoatCounter settings, the landing shows how many CVs were checked, starting from 0. Empty turns counting off. |
 
 ## API
 
