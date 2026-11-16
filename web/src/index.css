@@ -1704,8 +1704,47 @@ a {
   margin-top: 1.5rem;
 }
 
-.btn-lg {
-  padding: 0.9rem 1.4rem;
+/* How many CVs were checked, from GoatCounter; a soft pulse marks it as live. */
+.hero-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+  color: var(--muted);
+}
+
+.hero-stat-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--ok);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(127, 209, 168, 0.5);
+  animation: stat-pulse 2.4s ease-out infinite;
+}
+
+.hero-stat-n {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+@keyframes stat-pulse {
+  70% {
+    box-shadow: 0 0 0 10px rgba(127, 209, 168, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(127, 209, 168, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-stat-dot {
+    animation: none;
+  }
 }
 
 /* Headings rise in once their chapter is reached. Hidden only while motion plays and the

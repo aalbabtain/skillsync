@@ -16,14 +16,17 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { fetchStepCount, MIN_SHOWN } from "../analytics";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
-import { useReducedMotion } from "../motion";
+import { useCountUp, useReducedMotion } from "../motion";
 import { startChapterSnap } from "../chapters";
 import Logo from "./Logo";
 
 type Props = {
   onStart: () => void;
+  /** GoatCounter site code; when set, the hero shows how many CVs were checked. */
+  counterCode: string;
 };
 
 type Card = { icon: LucideIcon; title: MessageKey; body: MessageKey };
@@ -92,7 +95,7 @@ function useMotionChoice() {
   return { playing, toggle };
 }
 
-export default function Landing({ onStart }: Props) {
+export default function Landing({ onStart, counterCode }: Props) {
   const { t, lang } = useI18n();
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -101,6 +104,18 @@ export default function Landing({ onStart }: Props) {
   playingRef.current = playing;
   const [fieldReady, setFieldReady] = useState(false);
   const cvWord = t("particles_cv");
+  const [checked, setChecked] = useState<number | null>(null);
+  const shownChecked = useCountUp(checked ?? 0, !playing);
+
+  useEffect(() => {
+    let active = true;
+    fetchStepCount(counterCode, "skills").then((count) => {
+      if (active) setChecked(count !== null && count >= MIN_SHOWN ? count : null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [counterCode]);
 
   useEffect(() => {
     const container = root.current;
@@ -172,6 +187,15 @@ export default function Landing({ onStart }: Props) {
               {t("see_how")}
             </a>
           </div>
+          {checked !== null && (
+            <p className="hero-stat rise d2">
+              <span className="hero-stat-dot" aria-hidden="true" />
+              <span className="hero-stat-n" dir="ltr">
+                {shownChecked.toLocaleString("en-US")}
+              </span>
+              <span className="hero-stat-label">{t("stat_checked")}</span>
+            </p>
+          )}
         </div>
       </section>
 
