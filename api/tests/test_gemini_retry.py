@@ -75,12 +75,23 @@ def test_reports_busy_after_the_last_attempt(monkeypatch):
     assert len(calls) == 3
 
 
-def test_moves_to_the_fallback_model(monkeypatch):
+def test_a_busy_model_moves_to_the_fallback_at_once(monkeypatch, no_waiting):
+    # Another model is usually free, so waiting on a busy one only costs the visitor time.
     calls = []
-    use(monkeypatch, cv_skills, WithFallback, [ServerError(503)] * 3 + [ok()], calls)
+    use(monkeypatch, cv_skills, WithFallback, [ServerError(503), ok()], calls)
 
     assert cv_skills.extract(CV) == []
-    assert calls == ["main-model"] * 3 + ["spare-model"]
+    assert calls == ["main-model", "spare-model"]
+    assert no_waiting == []
+
+
+def test_the_last_model_is_retried_when_busy(monkeypatch, no_waiting):
+    calls = []
+    use(monkeypatch, cv_skills, WithFallback, [ServerError(503), ServerError(503), ServerError(503), ok()], calls)
+
+    assert cv_skills.extract(CV) == []
+    assert calls == ["main-model", "spare-model", "spare-model", "spare-model"]
+    assert no_waiting == [1.0, 2.0]
 
 
 def test_does_not_retry_errors_that_will_not_pass(monkeypatch):

@@ -180,11 +180,11 @@ list against CV and posting text.
 summary of required and preferred skills proven. No model; the same input always gives the same
 gap. Codes: `GAP_NO_REQUIREMENTS`, `GAP_INVALID`.
 
-**When Gemini is busy or out of quota:** Google answers 500 to 504 when a model is overloaded.
-Each call is tried three times (waiting 1 then 2 seconds) before moving on. A used-up daily
-quota (429) or a model name the key cannot use (404) moves on at once. The models in
-`GEMINI_FALLBACK_MODEL` are tried in order; only when all fail does the route answer
-`SKILLS_BUSY`, `SKILLS_QUOTA_EXCEEDED` or their `REQUIREMENTS_` twins.
+**When Gemini is busy or out of quota:** a busy model (500 to 504), a used-up daily quota (429)
+or a model name the key cannot use (404) moves on to the next model in `GEMINI_FALLBACK_MODEL`
+at once. Only the last model is retried, three times with 1 then 2 second waits. When all fail,
+the route answers `SKILLS_BUSY`, `SKILLS_QUOTA_EXCEEDED` or their `REQUIREMENTS_` twins. Each
+model's answer time is logged, never the request or the answer.
 
 **Limits:** the two model routes allow 20 model requests per visitor address per hour
 (`SKILLSYNC_RATE_LIMIT`), then answer `429 RATE_LIMITED` with a `Retry-After` header.
@@ -199,7 +199,7 @@ cd api
 python -m pytest
 ```
 
-187 tests, no network and no key: demo mode stands in for the model.
+188 tests, no network and no key: demo mode stands in for the model.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career

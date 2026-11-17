@@ -27,16 +27,19 @@ def models_to_try(settings) -> list[str]:
 
 
 def generate(client, models: list[str], **request):
-    """Call `generate_content`, retrying busy answers, then moving to the next model.
+    """Call `generate_content`, moving through the models until one answers.
 
-    A used-up quota or an unknown model moves to the next model at once. Any other error
-    (bad key, bad request) is raised at once: no model can help.
+    A busy model, a used-up quota or an unknown model moves to the next model at once: another
+    model is usually free, and waiting costs the visitor seconds. Only the last model, with
+    nothing left to move to, is retried with short waits. Any other error (bad key, bad
+    request) is raised at once: no model can help.
     """
     names = list(dict.fromkeys(model for model in models if model))
     last_error: Exception | None = None
 
-    for model in names:
-        for attempt in range(ATTEMPTS_PER_MODEL):
+    for index, model in enumerate(names):
+        attempts = ATTEMPTS_PER_MODEL if index == len(names) - 1 else 1
+        for attempt in range(attempts):
             started = time.monotonic()
             try:
                 response = client.models.generate_content(model=model, **request)
@@ -58,13 +61,14 @@ def generate(client, models: list[str], **request):
                     raise
                 last_error = error
                 logger.warning(
-                    "gemini model %s busy (code=%s), attempt %d of %d",
+                    "gemini model %s busy (code=%s) after %.1fs, attempt %d of %d",
                     model,
                     getattr(error, "code", None),
+                    time.monotonic() - started,
                     attempt + 1,
-                    ATTEMPTS_PER_MODEL,
+                    attempts,
                 )
-                if attempt < ATTEMPTS_PER_MODEL - 1:
+                if attempt < attempts - 1:
                     sleep(WAIT_SECONDS[attempt])
 
     assert last_error is not None
