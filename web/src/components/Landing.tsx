@@ -21,6 +21,7 @@ import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { useCountUp, useReducedMotion } from "../motion";
 import { startChapterSnap } from "../chapters";
+import daikoLogo from "../assets/daiko-lab.png";
 import Logo from "./Logo";
 
 type Props = {
@@ -317,9 +318,25 @@ export default function Landing({ onStart, counterCode }: Props) {
       </section>
 
       <footer className="site-foot wrap">
-        <Logo />
-        <span>{t("foot_vision")}</span>
-        <span dir="ltr">Ahmed Ababtain</span>
+        <div className="foot-top">
+          <div className="foot-brand">
+            <Logo />
+            <span>{t("foot_vision")}</span>
+          </div>
+          <ul className="foot-badges">
+            <li className="foot-badge">
+              <GraduationCap size={16} aria-hidden="true" />
+              {t("foot_ksu")}
+            </li>
+            <li className="foot-badge">
+              <img src={daikoLogo} alt="" width={14} height={20} />
+              <span dir="ltr">DAIKO Lab</span>
+            </li>
+          </ul>
+        </div>
+        <p className="foot-copy">
+          <span dir="ltr">© 2026 SkillSync · Ahmed Ababtain</span>
+        </p>
       </footer>
 
       {fieldReady && (
