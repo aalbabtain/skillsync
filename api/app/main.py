@@ -66,6 +66,14 @@ STATUS_BY_SKILL_ERROR = {
     "SKILLS_QUOTA_EXCEEDED": 429,
 }
 
+# SkillSync's own messages (timings, counts, never CV text) at INFO, so Render's logs show them.
+logging.getLogger("skillsync").setLevel(logging.INFO)
+if not logging.getLogger("skillsync").handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(levelname)s: %(name)s: %(message)s"))
+    logging.getLogger("skillsync").addHandler(_handler)
+    logging.getLogger("skillsync").propagate = False
+
 logger = logging.getLogger("skillsync.runs")
 
 RATE_WINDOW_SECONDS = 3600

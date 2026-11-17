@@ -37,13 +37,22 @@ def generate(client, models: list[str], **request):
 
     for model in names:
         for attempt in range(ATTEMPTS_PER_MODEL):
+            started = time.monotonic()
             try:
-                return client.models.generate_content(model=model, **request)
+                response = client.models.generate_content(model=model, **request)
+                # Only the model and the time: never the request or the answer.
+                logger.info("gemini model %s answered in %.1fs", model, time.monotonic() - started)
+                return response
             except Exception as error:  # noqa: BLE001
                 code = getattr(error, "code", None)
                 if code in NEXT_MODEL_CODES:
                     last_error = error
-                    logger.warning("gemini model %s unavailable (code=%s), trying the next one", model, code)
+                    logger.warning(
+                        "gemini model %s unavailable (code=%s) after %.1fs, trying the next one",
+                        model,
+                        code,
+                        time.monotonic() - started,
+                    )
                     break
                 if not is_busy(error):
                     raise
