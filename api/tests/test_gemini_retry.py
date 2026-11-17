@@ -175,3 +175,67 @@ def test_requirements_move_on_when_the_quota_is_used_up(monkeypatch):
 
     assert requirements.extract("Requirements: Python") == []
     assert calls == ["main-model", "spare-model"]
+
+
+def test_extraction_asks_for_minimal_thinking(monkeypatch):
+    # Pulling quoted skills out of a CV needs no long reasoning, and thinking costs seconds.
+    sent = {}
+
+    def build(**kwargs):
+        def generate(self, model, **request):
+            sent["config"] = request["config"]
+            return ok()
+
+        return type("Client", (), {"models": type("Models", (), {"generate_content": generate})()})()
+
+    monkeypatch.setattr(cv_skills, "get_settings", lambda: Settings())
+    monkeypatch.setattr(cv_skills.genai, "Client", build)
+    cv_skills.extract(CV)
+
+    assert sent["config"].thinking_config.thinking_level.value == "MINIMAL"
+
+
+class Rejected(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        self.code = 400
+
+
+def test_a_model_that_rejects_the_thinking_setting_is_asked_again_without_it(monkeypatch):
+    configs = []
+
+    def build(**kwargs):
+        def generate(self, model, **request):
+            configs.append(request["config"].thinking_config)
+            if request["config"].thinking_config is not None:
+                raise Rejected("Thinking level is not supported for this model.")
+            return ok()
+
+        return type("Client", (), {"models": type("Models", (), {"generate_content": generate})()})()
+
+    monkeypatch.setattr(cv_skills, "get_settings", lambda: Settings())
+    monkeypatch.setattr(cv_skills.genai, "Client", build)
+
+    assert cv_skills.extract(CV) == []
+    assert configs[0] is not None and configs[1] is None
+
+
+def test_after_a_thinking_rejection_a_used_up_quota_still_moves_on(monkeypatch):
+    calls = []
+
+    def build(**kwargs):
+        def generate(self, model, **request):
+            calls.append((model, request["config"].thinking_config is not None))
+            if request["config"].thinking_config is not None:
+                raise Rejected("Thinking level is not supported for this model.")
+            if model == "main-model":
+                raise ServerError(429)
+            return ok()
+
+        return type("Client", (), {"models": type("Models", (), {"generate_content": generate})()})()
+
+    monkeypatch.setattr(cv_skills, "get_settings", lambda: WithFallback())
+    monkeypatch.setattr(cv_skills.genai, "Client", build)
+
+    assert cv_skills.extract(CV) == []
+    assert calls == [("main-model", True), ("main-model", False), ("spare-model", False)]

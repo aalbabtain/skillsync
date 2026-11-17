@@ -29,7 +29,7 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (188 tests, no network, no key). The frontend check is
+Runs `pytest` in `api` (191 tests, no network, no key). The frontend check is
 `cd web; npm run build`.
 
 ## Run every CV case

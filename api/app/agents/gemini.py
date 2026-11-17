@@ -3,6 +3,8 @@
 import logging
 import time
 
+from google.genai import types
+
 logger = logging.getLogger("skillsync.agents")
 
 # Google answers these when a model is overloaded or briefly down; they usually pass.
@@ -14,6 +16,20 @@ ATTEMPTS_PER_MODEL = 3
 WAIT_SECONDS = (1.0, 2.0)
 
 sleep = time.sleep
+
+# Extracting quoted skills needs no long reasoning, and thinking costs the visitor seconds.
+MINIMAL_THINKING = types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL)
+
+
+def _rejects_thinking(error: Exception) -> bool:
+    return getattr(error, "code", None) == 400 and "thinking" in str(error).lower()
+
+
+def _without_thinking(request: dict) -> dict | None:
+    config = request.get("config")
+    if config is None or getattr(config, "thinking_config", None) is None:
+        return None
+    return {**request, "config": config.model_copy(update={"thinking_config": None})}
 
 
 def is_busy(error: Exception) -> bool:
@@ -31,15 +47,17 @@ def generate(client, models: list[str], **request):
 
     A busy model, a used-up quota or an unknown model moves to the next model at once: another
     model is usually free, and waiting costs the visitor seconds. Only the last model, with
-    nothing left to move to, is retried with short waits. Any other error (bad key, bad
-    request) is raised at once: no model can help.
+    nothing left to move to, is retried with short waits. A model that does not take the
+    thinking setting is asked again without it, and so are the models after it. Any other
+    error (bad key, bad request) is raised at once: no model can help.
     """
     names = list(dict.fromkeys(model for model in models if model))
     last_error: Exception | None = None
 
     for index, model in enumerate(names):
         attempts = ATTEMPTS_PER_MODEL if index == len(names) - 1 else 1
-        for attempt in range(attempts):
+        attempt = 0
+        while attempt < attempts:
             started = time.monotonic()
             try:
                 response = client.models.generate_content(model=model, **request)
@@ -48,8 +66,13 @@ def generate(client, models: list[str], **request):
                 return response
             except Exception as error:  # noqa: BLE001
                 code = getattr(error, "code", None)
+                plain = _without_thinking(request) if _rejects_thinking(error) else None
+                if plain is not None:
+                    logger.warning("gemini model %s does not take the thinking setting; asking without it", model)
+                    request = plain
+                    continue
+                last_error = error
                 if code in NEXT_MODEL_CODES:
-                    last_error = error
                     logger.warning(
                         "gemini model %s unavailable (code=%s) after %.1fs, trying the next one",
                         model,
@@ -59,17 +82,17 @@ def generate(client, models: list[str], **request):
                     break
                 if not is_busy(error):
                     raise
-                last_error = error
+                attempt += 1
                 logger.warning(
                     "gemini model %s busy (code=%s) after %.1fs, attempt %d of %d",
                     model,
-                    getattr(error, "code", None),
+                    code,
                     time.monotonic() - started,
-                    attempt + 1,
+                    attempt,
                     attempts,
                 )
-                if attempt < attempts - 1:
-                    sleep(WAIT_SECONDS[attempt])
+                if attempt < attempts:
+                    sleep(WAIT_SECONDS[attempt - 1])
 
     assert last_error is not None
     raise last_error

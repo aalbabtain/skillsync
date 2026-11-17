@@ -117,6 +117,7 @@ def extract(posting_text: str, extractor: str | None = None) -> list[dict[str, s
                 temperature=0,
                 response_mime_type="application/json",
                 response_schema=Extraction,
+                thinking_config=gemini.MINIMAL_THINKING,
             ),
         )
     except Exception as error:  # noqa: BLE001
