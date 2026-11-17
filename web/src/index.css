@@ -615,6 +615,15 @@ a {
 .foot-badge img {
   display: block;
   width: auto;
+  height: 16px;
+}
+
+/* The lab's own wordmark, in its dark-background colours: white letters, the coloured D. */
+.foot-badge-logo {
+  padding-inline: 0.9rem;
+}
+
+.foot-badge .foot-mark {
   height: 20px;
 }
 

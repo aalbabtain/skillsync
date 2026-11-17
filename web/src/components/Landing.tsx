@@ -21,7 +21,8 @@ import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { useCountUp, useReducedMotion } from "../motion";
 import { startChapterSnap } from "../chapters";
-import daikoLogo from "../assets/daiko-lab.png";
+import daicoMark from "../assets/daico-mark.png";
+import daicoLogo from "../assets/daico.png";
 import Logo from "./Logo";
 
 type Props = {
@@ -328,9 +329,9 @@ export default function Landing({ onStart, counterCode }: Props) {
               <GraduationCap size={16} aria-hidden="true" />
               {t("foot_ksu")}
             </li>
-            <li className="foot-badge">
-              <img src={daikoLogo} alt="" width={14} height={20} />
-              <span dir="ltr">DAIKO Lab</span>
+            <li className="foot-badge foot-badge-logo">
+              <img className="foot-mark" src={daicoMark} alt="" width={14} height={20} />
+              <img src={daicoLogo} alt="DAICO" width={72} height={16} />
             </li>
           </ul>
         </div>
