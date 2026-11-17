@@ -25,7 +25,6 @@ const en = {
   q5: "Why was a skill from my CV left out?",
   a5: "SkillSync keeps a skill only when a line in your CV clearly shows it. If one was left out, add it by hand on the skills step. It will show as needing proof until your CV shows it.",
   foot_vision: "Aligned with the Human Capability Development Program, Saudi Vision 2030",
-  source_code: "Source code",
 
   eyebrow: "Skills, checked against the market",
   hero: "Know your skills.",
@@ -223,7 +222,6 @@ const ar: Record<MessageKey, string> = {
   q5: "لماذا استُبعدت مهارة موجودة في سيرتي؟",
   a5: "يحتفظ SkillSync بالمهارة فقط إذا أظهرها سطر في سيرتك بوضوح. إذا استُبعدت مهارة، أضفها يدويًا في خطوة المهارات، وستظهر على أنها تحتاج إلى إثبات حتى تُظهرها سيرتك.",
   foot_vision: "يتوافق مع برنامج تنمية القدرات البشرية ضمن رؤية السعودية 2030",
-  source_code: "الشيفرة المصدرية",
 
   eyebrow: "مهاراتك في ميزان سوق العمل",
   hero: "اعرف مهاراتك.",
