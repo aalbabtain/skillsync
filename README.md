@@ -141,6 +141,7 @@ Every error uses `{"detail": {"code", "message"}}`, and the site shows each code
 | `POST` | `/api/runs` | Upload a CV (PDF or Word .docx) and get its text |
 | `POST` | `/api/skills/extract/stream` | Agent 1, streamed: one JSON line per verified skill as soon as it is proven, then a closing line. The site uses this one |
 | `POST` | `/api/skills/extract` | Agent 1: skills from CV text, each verified against a quote |
+| `POST` | `/api/requirements/extract/stream` | Agent 2, streamed: each posting in turn, one JSON line per verified requirement as soon as it is found, then the same counted result. The site uses this one |
 | `POST` | `/api/requirements/extract` | Agent 2: skills the pasted postings ask for, counted |
 | `POST` | `/api/gap` | Agent 3: confirmed skills against the requirements |
 
@@ -200,7 +201,7 @@ cd api
 python -m pytest
 ```
 
-207 tests, no network and no key: demo mode stands in for the model.
+212 tests, no network and no key: demo mode stands in for the model.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career

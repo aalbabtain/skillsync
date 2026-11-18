@@ -148,16 +148,18 @@ def _stronger(first: str, second: str) -> str:
     return REQUIRED if REQUIRED in (first, second) else PREFERRED
 
 
-def verify_requirements(
-    candidates: list[dict[str, str]],
-    posting_text: str,
-) -> tuple[list[VerifiedRequirement], int]:
-    """Keep each requirement whose evidence is quoted in the posting, one per skill."""
-    haystack = normalize(posting_text)
-    kept: dict[str, VerifiedRequirement] = {}
-    dropped = 0
+class RequirementVerifier:
+    """Checks a posting's candidate requirements one at a time, so a streamed answer can show
+    each requirement as soon as its quote is found. Same rule as verify_requirements: the quote
+    must appear in the posting, and a skill named twice keeps the stronger level."""
 
-    for candidate in candidates:
+    def __init__(self, posting_text: str) -> None:
+        self._haystack = normalize(posting_text)
+        self._kept: dict[str, VerifiedRequirement] = {}
+        self.dropped_count = 0
+
+    def check(self, candidate: dict[str, str]) -> VerifiedRequirement | None:
+        """The requirement when it is proven and new; None when dropped or already kept."""
         name = str(candidate.get("name", "")).strip()
         evidence = str(candidate.get("evidence", "")).strip()
         category = str(candidate.get("category", "")).strip() or "Other"
@@ -165,22 +167,35 @@ def verify_requirements(
         level = level if level in (REQUIRED, PREFERRED) else REQUIRED
         needle = normalize(evidence)
 
-        if not name or not needle or not _contains(haystack, needle):
-            dropped += 1
-            continue
+        if not name or not needle or not _contains(self._haystack, needle):
+            self.dropped_count += 1
+            return None
 
         display = canonical_name(name)
         key = normalize(display)
-        if key in kept:
-            first = kept[key]
-            kept[key] = VerifiedRequirement(
+        if key in self._kept:
+            first = self._kept[key]
+            self._kept[key] = VerifiedRequirement(
                 first.name, first.category, _stronger(first.level, level), first.evidence
             )
-            continue
+            return None
 
-        kept[key] = VerifiedRequirement(display, category, level, evidence)
+        self._kept[key] = VerifiedRequirement(display, category, level, evidence)
+        return self._kept[key]
 
-    return list(kept.values()), dropped
+    def kept(self) -> list[VerifiedRequirement]:
+        return list(self._kept.values())
+
+
+def verify_requirements(
+    candidates: list[dict[str, str]],
+    posting_text: str,
+) -> tuple[list[VerifiedRequirement], int]:
+    """Keep each requirement whose evidence is quoted in the posting, one per skill."""
+    verifier = RequirementVerifier(posting_text)
+    for candidate in candidates:
+        verifier.check(candidate)
+    return verifier.kept(), verifier.dropped_count
 
 
 def aggregate(per_posting: list[list[VerifiedRequirement]]) -> list[Requirement]:

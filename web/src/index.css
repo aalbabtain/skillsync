@@ -1382,6 +1382,47 @@ a {
 }
 
 /* 8. Extraction shows its real stages. */
+/* Postings read one after another, each with the requirements found so far. */
+.live-postings {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.live-postings > li {
+  color: var(--muted);
+}
+
+.live-postings > li.is-active,
+.live-postings > li.is-done {
+  color: var(--text);
+}
+
+.live-posting-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin-bottom: 0.45rem;
+  font-size: 0.9rem;
+}
+
+.live-posting-head .live-count {
+  margin: 0;
+  margin-inline-start: auto;
+}
+
+.live-postings ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* Skills arriving one by one while the model is still writing. */
 .live-skills {
   margin: 0 0 1rem;

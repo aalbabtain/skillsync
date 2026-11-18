@@ -1,6 +1,7 @@
+import { Check } from "lucide-react";
 import { useState } from "react";
 
-import { ApiRequestError, extractRequirements } from "../api";
+import { ApiRequestError, streamRequirements } from "../api";
 import type { PostingInput, RequirementsResult } from "../api";
 import { useI18n } from "../i18n";
 
@@ -27,6 +28,8 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult, onNext
   const [titles, setTitles] = useState<string[]>([]);
   const [result, setResult] = useState<RequirementsResult | null>(null);
   const [running, setRunning] = useState(false);
+  // What each posting has turned up so far while the model is still reading.
+  const [live, setLive] = useState<{ title: string; names: string[]; done: boolean; started: boolean }[]>([]);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const { t, category, errorMessage } = useI18n();
 
@@ -45,7 +48,18 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult, onNext
 
     try {
       const postings = drafts.map(({ title, text }) => ({ title: title.trim(), text }));
-      const extracted = await extractRequirements(postings);
+      setResult(null);
+      setLive(postings.map((posting) => ({ title: posting.title, names: [], done: false, started: false })));
+      const extracted = await streamRequirements(postings, (event) =>
+        setLive((current) =>
+          current.map((row, index) => {
+            if (index !== event.posting) return row;
+            if (event.type === "posting") return { ...row, started: true };
+            if (event.type === "requirement") return { ...row, names: [...row.names, event.name] };
+            return { ...row, done: true };
+          }),
+        ),
+      );
       setTitles(postings.map((posting) => posting.title));
       setResult(extracted);
       onResult(
@@ -146,6 +160,39 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult, onNext
           {running ? t("extracting_req") : t("extract_req")}
         </button>
       </div>
+
+      {running && live.length > 0 && (
+        <ol className="live-postings" aria-label={t("req_live_label")}>
+          {live.map((row, index) => (
+            <li key={index} className={row.done ? "is-done" : row.started ? "is-active" : ""}>
+              <p className="live-posting-head">
+                <span className="stage-mark" aria-hidden="true">
+                  {row.done ? <Check size={13} /> : row.started ? <span className="spinner spinner-sm" /> : null}
+                </span>
+                <span>
+                  {t("req_live_posting", { n: index + 1 })}
+                  {row.title && <bdi> · {row.title}</bdi>}
+                </span>
+                {row.started && (
+                  <span className="live-count" aria-live="polite">
+                    {t("req_live_found", { n: row.names.length })}
+                  </span>
+                )}
+              </p>
+              {row.names.length > 0 && (
+                <ul>
+                  {row.names.map((name) => (
+                    <li className="live-chip" key={name}>
+                      <Check size={12} aria-hidden="true" />
+                      <span dir="ltr">{name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
 
       {error && (
         <p className="upload-error" role="alert">

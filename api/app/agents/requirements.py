@@ -10,6 +10,7 @@ from google.genai import types
 from pydantic import BaseModel, ValidationError
 
 from app.agents import cv_skills, gemini, mock_extractor
+from app.agents.json_stream import ObjectScanner
 from app.config import get_settings
 
 logger = logging.getLogger("skillsync.agents")
@@ -124,6 +125,62 @@ def extract(posting_text: str, extractor: str | None = None) -> list[dict[str, s
         raise _upstream_failure(error) from error
 
     return _finish(_parse(response))
+
+
+def stream(posting_text: str, extractor: str | None = None):
+    """Yield candidate requirements one at a time as the model writes them, cleaned like
+    extract's. Raises RequirementsError as extract does, possibly after some were yielded."""
+    if (extractor or cv_skills.extractor_mode()) == cv_skills.MOCK:
+        yield from extract(posting_text, extractor=cv_skills.MOCK)
+        return
+
+    settings = get_settings()
+    if not settings.gemini_api_key:
+        raise RequirementsError(
+            "REQUIREMENTS_UNAVAILABLE", "Requirements extraction is not configured."
+        )
+    client = genai.Client(api_key=settings.gemini_api_key)
+
+    scanner = ObjectScanner()
+    text_seen: list[str] = []
+    count = 0
+    pieces = gemini.generate_stream(
+        client,
+        gemini.models_to_try(settings),
+        contents=posting_text,
+        config=types.GenerateContentConfig(
+            system_instruction=load_prompt(),
+            temperature=0,
+            response_mime_type="application/json",
+            response_schema=Extraction,
+            thinking_config=gemini.MINIMAL_THINKING,
+        ),
+    )
+    try:
+        for piece in pieces:
+            if piece is gemini.RESTART:
+                scanner = ObjectScanner()
+                text_seen = []
+                continue
+            text_seen.append(piece)
+            for found in scanner.feed(piece):
+                try:
+                    item = _clean(ExtractedRequirement.model_validate(found))
+                except ValidationError:
+                    continue
+                if item:
+                    count += 1
+                    yield item
+                    if count >= MAX_SKILLS:
+                        return
+    except Exception as error:  # noqa: BLE001
+        raise _upstream_failure(error) from error
+
+    if count == 0:
+        try:
+            Extraction.model_validate(json.loads("".join(text_seen) or ""))
+        except (ValueError, TypeError, ValidationError) as error:
+            raise _malformed() from error
 
 
 def _upstream_failure(error: Exception) -> RequirementsError:

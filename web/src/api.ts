@@ -45,6 +45,35 @@ export type SkillsResult = {
   dropped_count: number;
 };
 
+/**
+ * Reads a streamed answer: one JSON object per line. Refusals before the stream starts (too
+ * short, rate limit) are ordinary JSON errors and are thrown as such.
+ */
+async function readJsonLines(response: Response, fallback: string, onLine: (line: any) => boolean): Promise<void> {
+  if (!response.ok || !response.body) {
+    const payload = await response.json().catch(() => null);
+    throw new ApiRequestError(payload?.detail?.code ?? "UNKNOWN", payload?.detail?.message ?? fallback);
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let pending = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    pending += decoder.decode(value, { stream: !done });
+    const lines = pending.split("\n");
+    pending = done ? "" : (lines.pop() ?? "");
+    for (const raw of lines) {
+      if (!raw.trim()) continue;
+      const line = JSON.parse(raw);
+      if (line.type === "error") throw new ApiRequestError(line.code, line.message);
+      if (onLine(line)) return;
+    }
+    if (done) break;
+  }
+  // The connection closed without the closing line: the answer is incomplete.
+  throw new ApiRequestError("UNKNOWN", "The extraction stopped before it finished.");
+}
+
 type StreamLine =
   | ({ type: "skill" } & Skill)
   | { type: "done"; dropped_count: number }
@@ -60,48 +89,19 @@ export async function streamSkills(text: string, onSkill: (skill: Skill) => void
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
-
-  if (!response.ok || !response.body) {
-    // Refusals before the stream starts (too short, rate limit) are ordinary JSON errors.
-    const payload = await response.json().catch(() => null);
-    throw new ApiRequestError(
-      payload?.detail?.code ?? "UNKNOWN",
-      payload?.detail?.message ?? "Skill extraction failed.",
-    );
-  }
-
   const skills: Skill[] = [];
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let pending = "";
-
-  const handle = (raw: string): SkillsResult | null => {
-    if (!raw.trim()) return null;
-    const line = JSON.parse(raw) as StreamLine;
+  let result: SkillsResult | null = null;
+  await readJsonLines(response, "Skill extraction failed.", (line: StreamLine) => {
     if (line.type === "skill") {
       const skill = { name: line.name, category: line.category, evidence: line.evidence };
       skills.push(skill);
       onSkill(skill);
-      return null;
+      return false;
     }
-    if (line.type === "error") throw new ApiRequestError(line.code, line.message);
-    return { skills, dropped_count: line.dropped_count };
-  };
-
-  for (;;) {
-    const { value, done } = await reader.read();
-    pending += decoder.decode(value, { stream: !done });
-    const lines = pending.split("\n");
-    pending = done ? "" : (lines.pop() ?? "");
-    for (const raw of lines) {
-      const finished = handle(raw);
-      if (finished) return finished;
-    }
-    if (done) break;
-  }
-
-  // The connection closed without the closing line: the answer is incomplete.
-  throw new ApiRequestError("UNKNOWN", "The extraction stopped before it finished.");
+    if (line.type === "done") result = { skills, dropped_count: line.dropped_count };
+    return result !== null;
+  });
+  return result as unknown as SkillsResult;
 }
 
 export type Health = {
@@ -147,24 +147,34 @@ export type RequirementsResult = {
   dropped_count: number;
 };
 
-export async function extractRequirements(
+export type RequirementEvent =
+  | { type: "posting"; posting: number }
+  | { type: "requirement"; posting: number; name: string; level: "required" | "preferred" }
+  | { type: "posting_done"; posting: number; count: number };
+
+/**
+ * Agent 2, streamed: postings are read in turn and onEvent hears each requirement the moment
+ * its quote is found. Resolves with the counted result, the same as /api/requirements/extract.
+ */
+export async function streamRequirements(
   postings: PostingInput[],
+  onEvent: (event: RequirementEvent) => void,
 ): Promise<RequirementsResult> {
-  const response = await fetch("/api/requirements/extract", {
+  const response = await fetch("/api/requirements/extract/stream", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ postings }),
   });
-  const payload = await response.json();
-
-  if (!response.ok) {
-    throw new ApiRequestError(
-      payload?.detail?.code ?? "UNKNOWN",
-      payload?.detail?.message ?? "Requirements extraction failed.",
-    );
-  }
-
-  return payload as RequirementsResult;
+  let result: RequirementsResult | null = null;
+  await readJsonLines(response, "Requirements extraction failed.", (line) => {
+    if (line.type === "done") {
+      result = line.result as RequirementsResult;
+      return true;
+    }
+    onEvent(line as RequirementEvent);
+    return false;
+  });
+  return result as unknown as RequirementsResult;
 }
 
 export type GapItem = Requirement & { cv_evidence?: string };

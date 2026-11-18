@@ -25,7 +25,7 @@ from app.rate_limit import RateLimiter, client_address
 from app.skills_catalog import CATALOG, RELATED
 from app.parsers import extract_document
 from app.parsers.pdf import PdfExtractionError
-from app.verification import SkillVerifier, aggregate, verify_requirements, verify_skills
+from app.verification import RequirementVerifier, SkillVerifier, aggregate, verify_requirements, verify_skills
 
 settings = get_settings()
 
@@ -396,6 +396,11 @@ def extract_requirements_route(payload: RequirementsRequest, request: Request):
         per_posting.append(kept)
         dropped += removed
 
+    return _requirements_payload(per_posting, dropped)
+
+
+def _requirements_payload(per_posting, dropped: int) -> dict:
+    """Counts how many postings ask for each skill (plain code) and shapes the answer."""
     results = aggregate(per_posting)
     logger.info(
         "requirements extraction: %d postings, %d kept, %d dropped",
@@ -421,6 +426,44 @@ def extract_requirements_route(payload: RequirementsRequest, request: Request):
         ],
         "dropped_count": dropped,
     }
+
+
+@app.post("/api/requirements/extract/stream")
+def stream_requirements_route(payload: RequirementsRequest, request: Request):
+    """Agent 2, streamed: each posting is read in turn, and every requirement is sent the
+    moment its quote is found. Lines: {"type": "posting", "posting"} when a posting starts,
+    {"type": "requirement", "posting", "name", "level"} per new requirement, {"type":
+    "posting_done", "posting", "count"}, then {"type": "done", "result"} with the same result
+    as /api/requirements/extract, or {"type": "error", "code", "message"}."""
+    if rejection := _check_postings(payload.postings):
+        return rejection
+
+    if limited := _rate_limited(request, len(payload.postings)):
+        return limited
+
+    texts = [posting.text.strip() for posting in payload.postings]
+
+    def lines():
+        per_posting = []
+        dropped = 0
+        for index, text in enumerate(texts):
+            yield _line({"type": "posting", "posting": index})
+            verifier = RequirementVerifier(text)
+            try:
+                for candidate in requirements.stream(text):
+                    if found := verifier.check(candidate):
+                        yield _line({"type": "requirement", "posting": index, "name": found.name, "level": found.level})
+            except requirements.RequirementsError as error:
+                yield _line({"type": "error", "code": error.code, "message": error.message})
+                return
+            kept = verifier.kept()
+            per_posting.append(kept)
+            dropped += verifier.dropped_count
+            yield _line({"type": "posting_done", "posting": index, "count": len(kept)})
+        yield _line({"type": "done", "result": _requirements_payload(per_posting, dropped)})
+
+    headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    return StreamingResponse(lines(), media_type="application/x-ndjson", headers=headers)
 
 
 MAX_GAP_SKILLS = 200
