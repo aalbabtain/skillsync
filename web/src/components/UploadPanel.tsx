@@ -4,8 +4,9 @@ import { useRef, useState } from "react";
 import {
   ApiRequestError,
   createRun,
-  extractSkills,
+  streamSkills,
   type RunResult,
+  type Skill,
   type SkillsResult,
 } from "../api";
 import { useI18n } from "../i18n";
@@ -20,7 +21,7 @@ type State =
 
 type Extraction =
   | { kind: "idle" }
-  | { kind: "running"; stage: "extracting" | "verifying" }
+  | { kind: "running"; found: Skill[]; finished: boolean }
   | ({ kind: "error" } & Failure);
 
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -36,7 +37,8 @@ function fileProblem(file: File): string | null {
   if (file.size > MAX_BYTES) return "FILE_TOO_LARGE";
   return null;
 }
-const VERIFY_DELAY_MS = 1200;
+// A short pause on the finished list, so the last skills are seen before the page moves on.
+const FINISHED_PAUSE_MS = 700;
 
 type Props = {
   onSkills: (result: SkillsResult) => void;
@@ -83,12 +85,17 @@ export default function UploadPanel({ onSkills }: Props) {
     }
 
     runningRef.current = true;
-    setExtraction({ kind: "running", stage: "extracting" });
+    setExtraction({ kind: "running", found: [], finished: false });
 
     try {
-      const result = await extractSkills(state.result.text);
-      setExtraction({ kind: "running", stage: "verifying" });
-      await new Promise((resolve) => setTimeout(resolve, VERIFY_DELAY_MS));
+      // Each skill shows up as soon as the server has checked its quote against the CV.
+      const result = await streamSkills(state.result.text, (skill) =>
+        setExtraction((current) =>
+          current.kind === "running" ? { ...current, found: [...current.found, skill] } : current,
+        ),
+      );
+      setExtraction({ kind: "running", found: result.skills, finished: true });
+      await new Promise((resolve) => setTimeout(resolve, FINISHED_PAUSE_MS));
       setExtraction({ kind: "idle" });
       onSkills(result);
     } catch (error) {
@@ -133,20 +140,38 @@ export default function UploadPanel({ onSkills }: Props) {
         </div>
 
         {extraction.kind === "running" && (
-          <ol className="stages" role="status" aria-live="polite">
-            {(["stage_read", "stage_find", "stage_check"] as const).map((key, index) => {
-              const current = extraction.stage === "extracting" ? 1 : 2;
-              const state = index < current ? "is-done" : index === current ? "is-active" : "";
-              return (
-                <li className={state} key={key}>
-                  <span className="stage-mark" aria-hidden="true">
-                    {index < current ? <Check size={13} /> : index === current ? <span className="spinner spinner-sm" /> : null}
-                  </span>
-                  {t(key)}
-                </li>
-              );
-            })}
-          </ol>
+          <>
+            <ol className="stages" role="status" aria-live="polite">
+              {(["stage_read", "stage_find", "stage_check"] as const).map((key, index) => {
+                // Finding and checking run together now: each skill is checked as it is found.
+                const done = index === 0 || extraction.finished;
+                const active = !done && (index === 1 || extraction.found.length > 0);
+                return (
+                  <li className={done ? "is-done" : active ? "is-active" : ""} key={key}>
+                    <span className="stage-mark" aria-hidden="true">
+                      {done ? <Check size={13} /> : active ? <span className="spinner spinner-sm" /> : null}
+                    </span>
+                    {t(key)}
+                  </li>
+                );
+              })}
+            </ol>
+            {extraction.found.length > 0 && (
+              <div className="live-skills">
+                <p className="live-count" aria-live="polite">
+                  {t("found_so_far", { n: extraction.found.length })}
+                </p>
+                <ul>
+                  {extraction.found.map((skill) => (
+                    <li className="live-chip" key={skill.name}>
+                      <Check size={12} aria-hidden="true" />
+                      <span dir="auto">{skill.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
 
         {extraction.kind === "error" && (

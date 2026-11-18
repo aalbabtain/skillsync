@@ -87,6 +87,7 @@ const en = {
   stage_read: "Read your CV",
   stage_find: "Finding the skills it shows",
   stage_check: "Checking each quote against your CV",
+  found_so_far: "Verified so far: {n}",
 
   skills_h: "Your verified skills",
   skills_count: "Verified: {verified} · Added by you: {self}",
@@ -285,6 +286,7 @@ const ar: Record<MessageKey, string> = {
   stage_read: "قراءة سيرتك الذاتية",
   stage_find: "استخراج المهارات التي تُظهرها",
   stage_check: "مطابقة كل اقتباس مع سيرتك الذاتية",
+  found_so_far: "المهارات المُثبتة حتى الآن: {n}",
 
   skills_h: "مهاراتك المثبتة",
   skills_count: "المثبتة: {verified} · المضافة يدويًا: {self}",

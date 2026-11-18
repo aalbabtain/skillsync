@@ -96,3 +96,73 @@ def generate(client, models: list[str], **request):
 
     assert last_error is not None
     raise last_error
+
+
+# Yielded by generate_stream when a model stopped mid-answer and the next one starts afresh:
+# whatever was half-read belongs to the old answer.
+RESTART = object()
+
+
+def generate_stream(client, models: list[str], **request):
+    """Like generate, but yields the answer's text as it arrives.
+
+    Errors before the first piece follow generate's rules. If a model stops after it has
+    started answering, RESTART is yielded and the next model answers from the beginning.
+    """
+    names = list(dict.fromkeys(model for model in models if model))
+    last_error: Exception | None = None
+
+    for index, model in enumerate(names):
+        attempts = ATTEMPTS_PER_MODEL if index == len(names) - 1 else 1
+        attempt = 0
+        while attempt < attempts:
+            started = time.monotonic()
+            answered = False
+            try:
+                for chunk in client.models.generate_content_stream(model=model, **request):
+                    text = getattr(chunk, "text", None)
+                    if not text:
+                        continue
+                    if not answered:
+                        answered = True
+                        logger.info("gemini model %s started answering in %.1fs", model, time.monotonic() - started)
+                    yield text
+                logger.info("gemini model %s answered in %.1fs", model, time.monotonic() - started)
+                return
+            except Exception as error:  # noqa: BLE001
+                code = getattr(error, "code", None)
+                if answered:
+                    last_error = error
+                    logger.warning("gemini model %s stopped mid-answer (code=%s), trying the next one", model, code)
+                    yield RESTART
+                    break
+                plain = _without_thinking(request) if _rejects_thinking(error) else None
+                if plain is not None:
+                    logger.warning("gemini model %s does not take the thinking setting; asking without it", model)
+                    request = plain
+                    continue
+                last_error = error
+                if code in NEXT_MODEL_CODES:
+                    logger.warning(
+                        "gemini model %s unavailable (code=%s) after %.1fs, trying the next one",
+                        model,
+                        code,
+                        time.monotonic() - started,
+                    )
+                    break
+                if not is_busy(error):
+                    raise
+                attempt += 1
+                logger.warning(
+                    "gemini model %s busy (code=%s) after %.1fs, attempt %d of %d",
+                    model,
+                    code,
+                    time.monotonic() - started,
+                    attempt,
+                    attempts,
+                )
+                if attempt < attempts:
+                    sleep(WAIT_SECONDS[attempt - 1])
+
+    assert last_error is not None
+    raise last_error

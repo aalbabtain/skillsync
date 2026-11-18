@@ -78,34 +78,42 @@ class VerificationResult:
     dropped_count: int
 
 
-def verify_skills(
-    candidates: list[dict[str, str]],
-    cv_text: str,
-) -> VerificationResult:
-    haystack = normalize(cv_text)
-    seen: set[str] = set()
-    skills: list[VerifiedSkill] = []
-    dropped = 0
+class SkillVerifier:
+    """Checks candidate skills one at a time against the CV text, so a streamed answer can show
+    each skill as soon as it is proven. The rule is the same as verify_skills: the quote must
+    appear in the CV, and a skill already accepted under the same name is skipped."""
 
-    for candidate in candidates:
+    def __init__(self, cv_text: str) -> None:
+        self._haystack = normalize(cv_text)
+        self._seen: set[str] = set()
+        self.dropped_count = 0
+
+    def check(self, candidate: dict[str, str]) -> VerifiedSkill | None:
         name = str(candidate.get("name", "")).strip()
         evidence = str(candidate.get("evidence", "")).strip()
         category = str(candidate.get("category", "")).strip() or "Other"
         needle = normalize(evidence)
 
-        if not name or not needle or not _contains(haystack, needle):
-            dropped += 1
-            continue
+        if not name or not needle or not _contains(self._haystack, needle):
+            self.dropped_count += 1
+            return None
 
         display = canonical_name(name)
         key = normalize(display)
-        if key in seen:
-            continue
+        if key in self._seen:
+            return None
 
-        seen.add(key)
-        skills.append(VerifiedSkill(name=display, category=category, evidence=evidence))
+        self._seen.add(key)
+        return VerifiedSkill(name=display, category=category, evidence=evidence)
 
-    return VerificationResult(skills=skills, dropped_count=dropped)
+
+def verify_skills(
+    candidates: list[dict[str, str]],
+    cv_text: str,
+) -> VerificationResult:
+    verifier = SkillVerifier(cv_text)
+    skills = [skill for candidate in candidates if (skill := verifier.check(candidate))]
+    return VerificationResult(skills=skills, dropped_count=verifier.dropped_count)
 
 
 @dataclass(frozen=True)

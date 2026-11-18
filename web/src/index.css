@@ -1382,6 +1382,56 @@ a {
 }
 
 /* 8. Extraction shows its real stages. */
+/* Skills arriving one by one while the model is still writing. */
+.live-skills {
+  margin: 0 0 1rem;
+}
+
+.live-count {
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.live-skills ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.live-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--accent-soft);
+  border: 1px solid rgba(121, 212, 255, 0.25);
+  border-radius: 999px;
+  animation: chip-arrive 0.35s ease-out;
+}
+
+.live-chip svg {
+  color: var(--ok);
+}
+
+@keyframes chip-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-chip {
+    animation: none;
+  }
+}
+
 .stages {
   display: grid;
   gap: 0.45rem;

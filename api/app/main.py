@@ -12,7 +12,7 @@ from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -25,7 +25,7 @@ from app.rate_limit import RateLimiter, client_address
 from app.skills_catalog import CATALOG, RELATED
 from app.parsers import extract_document
 from app.parsers.pdf import PdfExtractionError
-from app.verification import aggregate, verify_requirements, verify_skills
+from app.verification import SkillVerifier, aggregate, verify_requirements, verify_skills
 
 settings = get_settings()
 
@@ -278,6 +278,45 @@ def extract_skills_route(payload: SkillsRequest, request: Request):
         ],
         "dropped_count": result.dropped_count,
     }
+
+
+@app.post("/api/skills/extract/stream")
+def stream_skills_route(payload: SkillsRequest, request: Request):
+    """Agent 1, streamed: one JSON line per verified skill as soon as it is proven, then a
+    closing line. Lines: {"type": "skill", name, category, evidence}, then {"type": "done",
+    "dropped_count"} or {"type": "error", "code", "message"}."""
+    text = payload.text.strip()
+
+    if len(text) < MIN_CV_TEXT_CHARS:
+        return _error(422, "TEXT_TOO_SHORT", "The CV text is too short to extract skills.")
+
+    if len(text) > MAX_CV_TEXT_CHARS:
+        return _error(413, "TEXT_TOO_LONG", "The CV text is too long to extract skills.")
+
+    if limited := _rate_limited(request, 1):
+        return limited
+
+    def lines():
+        verifier = SkillVerifier(text)
+        kept = 0
+        try:
+            for candidate in cv_skills.stream(text):
+                if skill := verifier.check(candidate):
+                    kept += 1
+                    yield _line({"type": "skill", "name": skill.name, "category": skill.category, "evidence": skill.evidence})
+        except cv_skills.SkillExtractionError as error:
+            yield _line({"type": "error", "code": error.code, "message": error.message})
+            return
+        logger.info("skills extraction (streamed): %d kept, %d dropped", kept, verifier.dropped_count)
+        yield _line({"type": "done", "dropped_count": verifier.dropped_count})
+
+    # No caching or proxy buffering, or the lines would arrive all at once at the end.
+    headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    return StreamingResponse(lines(), media_type="application/x-ndjson", headers=headers)
+
+
+def _line(item: dict) -> str:
+    return json.dumps(item, ensure_ascii=False) + "\n"
 
 
 MAX_POSTINGS = 10

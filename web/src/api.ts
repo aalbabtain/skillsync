@@ -45,22 +45,63 @@ export type SkillsResult = {
   dropped_count: number;
 };
 
-export async function extractSkills(text: string): Promise<SkillsResult> {
-  const response = await fetch("/api/skills/extract", {
+type StreamLine =
+  | ({ type: "skill" } & Skill)
+  | { type: "done"; dropped_count: number }
+  | { type: "error"; code: string; message: string };
+
+/**
+ * Agent 1, streamed: calls onSkill for each verified skill the moment the server proves it,
+ * then resolves with the whole list. The server sends one JSON object per line.
+ */
+export async function streamSkills(text: string, onSkill: (skill: Skill) => void): Promise<SkillsResult> {
+  const response = await fetch("/api/skills/extract/stream", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
-  const payload = await response.json();
 
-  if (!response.ok) {
+  if (!response.ok || !response.body) {
+    // Refusals before the stream starts (too short, rate limit) are ordinary JSON errors.
+    const payload = await response.json().catch(() => null);
     throw new ApiRequestError(
       payload?.detail?.code ?? "UNKNOWN",
       payload?.detail?.message ?? "Skill extraction failed.",
     );
   }
 
-  return payload as SkillsResult;
+  const skills: Skill[] = [];
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let pending = "";
+
+  const handle = (raw: string): SkillsResult | null => {
+    if (!raw.trim()) return null;
+    const line = JSON.parse(raw) as StreamLine;
+    if (line.type === "skill") {
+      const skill = { name: line.name, category: line.category, evidence: line.evidence };
+      skills.push(skill);
+      onSkill(skill);
+      return null;
+    }
+    if (line.type === "error") throw new ApiRequestError(line.code, line.message);
+    return { skills, dropped_count: line.dropped_count };
+  };
+
+  for (;;) {
+    const { value, done } = await reader.read();
+    pending += decoder.decode(value, { stream: !done });
+    const lines = pending.split("\n");
+    pending = done ? "" : (lines.pop() ?? "");
+    for (const raw of lines) {
+      const finished = handle(raw);
+      if (finished) return finished;
+    }
+    if (done) break;
+  }
+
+  // The connection closed without the closing line: the answer is incomplete.
+  throw new ApiRequestError("UNKNOWN", "The extraction stopped before it finished.");
 }
 
 export type Health = {

@@ -10,6 +10,7 @@ from google.genai import types
 from pydantic import BaseModel, ValidationError
 
 from app.agents import gemini, mock_extractor
+from app.agents.json_stream import ObjectScanner
 from app.config import get_settings
 
 
@@ -135,6 +136,70 @@ def extract(cv_text: str, extractor: str | None = None) -> list[dict[str, str]]:
         raise _upstream_failure(error) from error
 
     return _parse(response)
+
+
+def stream(cv_text: str, extractor: str | None = None):
+    """Yield candidate skills one at a time as the model writes them, each cleaned like extract's.
+
+    Raises SkillExtractionError as extract does; it can come after some skills were yielded.
+    """
+    settings = get_settings()
+
+    if (extractor or extractor_mode()) == MOCK:
+        count = 0
+        for item in mock_extractor.extract(cv_text):
+            if count >= MAX_SKILLS:
+                return
+            if skill := _clean(ExtractedSkill(**item)):
+                count += 1
+                yield skill
+        return
+
+    if not settings.gemini_api_key:
+        raise SkillExtractionError("SKILLS_UNAVAILABLE", "Skill extraction is not configured.")
+    client = genai.Client(api_key=settings.gemini_api_key)
+
+    scanner = ObjectScanner()
+    text_seen = []
+    count = 0
+    pieces = gemini.generate_stream(
+        client,
+        gemini.models_to_try(settings),
+        contents=cv_text,
+        config=types.GenerateContentConfig(
+            system_instruction=load_prompt(),
+            temperature=0,
+            response_mime_type="application/json",
+            response_schema=Extraction,
+            thinking_config=gemini.MINIMAL_THINKING,
+        ),
+    )
+    try:
+        for piece in pieces:
+            if piece is gemini.RESTART:
+                scanner = ObjectScanner()
+                text_seen = []
+                continue
+            text_seen.append(piece)
+            for found in scanner.feed(piece):
+                try:
+                    skill = _clean(ExtractedSkill.model_validate(found))
+                except ValidationError:
+                    continue
+                if skill:
+                    count += 1
+                    yield skill
+                    if count >= MAX_SKILLS:
+                        return
+    except Exception as error:  # noqa: BLE001
+        raise _upstream_failure(error) from error
+
+    if count == 0:
+        # Nothing came out: an empty list is a fair answer, anything else is unusable.
+        try:
+            Extraction.model_validate(json.loads("".join(text_seen) or ""))
+        except (ValueError, TypeError, ValidationError) as error:
+            raise _malformed() from error
 
 
 def _upstream_failure(error: Exception) -> SkillExtractionError:
