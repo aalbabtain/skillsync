@@ -48,10 +48,17 @@ test("after the polish, skills are split and sorted, and certificates one per li
       "capm ecba": "Certified Associate in Project Management (CAPM), PMI | Entry Certificate in Business Analysis (ECBA), IIBA",
     },
   );
-  const done = regroup(polished, (skill) => (skill === "Python" ? "Programming languages" : "Soft skills"));
+  const done = regroup(polished, (skill) => ({ name: skill, category: skill === "Python" ? "Programming languages" : "Soft skills" }));
   assert.deepEqual(done.skills, { "Programming languages": ["Python"], "Soft skills": ["Teamwork"] });
   assert.deepEqual(done.certifications.map((cert) => cert.name), [
     "Certified Associate in Project Management (CAPM), PMI",
     "Entry Certificate in Business Analysis (ECBA), IIBA",
   ]);
+});
+
+test("regroup files each skill by the catalog, then by the writer's categories, and drops headings", async () => {
+  const { regroup } = await import("./english.ts");
+  const typed = { ...resume, skills: { "Other skills": ["Problem-Solving, Technical Skills, Document Preparation, Python, Skills"] } };
+  const done = regroup(typed, (skill) => ({ Python: { name: "Python", category: "Programming languages" }, "Problem-Solving": { name: "Problem Solving", category: "Soft skills" } })[skill] ?? null, { "Document Preparation": "Tools" });
+  assert.deepEqual(done.skills, { "Soft skills": ["Problem Solving"], Tools: ["Document Preparation"], "Programming languages": ["Python"] });
 });

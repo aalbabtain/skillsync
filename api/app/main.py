@@ -788,6 +788,24 @@ def cv_polish_route(payload: CvPolishRequest, request: Request):
     return {"items": out}
 
 
+class CvCategorizeRequest(BaseModel):
+    skills: list[str] = Field(min_length=1, max_length=60)
+
+
+@app.post("/api/cv/categorize")
+def cv_categorize_route(payload: CvCategorizeRequest, request: Request):
+    """Agent 5: a category for skills the catalog does not know. Only the catalog's own
+    categories are kept, and only for the skills that were sent."""
+    skills = [skill.strip()[:80] for skill in payload.skills if skill.strip()]
+    if limited := _rate_limited(request, 1):
+        return limited
+    try:
+        found = cv_writer.categorize(skills)
+    except cv_writer.CvWriterError as error:
+        return _cv_error(error)
+    return {"categories": {skill: found[skill] for skill in skills if found.get(skill) in cv_skills.CATEGORIES}}
+
+
 @app.post("/api/cv/translate")
 def cv_translate_route(payload: CvTranslateRequest, request: Request):
     """Agent 5: English for short Arabic fields. A value whose numbers or Latin words were

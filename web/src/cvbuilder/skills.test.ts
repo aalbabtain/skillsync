@@ -27,3 +27,16 @@ test("skills typed without commas are split when every word is a known skill", a
   assert.deepEqual(splitSkills("Python, team work, public speaking", catalog), ["Python", "team work", "public speaking"]);
   assert.deepEqual(splitSkills("data entry in excel", catalog), ["data entry in excel"]);
 });
+
+test("a skill is found in the catalog whatever its hyphens, capitals or a trailing skills", async () => {
+  const { resolveSkill, skillIndex } = await import("./skills.ts");
+  const index = skillIndex([
+    { name: "Problem Solving", category: "Soft skills", aliases: ["problem solving"] },
+    { name: "Communication", category: "Soft skills", aliases: ["communication"] },
+    { name: "Excel", category: "Tools", aliases: ["excel", "microsoft excel"] },
+  ]);
+  assert.deepEqual(resolveSkill("Problem-Solving", index), { name: "Problem Solving", category: "Soft skills" });
+  assert.deepEqual(resolveSkill("Communication Skills", index), { name: "Communication", category: "Soft skills" });
+  assert.deepEqual(resolveSkill("microsoft  excel", index), { name: "Excel", category: "Tools" });
+  assert.equal(resolveSkill("Document Preparation", index), null);
+});

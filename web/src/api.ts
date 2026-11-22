@@ -380,3 +380,9 @@ export async function cvPolish(items: { text: string; kind: "text" | "langs" | "
   const result = await postJson<{ items: string[] }>("/api/cv/polish", { items }, "The CV could not be tidied.");
   return result.items;
 }
+
+/** Agent 5: a category for skills the catalog does not know; the server keeps only known ones. */
+export async function cvCategorize(skills: string[]): Promise<Record<string, string>> {
+  const result = await postJson<{ categories: Record<string, string> }>("/api/cv/categorize", { skills }, "The skills could not be sorted.");
+  return result.categories;
+}

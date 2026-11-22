@@ -78,3 +78,29 @@ export function splitSkills(text: string, catalog: CatalogEntry[]): string[] {
   }
   return out;
 }
+
+export type KnownSkill = { name: string; category: string };
+export type SkillIndex = Map<string, KnownSkill>;
+
+/** How a skill is compared: no capitals, hyphens as spaces, and no trailing "skills"
+ * ("Problem-Solving" and "Communication Skills" match "problem solving" and "communication"). */
+export function skillKey(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\s+skills?$/, "");
+}
+
+export function skillIndex(catalog: { name: string; category: string; aliases: string[] }[]): SkillIndex {
+  const index: SkillIndex = new Map();
+  for (const skill of catalog) {
+    for (const spelling of [skill.name, ...skill.aliases]) index.set(skillKey(spelling), { name: skill.name, category: skill.category });
+  }
+  return index;
+}
+
+export function resolveSkill(text: string, index: SkillIndex): KnownSkill | null {
+  return index.get(skillKey(text)) ?? null;
+}

@@ -50,3 +50,13 @@ def test_catalog_route_serves_names_categories_and_english_aliases():
     assert by_name["Python"]["aliases"] == ["python"]
     assert body["related"]["React"][0] == "TypeScript"
     assert "max-age" in response.headers["cache-control"]
+
+
+def test_common_soft_skills_and_office_tools_are_known():
+    from app.skills_catalog import CATALOG
+
+    known = {alias: category for name, category, aliases in CATALOG for alias in (name.lower(), *aliases)}
+    assert known["analytical thinking"] == "Soft skills"
+    assert known["attention to detail"] == "Soft skills"
+    assert known["microsoft excel"] == "Tools"
+    assert known["microsoft word"] == "Tools"

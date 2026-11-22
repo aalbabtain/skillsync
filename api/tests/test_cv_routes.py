@@ -124,3 +124,19 @@ def test_polish_in_demo_mode_tidies_capital_letters(monkeypatch):
     monkeypatch.setattr(cv_skills, "extractor_mode", lambda: cv_skills.MOCK)
     response = client.post("/api/cv/polish", json={"items": [{"text": "king saud university", "kind": "text"}]})
     assert response.json() == {"items": ["King Saud University"]}
+
+
+def test_categorize_keeps_only_known_categories(monkeypatch):
+    monkeypatch.setattr(
+        cv_writer, "categorize",
+        lambda skills: {"Document Preparation": "Tools", "Attention to Detail": "Soft skills", "Juggling": "Circus"},
+    )
+    body = {"skills": ["Document Preparation", "Attention to Detail", "Juggling"]}
+    assert client.post("/api/cv/categorize", json=body).json() == {
+        "categories": {"Document Preparation": "Tools", "Attention to Detail": "Soft skills"}
+    }
+
+
+def test_categorize_in_demo_mode_leaves_them_to_other(monkeypatch):
+    monkeypatch.setattr(cv_skills, "extractor_mode", lambda: cv_skills.MOCK)
+    assert client.post("/api/cv/categorize", json={"skills": ["Document Preparation"]}).json() == {"categories": {}}

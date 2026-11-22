@@ -49,6 +49,8 @@ export type State = {
   english: Record<string, string>;
   // English for any text still in Arabic in the finished CV, by its Arabic text.
   textEnglish?: Record<string, string>;
+  // A category for each skill the catalog does not know, from the writer.
+  skillCategories?: Record<string, string>;
   log: LogEntry[];
 };
 

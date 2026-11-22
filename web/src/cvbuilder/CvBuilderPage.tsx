@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { track } from "../analytics";
-import { ApiRequestError, createRun, cvDocx, cvFollowUp, cvImport, cvPolish, cvTranslate, getSkillCatalog, streamCvLines } from "../api";
+import { ApiRequestError, createRun, cvDocx, cvFollowUp, cvImport, cvCategorize, cvPolish, cvTranslate, getSkillCatalog, streamCvLines } from "../api";
 import type { CvLine } from "../api";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
@@ -12,7 +12,8 @@ import { applyEnglish, arabicTexts, polishable, regroup } from "./english";
 import type { PolishKind } from "./english";
 import CvPreview from "./CvPreview";
 import { MonthGrid, RangePicker } from "./MonthPicker";
-import { splitSkills, suggestSkills } from "./skills";
+import { resolveSkill, skillIndex, splitSkills, suggestSkills } from "./skills";
+import type { SkillIndex } from "./skills";
 import type { CatalogEntry } from "./skills";
 import { addAnother, answer, back, cancelEdit, canEdit, current, done, load, replaceLines, saveItem, skip, start, toResume } from "./engine";
 import { FOLLOW_UP_KEYS, groupKeys, SCRIPT, STEPS, TRANSLATED_KEYS } from "./script";
@@ -112,7 +113,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   const [fileName, setFileName] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [downloadError, setDownloadError] = useState("");
-  const [categories, setCategories] = useState<Map<string, string>>(new Map());
+  const [index, setIndex] = useState<SkillIndex>(new Map());
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
   // Skills offered at the skills question that the person turned off.
   const [dropped, setDropped] = useState<Set<string>>(new Set());
@@ -125,14 +126,10 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     track("cv-builder");
     getSkillCatalog()
       .then((catalog) => {
-        const map = new Map<string, string>();
-        for (const skill of catalog.skills) {
-          for (const spelling of [skill.name, ...skill.aliases]) map.set(spelling.toLowerCase(), skill.category);
-        }
-        setCategories(map);
+        setIndex(skillIndex(catalog.skills));
         setCatalog(catalog.skills.map((skill) => ({ name: skill.name, aliases: skill.aliases })));
       })
-      .catch(() => setCategories(new Map()));
+      .catch(() => setIndex(new Map()));
   }, []);
 
   useEffect(() => {
@@ -149,7 +146,11 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     if (box) box.scrollTop = box.scrollHeight;
   }, [state?.log.length, writing?.shown, error, followKey]);
 
-  const categoryOf = useCallback((skill: string) => categories.get(skill.toLowerCase()) ?? "Other skills", [categories]);
+  const categoryOf = useCallback(
+    (skill: string) => resolveSkill(skill, index)?.category ?? state?.skillCategories?.[skill] ?? "Other skills",
+    [index, state?.skillCategories],
+  );
+  const resolve = useCallback((skill: string) => resolveSkill(skill, index), [index]);
 
   // A long wait while writing (a busy model, a switch to the next one) is said, not left silent.
   const writingKey = writing ? `${writing.lines.length}:${writing.shown.length > 0}` : "";
@@ -472,7 +473,11 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     if (writing?.target === "summary") live = { ...live, summary: [...writing.lines, writing.shown].join(" ").trim() };
     return applyEnglish(toResume(live, categoryOf), state.textEnglish ?? {});
   }, [state, draft, question, followKey, writing, categoryOf]);
-  const resume = useMemo(() => (baseResume ? regroup(baseResume, categoryOf) : null), [baseResume, categoryOf]);
+  const resume = useMemo(
+    () => (baseResume ? regroup(baseResume, resolve, state?.skillCategories ?? {}) : null),
+    [baseResume, resolve, state?.skillCategories],
+  );
+
 
   // The finished CV is tidied and English only: the short fields the person typed (spelling,
   // capital letters, certificates in full, language levels) and anything still in Arabic go to
@@ -522,6 +527,26 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     setDownloadError(`${t("cvb_still_arabic")} ${left.join("، ")}`);
     return false;
   }
+
+  // Skills the catalog does not know get a category from the writer, once, after the polish.
+  const categorizeTried = useRef("");
+  const unknownSkills = useMemo(() => {
+    if (!resume || !finished || englishing) return [];
+    const asked = state?.skillCategories ?? {};
+    return (resume.skills["Other skills"] ?? []).filter((skill) => !(skill in asked));
+  }, [resume, finished, englishing, state?.skillCategories]);
+  useEffect(() => {
+    const key = unknownSkills.join("\n");
+    if (!unknownSkills.length || writing || categorizeTried.current === key) return;
+    categorizeTried.current = key;
+    cvCategorize(unknownSkills)
+      .then((found) => {
+        // A skill with no category is remembered as asked, so it is not sent again.
+        const all = Object.fromEntries(unknownSkills.map((skill) => [skill, found[skill] ?? "Other skills"]));
+        setState((s) => (s ? { ...s, skillCategories: { ...(s.skillCategories ?? {}), ...all } } : s));
+      })
+      .catch(() => undefined);
+  }, [unknownSkills, writing]);
 
   const fresh = writing ? [...writing.lines, writing.shown, [...writing.lines, writing.shown].join(" ").trim()] : [];
 

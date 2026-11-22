@@ -310,3 +310,21 @@ def polish(items: list[dict[str, str]], extractor: str | None = None) -> list[st
     contents = json.dumps([{"kind": item["kind"], "text": strip_contact(item["text"])} for item in items], ensure_ascii=False)
     found = _ask("cv_polish", Polished, contents).items
     return [" ".join(text.split()) for text in found]
+
+
+class Categorized(BaseModel):
+    skill: str
+    category: str
+
+
+class Categories(BaseModel):
+    items: list[Categorized]
+
+
+def categorize(skills: list[str], extractor: str | None = None) -> dict[str, str]:
+    """A category for each skill the catalog does not know. Demo mode gives none, and the page
+    files them under Other skills; the route keeps only the catalog's own categories."""
+    if _demo(extractor) or not skills:
+        return {}
+    found = _ask("cv_categorize", Categories, json.dumps(skills, ensure_ascii=False)).items
+    return {item.skill: item.category for item in found}
