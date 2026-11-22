@@ -12,7 +12,7 @@ import { applyEnglish, arabicTexts, polishable, regroup } from "./english";
 import type { PolishKind } from "./english";
 import CvPreview from "./CvPreview";
 import { MonthGrid, RangePicker } from "./MonthPicker";
-import { suggestSkills } from "./skills";
+import { splitSkills, suggestSkills } from "./skills";
 import type { CatalogEntry } from "./skills";
 import { addAnother, answer, back, cancelEdit, canEdit, current, done, load, replaceLines, saveItem, skip, start, toResume } from "./engine";
 import { FOLLOW_UP_KEYS, groupKeys, SCRIPT, STEPS, TRANSLATED_KEYS } from "./script";
@@ -329,7 +329,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     if (question?.kind === "skills") {
       // The offered skills the person kept, then the ones they typed.
       const kept = offered.filter((skill) => !dropped.has(skill));
-      text = [...kept, ...text.split(/[,،\n]/).map((part) => part.trim()).filter(Boolean)].join(", ");
+      text = [...kept, ...splitSkills(text, catalog)].join(", ");
     }
 
     // One follow-up per job or project when its description is too thin to write from. It is
@@ -825,7 +825,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         {question.kind !== "date" && question.kind !== "range" && (
         <textarea
           id="cvb-answer"
-          placeholder={question.kind === "skills" && offered.length > 0 ? t("cvb_skills_more") : undefined}
+          placeholder={question.kind === "skills" ? t(offered.length > 0 ? "cvb_skills_more" : "cvb_skills_comma") : undefined}
           ref={inputRef}
           dir="auto"
           rows={2}

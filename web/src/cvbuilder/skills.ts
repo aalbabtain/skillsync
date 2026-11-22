@@ -41,3 +41,40 @@ export function suggestSkills([tools, ...texts]: string[], catalog: CatalogEntry
   }
   return found;
 }
+
+/** The skills in what the person typed: one per comma. A part with no comma is split further
+ * only when it is wholly made of known skills ("python teamwork" is Python and Teamwork;
+ * "machine learning" stays one); anything else stays as typed. */
+export function splitSkills(text: string, catalog: CatalogEntry[]): string[] {
+  const spellings = new Map<string, string>();
+  for (const skill of catalog) {
+    for (const spelling of [skill.name, ...skill.aliases]) spellings.set(spelling.toLowerCase(), skill.name);
+  }
+  const out: string[] = [];
+  for (const part of text.split(/[,،\n]/).map((item) => item.trim()).filter(Boolean)) {
+    const words = part.split(/\s+/);
+    if (words.length < 2) {
+      out.push(part);
+      continue;
+    }
+    // Longest known skill first at each position; if any word is left over, keep the part whole.
+    const found: string[] = [];
+    let i = 0;
+    while (i < words.length) {
+      let matched = 0;
+      for (let end = words.length; end > i; end--) {
+        const name = spellings.get(words.slice(i, end).join(" ").toLowerCase());
+        if (name) {
+          found.push(name);
+          matched = end - i;
+          break;
+        }
+      }
+      if (!matched) break;
+      i += matched;
+    }
+    if (i === words.length && found.length > 1) out.push(...found);
+    else out.push(part);
+  }
+  return out;
+}

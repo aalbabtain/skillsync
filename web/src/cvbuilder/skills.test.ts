@@ -18,3 +18,12 @@ test("skills come from the tools named and the catalog skills in the description
 test("a short skill name counts only when written as a name", () => {
   assert.deepEqual(suggestSkills(["", "wrote services in Go"], CATALOG), ["Go"]);
 });
+
+test("skills typed without commas are split when every word is a known skill", async () => {
+  const { splitSkills } = await import("./skills.ts");
+  const catalog = [...CATALOG, { name: "Teamwork", aliases: ["teamwork", "team work"] }, { name: "Machine Learning", aliases: ["machine learning", "ml"] }, { name: "Public Speaking", aliases: ["public speaking"] }];
+  assert.deepEqual(splitSkills("python teamwork", catalog), ["Python", "Teamwork"]);
+  assert.deepEqual(splitSkills("machine learning python", catalog), ["Machine Learning", "Python"]);
+  assert.deepEqual(splitSkills("Python, team work, public speaking", catalog), ["Python", "team work", "public speaking"]);
+  assert.deepEqual(splitSkills("data entry in excel", catalog), ["data entry in excel"]);
+});
