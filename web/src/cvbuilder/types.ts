@@ -1,6 +1,6 @@
 // The CV builder's data. Resume mirrors api/app/cv_docx.py's Resume, which /api/cv/docx takes.
 
-export type QuestionKind = "text" | "latin" | "long" | "email" | "phone" | "url" | "date" | "gpa" | "choice" | "skills";
+export type QuestionKind = "text" | "latin" | "long" | "email" | "phone" | "url" | "date" | "gpa" | "choice" | "skills" | "range";
 
 export type Group = "job" | "project";
 
@@ -29,7 +29,7 @@ export type Mode = "scratch" | "update";
 
 // Raised whenever the questions change, so a conversation saved under other questions is
 // started over instead of being read against the wrong script.
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
 export type State = {
   version: typeof STATE_VERSION;

@@ -3,7 +3,7 @@
 import { DEGREE_TEXT, groupKeys, indexOf, SCRIPT } from "./script.ts";
 import { STATE_VERSION } from "./types.ts";
 import type { Group, Item, LogEntry, Mode, Question, Resume, State } from "./types.ts";
-import { isSkipWord, normalizeDate, validate, westernDigits } from "./validate.ts";
+import { isSkipWord, normalizeDate, normalizeRange, validate, westernDigits } from "./validate.ts";
 import type { Problem } from "./validate.ts";
 
 export type Result = {
@@ -60,9 +60,8 @@ function moveTo(state: State, at: number): State {
 function advance(state: State, question: Question): Result {
   const groupDone = question.group && SCRIPT[state.at + 1]?.group !== question.group;
   if (state.resumeAt !== null) {
-    // Back from an edit: return to where the person was.
-    const resumeAt = state.resumeAt;
-    return { state: moveTo({ ...state, resumeAt: null }, resumeAt) };
+    // Back from an edit: return to the question the person was on, already asked.
+    return { state: { ...state, at: state.resumeAt, resumeAt: null }, needs: question.writes };
   }
   if (groupDone && question.group) {
     return { state: { ...state, pending: question.group }, needs: question.group };
@@ -77,7 +76,20 @@ function advance(state: State, question: Question): Result {
   return { state: moveTo(next, nextIndex(next, state.at)), needs: question.writes };
 }
 
-export function answer(state: State, text: string): Result {
+// An edit replaces the earlier answer where it is in the conversation; a new answer is added.
+function logAnswer(state: State, entry: LogEntry & { key: string }): LogEntry[] {
+  if (state.resumeAt === null) return [...state.log, entry];
+  let index = -1;
+  state.log.forEach((e, i) => {
+    if ((e.kind === "answer" || e.kind === "skipped") && e.key === entry.key) index = i;
+  });
+  if (index < 0) return [...state.log, entry];
+  return state.log.map((e, i) => (i === index ? entry : e));
+}
+
+/** `shown` is what the conversation shows when it differs from what is stored, such as the
+ * detail given after a follow-up question, stored joined to the first answer. */
+export function answer(state: State, text: string, shown?: string): Result {
   const question = current(state);
   if (!question) return { state };
   if (isSkipWord(text)) return skip(state);
@@ -88,7 +100,11 @@ export function answer(state: State, text: string): Result {
     const problem = validate(question.kind, value);
     if (problem) return { state, error: problem };
   }
-  const stored = question.kind === "date" ? normalizeDate(value) ?? value : question.kind === "gpa" ? westernDigits(value) : value;
+  const stored =
+    question.kind === "date" ? normalizeDate(value) ?? value
+    : question.kind === "range" ? normalizeRange(value) ?? value
+    : question.kind === "gpa" ? westernDigits(value)
+    : value;
   const skipped = { ...state.skipped };
   delete skipped[question.key];
   // A changed answer needs its English form again.
@@ -99,7 +115,7 @@ export function answer(state: State, text: string): Result {
     answers: { ...state.answers, [question.key]: stored },
     english,
     skipped,
-    log: [...state.log, { kind: "answer", key: question.key, text: value }],
+    log: logAnswer(state, { kind: "answer", key: question.key, text: (shown ?? value).trim() }),
   };
   return advance(next, question);
 }
@@ -114,7 +130,7 @@ export function skip(state: State): Result {
     ...state,
     answers,
     skipped: { ...state.skipped, [question.key]: true },
-    log: [...state.log, { kind: "skipped", key: question.key }],
+    log: logAnswer(state, { kind: "skipped", key: question.key }),
   };
   return advance(next, question);
 }
@@ -143,18 +159,6 @@ export function addAnother(state: State, yes: boolean): State {
   return moveTo(next, yes ? first : nextIndex(next, last));
 }
 
-// The answer to a follow-up question joins the answer it was about; the current question is
-// then asked again.
-export function addDetail(state: State, key: string, text: string): State {
-  const detail = text.trim();
-  if (!detail) return state;
-  const before = (state.answers[key] ?? "").trim().replace(/[.،]+$/, "");
-  const log: LogEntry[] = [...state.log, { kind: "answer", key, text: detail }];
-  const question = current(state);
-  if (question) log.push({ kind: "ask", key: question.key });
-  return { ...state, answers: { ...state.answers, [key]: before ? `${before}. ${detail}` : detail }, log };
-}
-
 export function replaceLines(state: State, group: Group, index: number, lines: string[]): State {
   const list = group === "job" ? "jobs" : "projects";
   const items = state[list].map((item, i) => (i === index ? { ...item, lines } : item));
@@ -165,7 +169,13 @@ export function replaceLines(state: State, group: Group, index: number, lines: s
 export function back(state: State, key: string | undefined): State {
   const target = key ? indexOf(key) : previousAsked(state);
   if (target < 0 || target >= state.at || state.pending) return state;
-  return moveTo({ ...state, resumeAt: state.resumeAt ?? state.at }, target);
+  // Nothing is added to the conversation: the page shows which answer is being changed.
+  return { ...state, resumeAt: state.resumeAt ?? state.at, at: target };
+}
+
+export function cancelEdit(state: State): State {
+  if (state.resumeAt === null) return state;
+  return { ...state, at: state.resumeAt, resumeAt: null };
 }
 
 function previousAsked(state: State): number {
@@ -216,8 +226,8 @@ export function toResume(state: State, categoryOf: (skill: string) => string = (
     experience: state.jobs.map(({ answers, lines: bullets }) => ({
       company: answers.company ?? "",
       title: answers.jobTitle ?? "",
-      start: answers.jobStart ?? "",
-      end: answers.jobEnd ?? "",
+      start: (answers.jobDates ?? "").split(" – ")[0] ?? "",
+      end: (answers.jobDates ?? "").split(" – ")[1] ?? "",
       role_line: answers.tools ?? "",
       bullets,
     })),

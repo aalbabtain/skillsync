@@ -51,10 +51,13 @@ const AUDIENCES: Card[] = [
 
 const FAQ: { q: MessageKey; a: MessageKey }[] = [
   { q: "q0", a: "a0" },
+  { q: "q6", a: "a6" },
   { q: "q2", a: "a2" },
+  { q: "q7", a: "a7" },
   { q: "q3", a: "a3" },
   { q: "q4", a: "a4" },
   { q: "q5", a: "a5" },
+  { q: "q8", a: "a8" },
   { q: "q1", a: "a1" },
 ];
 
@@ -255,6 +258,12 @@ export default function Landing({ onStart, counterCode }: Props) {
             </li>
           ))}
         </ol>
+        <p className="ch-build" data-mask>
+          <FileText size={16} aria-hidden="true" />
+          <span>
+            {t("how_build")} <a href="#cv-builder">{t("how_build_link")}</a>
+          </span>
+        </p>
       </section>
 
       <section className="chapter" id="result" aria-labelledby="result-title">

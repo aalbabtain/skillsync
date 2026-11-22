@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { addAnother, addDetail, answer, back, current, load, replaceLines, saveItem, skip, start, toResume } from "./engine.ts";
+import { addAnother, answer, back, cancelEdit, current, load, replaceLines, saveItem, skip, start, toResume } from "./engine.ts";
 import { indexOf, SCRIPT } from "./script.ts";
 import type { State } from "./types.ts";
 
@@ -123,12 +123,41 @@ test("the script has nine steps in order", () => {
   assert.deepEqual([...new Set(steps)], [0, 1, 2, 3, 4, 5, 6, 7, 8]);
 });
 
-test("a follow-up detail is added to the answer it asked about", () => {
-  let state = say(atKey("projName"), "SkillSync", "built it with Python");
-  state = addDetail(state, "projWhat", "it reads a CV and lists its skills");
-  assert.equal(state.answers.projWhat, "built it with Python. it reads a CV and lists its skills");
-  assert.equal(current(state)?.key, "projTools");
-  assert.deepEqual(state.log.at(-1), { kind: "ask", key: "projTools" });
+test("an answer can be logged with other words than it stores (a follow-up detail)", () => {
+  const state = say(atKey("projName"), "SkillSync");
+  const result = answer(state, "built it with Python. it reads a CV", "it reads a CV");
+  assert.equal(result.state.answers.projWhat, "built it with Python. it reads a CV");
+  assert.deepEqual(result.state.log.at(-2), { kind: "answer", key: "projWhat", text: "it reads a CV" });
+});
+
+test("editing an earlier answer changes it in place, without asking anything twice", () => {
+  let state = say(start("scratch"), "Sara Alharbi", "SE", "skip", "s@x.io");
+  const before = state.log.length;
+  state = back(state, "name");
+  assert.equal(state.log.length, before);
+  assert.equal(current(state)?.key, "name");
+  state = say(state, "Sara Al-Harbi");
+  assert.equal(state.log.length, before);
+  assert.equal(state.log.filter((e) => e.kind === "answer" && e.key === "name").length, 1);
+  assert.ok(state.log.some((e) => e.kind === "answer" && e.text === "Sara Al-Harbi"));
+  assert.equal(current(state)?.key, "phone");
+});
+
+test("cancelling an edit returns to the current question unchanged", () => {
+  const state = say(start("scratch"), "Sara Alharbi", "SE");
+  const edited = cancelEdit(back(state, "name"));
+  assert.equal(current(edited)?.key, "target");
+  assert.equal(edited.answers.name, "Sara Alharbi");
+  assert.equal(edited.log.length, state.log.length);
+});
+
+test("job dates are one answer, from and to", () => {
+  const state = say(atKey("jobDates"), "march 2025 - present");
+  assert.equal(state.answers.jobDates, "Mar 2025 – Present");
+  assert.equal(answer(atKey("jobDates"), "Jun 2026 - Jan 2025").error, "range");
+  const resume = toResume({ ...state, jobs: [{ answers: { company: "STC", jobTitle: "Intern", jobDates: "Mar 2025 – Present" }, lines: [] }] });
+  assert.equal(resume.experience[0].start, "Mar 2025");
+  assert.equal(resume.experience[0].end, "Present");
 });
 
 test("rewritten lines replace an item's lines", () => {

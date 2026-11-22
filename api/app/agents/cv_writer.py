@@ -210,12 +210,19 @@ def _ask(prompt: str, schema, contents: str):
         raise CvWriterError("CV_MALFORMED", "The writing model returned unusable output.") from error
 
 
-def follow_up(answer: str, extractor: str | None = None) -> str | None:
-    """One short English question when the answer is too vague to write from, else None.
-    Demo mode never asks; the page asks its own fixed question for short answers."""
+LANGUAGE_NAMES = {"en": "English", "ar": "Arabic"}
+
+
+def follow_up(answer: str, extractor: str | None = None, language: str = "en") -> str | None:
+    """One short question, in the site's language, when the answer is too vague to write
+    from, else None. Demo mode never asks; the page asks its own fixed question for short
+    answers."""
     if _demo(extractor):
         return None
-    question = _ask("cv_follow_up", FollowUp, strip_contact(answer)).question
+    contents = json.dumps(
+        {"answer": strip_contact(answer), "ask_in": LANGUAGE_NAMES.get(language, "English")}, ensure_ascii=False
+    )
+    question = _ask("cv_follow_up", FollowUp, contents).question
     question = " ".join((question or "").split())
     return question[:200] or None
 

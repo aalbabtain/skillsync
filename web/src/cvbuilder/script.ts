@@ -20,8 +20,7 @@ export const SCRIPT: Question[] = [
   { key: "hasJob", step: 3, kind: "choice", choices: ["yes", "no"] },
   { key: "company", step: 3, kind: "latin", group: "job" },
   { key: "jobTitle", step: 3, kind: "text", group: "job" },
-  { key: "jobStart", step: 3, kind: "date", group: "job" },
-  { key: "jobEnd", step: 3, kind: "date", group: "job" },
+  { key: "jobDates", step: 3, kind: "range", group: "job" },
   { key: "jobWhat", step: 3, kind: "long", group: "job" },
   { key: "tools", step: 3, kind: "text", group: "job", optional: true },
 

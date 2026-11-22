@@ -12,7 +12,7 @@ import CvPreview from "./CvPreview";
 import MonthPicker from "./MonthPicker";
 import { suggestSkills } from "./skills";
 import type { CatalogEntry } from "./skills";
-import { addAnother, addDetail, answer, back, canEdit, current, done, load, replaceLines, saveItem, skip, start, toResume } from "./engine";
+import { addAnother, answer, back, cancelEdit, canEdit, current, done, load, replaceLines, saveItem, skip, start, toResume } from "./engine";
 import { FOLLOW_UP_KEYS, groupKeys, SCRIPT, STEPS, TRANSLATED_KEYS } from "./script";
 import type { Group, Item, LogEntry, State } from "./types";
 import { hasArabic, isSkipWord, normalizeDate } from "./validate";
@@ -59,13 +59,16 @@ function typeOut(text: string, show: (shown: string) => void): Promise<void> {
 }
 
 export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
-  const { t, errorMessage } = useI18n();
+  const { t, lang, errorMessage } = useI18n();
   const [state, setState] = useState<State | null>(readSaved);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [writing, setWriting] = useState<Writing | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
-  const [followKey, setFollowKey] = useState<string | null>(null);
+  // A follow-up question waiting for its answer, and the description it asked about.
+  const [follow, setFollow] = useState<{ key: string; first: string } | null>(null);
+  const followKey = follow?.key ?? null;
+  const [thinking, setThinking] = useState(false);
   const [slow, setSlow] = useState(false);
   const [importing, setImporting] = useState<"idle" | "choose" | "reading">("idle");
   const [importError, setImportError] = useState("");
@@ -261,16 +264,26 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
 
   // ---------- The conversation ----------
 
+  // After an edit or a written step, the next question is already in the log; the box is empty.
+  function applied(result: ReturnType<typeof answer>) {
+    setDraft("");
+    setState(result.state);
+    if (result.needs === "summary") return writeSummary(result.state);
+    if (result.needs === "job" || result.needs === "project") return writeItem(result.state, result.needs);
+  }
+
   async function submit(input: string) {
     let text = input;
-    if (!state || writing) return;
+    if (!state || writing || thinking) return;
     setError("");
 
-    if (followKey) {
-      setState(addDetail(state, followKey, text));
-      setFollowKey(null);
-      setDraft("");
-      return;
+    // The answer to a follow-up joins the description it was about.
+    if (follow) {
+      if (!text.trim()) return setError(t("cvb_bad_empty"));
+      const result = answer(state, `${follow.first.replace(/[.،\s]+$/, "")}. ${text.trim()}`, text);
+      setFollow(null);
+      if (result.error) return setError(t(`cvb_bad_${result.error}` as MessageKey));
+      return applied(result);
     }
 
     const question = current(state);
@@ -279,51 +292,59 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
       const kept = offered.filter((skill) => !dropped.has(skill));
       text = [...kept, ...text.split(/[,،\n]/).map((part) => part.trim()).filter(Boolean)].join(", ");
     }
-    const result = answer(state, text);
-    if (result.error) {
-      setError(t(`cvb_bad_${result.error}` as MessageKey));
-      return;
-    }
-    setDraft("");
-    setState(result.state);
 
-    if (result.needs === "summary") return writeSummary(result.state);
-    if (result.needs === "job" || result.needs === "project") return writeItem(result.state, result.needs);
-
-    // One follow-up per job or project when its description is too thin to write from.
-    if (question && FOLLOW_UP_KEYS.includes(question.key) && !isSkipWord(text)) {
-      let follow: string | null = null;
+    // One follow-up per job or project when its description is too thin to write from. It is
+    // asked before the conversation moves on, so the next answer always goes to the right place.
+    if (question && FOLLOW_UP_KEYS.includes(question.key) && state.resumeAt === null && !isSkipWord(text) && text.trim()) {
+      let asked: string | null = null;
       if (!demoMode) {
+        setThinking(true);
         try {
-          follow = await cvFollowUp(text);
+          asked = await cvFollowUp(text, lang);
         } catch {
-          follow = null;
+          asked = null;
         }
+        setThinking(false);
       }
-      if (!follow && text.trim().split(/\s+/).length < FOLLOW_UP_MIN_WORDS) follow = t("cvb_follow_up");
-      if (follow) {
-        const entry: LogEntry = { kind: "follow", key: question.key, text: follow };
-        setState((s) => (s ? { ...s, log: [...s.log, entry] } : s));
-        setFollowKey(question.key);
+      if (!asked && text.trim().split(/\s+/).length < FOLLOW_UP_MIN_WORDS) {
+        asked = t(question.key === "jobWhat" ? "cvb_follow_up_job" : "cvb_follow_up");
+      }
+      if (asked) {
+        const entries: LogEntry[] = [
+          { kind: "answer", key: question.key, text: text.trim() },
+          { kind: "follow", key: question.key, text: asked },
+        ];
+        setState((s) => (s ? { ...s, log: [...s.log, ...entries] } : s));
+        setFollow({ key: question.key, first: text.trim() });
+        setDraft("");
+        return;
       }
     }
+
+    const result = answer(state, text);
+    if (result.error) return setError(t(`cvb_bad_${result.error}` as MessageKey));
+    return applied(result);
   }
 
   function onSkip() {
-    if (!state || writing) return;
+    if (!state || writing || thinking) return;
     setError("");
-    if (followKey) {
-      setFollowKey(null);
-      return;
+    if (follow) {
+      // No more detail: the first description stands, and it is already in the conversation.
+      const result = answer(state, follow.first, t("cvb_no_more"));
+      setFollow(null);
+      return applied(result);
     }
     const result = skip(state);
-    if (result.error) {
-      setError(t(`cvb_bad_${result.error}` as MessageKey));
-      return;
-    }
+    if (result.error) return setError(t(`cvb_bad_${result.error}` as MessageKey));
+    return applied(result);
+  }
+
+  function onCancelEdit() {
+    if (!state) return;
+    setError("");
     setDraft("");
-    setState(result.state);
-    if (result.needs === "job" || result.needs === "project") writeItem(result.state, result.needs);
+    setState(cancelEdit(state));
   }
 
   function onBack(key?: string) {
@@ -331,7 +352,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     const next = back(state, key);
     if (next === state) return;
     setError("");
-    setFollowKey(null);
+    setFollow(null);
     setState(next);
     setDraft(next.answers[current(next)?.key ?? ""] ?? "");
     window.setTimeout(() => inputRef.current?.focus(), 0);
@@ -343,7 +364,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     setDraft("");
     setError("");
     setFailure(null);
-    setFollowKey(null);
+    setFollow(null);
   }
 
   async function importCv(file: File) {
@@ -504,7 +525,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
       }
       case "answer": {
         const asked = SCRIPT.find((item) => item.key === entry.key);
-        const shown = asked?.kind === "choice" ? t(`cvb_choice_${entry.text}` as MessageKey) : entry.text;
+        const shown = asked?.kind === "choice" ? choiceLabel(entry.key, entry.text) : entry.text;
         return (
           <p className="cvb-msg is-me" dir="auto" key={index}>
             {shown}
@@ -572,6 +593,28 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
 
   const writingLabel = writing && (writing.target === "summary" ? t("cvb_writing_summary") : t("cvb_writing_bullets"));
 
+  // A choice can have its own wording for one question ("No experience yet").
+  function choiceLabel(key: string, choice: string): string {
+    return t(`cvb_choice_${key}_${choice}` as MessageKey) || t(`cvb_choice_${choice}` as MessageKey);
+  }
+
+  // When an earlier answer is being changed, the box says which one, with a way back.
+  const editing =
+    state.resumeAt !== null && question ? (
+      <p className="cvb-editing">
+        <span>
+          {t("cvb_editing")} <b>{t(`cvb_q_${question.key}` as MessageKey)}</b>
+        </span>
+        <button className="cvb-edit" type="button" onClick={onCancelEdit}>
+          {t("cvb_cancel")}
+        </button>
+      </p>
+    ) : null;
+
+  // The two halves of a from–to answer, as picked or typed so far.
+  const rangeParts = draft.split(" – ").map((part) => part.trim());
+  while (rangeParts.length < 2) rangeParts.push("");
+
   let composer: ReactNode = null;
   if (writing) {
     composer = null;
@@ -609,10 +652,11 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   } else if (question?.kind === "choice") {
     composer = (
       <div className="cvb-composer">
+        {editing}
         <div className="cvb-row">
           {question.choices?.map((choice) => (
             <button className="btn btn-ghost" type="button" key={choice} onClick={() => submit(choice)}>
-              {t(`cvb_choice_${choice}` as MessageKey)}
+              {choiceLabel(question.key, choice)}
             </button>
           ))}
         </div>
@@ -621,6 +665,23 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   } else if (question) {
     composer = (
       <div className="cvb-composer">
+        {editing}
+        {question.kind === "range" && (
+          <div className="cvb-range">
+            <MonthPicker
+              key={`${question.key}-from`}
+              label={`${t("cvb_from")}: ${rangeParts[0] || "…"}`}
+              allowPresent={false}
+              onPick={(value) => setDraft(`${value} – ${rangeParts[1]}`)}
+            />
+            <MonthPicker
+              key={`${question.key}-to`}
+              label={`${t("cvb_to")}: ${rangeParts[1] || "…"}`}
+              allowPresent
+              onPick={(value) => setDraft(`${rangeParts[0]} – ${value}`)}
+            />
+          </div>
+        )}
         <label className="visually-hidden" htmlFor="cvb-answer">
           {t("cvb_answer_label")}
         </label>
@@ -672,12 +733,13 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
               {t("cvb_skip")}
             </button>
           )}
-          <button className="btn btn-primary cvb-send" type="button" onClick={() => submit(draft)}>
+          <button className="btn btn-primary cvb-send" type="button" disabled={thinking} onClick={() => submit(draft)}>
+            {thinking ? <span className="spinner" aria-hidden="true" /> : null}
             {t("cvb_send")}
           </button>
         </div>
         {question.kind === "date" && (
-          <MonthPicker key={question.key} allowPresent={question.key === "jobEnd"} onPick={(value) => submit(value)} />
+          <MonthPicker key={question.key} allowPresent={false} onPick={(value) => submit(value)} />
         )}
       </div>
     );
@@ -772,6 +834,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
               fresh={fresh}
               writing={writing && !writing.lines.length && !writing.shown ? writing.target : undefined}
               translatingLabel={t("cvb_translating")}
+              final={finished}
             />
           )}
           {finished && (

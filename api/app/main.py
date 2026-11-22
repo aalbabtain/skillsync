@@ -612,6 +612,7 @@ class CvWriteRequest(BaseModel):
 
 class CvFollowUpRequest(BaseModel):
     answer: str = Field(max_length=MAX_ANSWER_CHARS)
+    language: Literal["en", "ar"] = "en"
 
 
 class CvTranslateRequest(BaseModel):
@@ -674,7 +675,7 @@ def cv_follow_up_route(payload: CvFollowUpRequest, request: Request):
     if limited := _rate_limited(request, 1):
         return limited
     try:
-        return {"question": cv_writer.follow_up(payload.answer)}
+        return {"question": cv_writer.follow_up(payload.answer, language=payload.language)}
     except cv_writer.CvWriterError as error:
         return _cv_error(error)
 

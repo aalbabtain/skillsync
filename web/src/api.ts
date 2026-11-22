@@ -340,8 +340,8 @@ export async function streamCvLines(
   return { fallback };
 }
 
-export async function cvFollowUp(answer: string): Promise<string | null> {
-  const { question } = await postJson<{ question: string | null }>("/api/cv/follow-up", { answer }, "No follow-up question.");
+export async function cvFollowUp(answer: string, language: "en" | "ar"): Promise<string | null> {
+  const { question } = await postJson<{ question: string | null }>("/api/cv/follow-up", { answer, language }, "No follow-up question.");
   return question;
 }
 

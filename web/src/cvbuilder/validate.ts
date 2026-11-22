@@ -1,6 +1,6 @@
 import type { QuestionKind } from "./types.ts";
 
-export type Problem = "" | "empty" | "latin" | "email" | "phone" | "url" | "date" | "gpa";
+export type Problem = "" | "empty" | "latin" | "email" | "phone" | "url" | "date" | "gpa" | "range";
 
 const ARABIC = /[؀-ۿ]/;
 const MONTHS = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
@@ -32,6 +32,23 @@ export function normalizeDate(raw: string): string | null {
   if (match) return monthYear(Number(match[2]), Number(match[1]));
   return null;
 }
+function monthIndex(date: string): number {
+  if (date === "Present") return Infinity;
+  const [month, year] = date.split(" ");
+  return Number(year) * 12 + MONTH_NAMES.indexOf(month);
+}
+
+/** Two dates, from and to ("Mar 2025 - Present", "مارس 2025 إلى أغسطس 2025"), as
+ * "Mar 2025 – Aug 2025"; null when either is not a date or the end comes first. */
+export function normalizeRange(raw: string): string | null {
+  const parts = westernDigits(raw).split(/\s+(?:-|–|—|to|until|till|إلى|الى|حتى)\s+|\s*[–—]\s*/i);
+  if (parts.length !== 2) return null;
+  const start = normalizeDate(parts[0]);
+  const end = normalizeDate(parts[1]);
+  if (!start || !end || start === "Present" || monthIndex(start) > monthIndex(end)) return null;
+  return `${start} – ${end}`;
+}
+
 const SKIP_WORDS = new Set(["skip", "تخطي", "تخطى", "تخط", "تخطَّ", "-"]);
 
 export function westernDigits(text: string): string {
@@ -64,6 +81,8 @@ export function validate(kind: QuestionKind, raw: string): Problem {
       return /^https:\/\/\S+\.\S+$/.test(text) ? "" : "url";
     case "date":
       return normalizeDate(text) ? "" : "date";
+    case "range":
+      return normalizeRange(text) ? "" : "range";
     case "gpa": {
       const match = /^(\d+(?:\.\d+)?)(?:\s*\/\s*(\d+(?:\.\d+)?))?$/.exec(text);
       if (!match) return "gpa";

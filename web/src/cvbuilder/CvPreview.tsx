@@ -13,6 +13,8 @@ type Props = {
   translatingLabel: string;
   // What the model is writing and has not sent a line for yet: a placeholder shows there.
   writing?: "summary" | "job" | "project";
+  // The finished CV: sections with nothing in them are left out, as in the Word file.
+  final?: boolean;
 };
 
 /**
@@ -20,7 +22,7 @@ type Props = {
  * (centred name, one contact line, ruled headings, dates at the end of each title line). It is
  * also the PDF: printing the page shows this element alone.
  */
-export default function CvPreview({ resume, live, fresh = [], translatingLabel, writing }: Props) {
+export default function CvPreview({ resume, live, fresh = [], translatingLabel, writing, final = false }: Props) {
   const pending = <span className="cv-pending">Writing…</span>;
   const mark = (text: string): ReactNode => {
     let node: ReactNode = text;
@@ -57,8 +59,8 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
           : empty("[Email | Phone | City]")}
       </p>
 
-      <h3 className="cv-h">Professional Summary</h3>
-      {resume.summary ? <p>{mark(resume.summary)}</p> : writing === "summary" ? <p>{pending}</p> : <p className="cv-empty">…</p>}
+      {(!final || resume.summary) && <h3 className="cv-h">Professional Summary</h3>}
+      {final && !resume.summary ? null : resume.summary ? <p>{mark(resume.summary)}</p> : writing === "summary" ? <p>{pending}</p> : <p className="cv-empty">…</p>}
 
       {resume.experience.length > 0 && (
         <>
@@ -74,8 +76,8 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
         </>
       )}
 
-      <h3 className="cv-h">Education</h3>
-      {resume.education.length ? (
+      {(!final || resume.education.length > 0) && <h3 className="cv-h">Education</h3>}
+      {final && !resume.education.length ? null : resume.education.length ? (
         resume.education.map((school, index) => (
           <div key={index}>
             <TitleRow title={mark(school.institution)} dates={school.end} />
@@ -92,8 +94,8 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
         <p className="cv-empty">…</p>
       )}
 
-      <h3 className="cv-h">Projects</h3>
-      {resume.projects.length ? (
+      {(!final || resume.projects.length > 0) && <h3 className="cv-h">Projects</h3>}
+      {final && !resume.projects.length ? null : resume.projects.length ? (
         resume.projects.map((project, index) => (
           <div key={index}>
             <TitleRow title={mark(project.name)} link={bare(project.url)} dates={dates(project.start, project.end)} />
@@ -106,8 +108,8 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
         <p className="cv-empty">…</p>
       )}
 
-      <h3 className="cv-h">Technical Skills</h3>
-      {skills.length ? (
+      {(!final || skills.length > 0) && <h3 className="cv-h">Technical Skills</h3>}
+      {final && !skills.length ? null : skills.length ? (
         skills.map(([category, items]) => (
           <p key={category}>
             <b>{category}:</b> {mark(items.join(", "))}

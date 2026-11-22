@@ -2391,6 +2391,29 @@ a {
   color: var(--muted);
 }
 
+/* Under the five steps: the way in for someone without a CV. */
+.ch-build {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  max-width: 62ch;
+  margin-top: 1.5rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.ch-build svg {
+  flex: none;
+  align-self: center;
+  color: var(--accent);
+}
+
+.ch-build a {
+  color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
 .hero-build svg {
   flex: none;
 }
@@ -3232,6 +3255,30 @@ label {
 .cvb-hint {
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+.cvb-editing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding: 0.45rem 0.7rem;
+  border-inline-start: 3px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent-soft);
+  font-size: 0.86rem;
+}
+
+.cvb-editing .cvb-edit {
+  margin: 0;
+  color: var(--accent);
+}
+
+.cvb-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .cvb-offered {

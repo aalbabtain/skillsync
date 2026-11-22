@@ -81,8 +81,10 @@ def test_bad_task_is_refused():
 
 
 def test_follow_up_route(monkeypatch):
-    monkeypatch.setattr(cv_writer, "follow_up", lambda answer: "What could people do with it?")
-    assert client.post("/api/cv/follow-up", json={"answer": "built it"}).json() == {"question": "What could people do with it?"}
+    asked = []
+    monkeypatch.setattr(cv_writer, "follow_up", lambda answer, language="en": asked.append(language) or "ماذا يفعل؟")
+    response = client.post("/api/cv/follow-up", json={"answer": "built it", "language": "ar"})
+    assert response.json() == {"question": "ماذا يفعل؟"} and asked == ["ar"]
 
 
 def test_translate_keeps_original_when_digits_lost(monkeypatch):
@@ -92,7 +94,7 @@ def test_translate_keeps_original_when_digits_lost(monkeypatch):
 
 
 def test_rate_limited_returns_429(monkeypatch):
-    monkeypatch.setattr(cv_writer, "follow_up", lambda answer: None)
+    monkeypatch.setattr(cv_writer, "follow_up", lambda answer, language="en": None)
     monkeypatch.setattr(rate_limiter, "take", lambda key, units=1: 60)
     response = client.post("/api/cv/follow-up", json={"answer": "built it"})
     assert response.status_code == 429

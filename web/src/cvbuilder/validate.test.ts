@@ -51,3 +51,12 @@ test("dates are read loosely and stored as Mmm YYYY", async () => {
   assert.equal(normalizeDate("13/2027"), null);
   assert.equal(validate("date", "june 2027"), "");
 });
+
+test("a range of dates, from and to", async () => {
+  const { normalizeRange } = await import("./validate.ts");
+  assert.equal(normalizeRange("Mar 2025 - Present"), "Mar 2025 – Present");
+  assert.equal(normalizeRange("مارس 2025 إلى أغسطس 2025"), "Mar 2025 – Aug 2025");
+  assert.equal(normalizeRange("03/2025 to 08/2025"), "Mar 2025 – Aug 2025");
+  assert.equal(normalizeRange("Aug 2025 - Mar 2025"), null);
+  assert.equal(normalizeRange("Mar 2025"), null);
+});

@@ -145,3 +145,10 @@ def test_busy_model_becomes_cv_busy(monkeypatch):
     with pytest.raises(cv_writer.CvWriterError) as error:
         list(cv_writer.write_lines("summary", {"background": "x"}))
     assert error.value.code == "CV_BUSY"
+
+
+def test_follow_up_is_asked_in_the_sites_language(monkeypatch):
+    seen = []
+    fake_model(monkeypatch, {}, seen, whole=json.dumps({"question": "ماذا يستطيع الناس فعله به؟"}))
+    assert cv_writer.follow_up("بنيته بـ Python", language="ar") == "ماذا يستطيع الناس فعله به؟"
+    assert "Arabic" in seen[0]
