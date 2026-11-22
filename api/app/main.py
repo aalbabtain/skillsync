@@ -17,7 +17,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.agents import cv_skills, plan_builder, requirements, retrieval
+from app.agents import cv_skills, cv_writer, plan_builder, requirements, retrieval
+from app.cv_check import DIGITS, facts as line_facts, unsupported
 from app.config import get_settings
 from app.frontend import register_frontend
 from app.gap import evaluate_gap
@@ -583,6 +584,116 @@ def plan_route(payload: PlanRequest, request: Request):
 
     headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     return StreamingResponse(lines(), media_type="application/x-ndjson", headers=headers)
+
+
+MAX_ANSWER_CHARS = 1500
+MAX_ANSWERS = 20
+MAX_FALLBACK_CHARS = 200
+STATUS_BY_CV_ERROR = {"CV_BUSY": 503, "CV_QUOTA": 429, "CV_UNAVAILABLE": 503, "CV_MALFORMED": 502}
+LATIN_WORD = re.compile(r"[A-Za-z][\w.+#-]*|\d+(?:[.,]\d+)?")
+
+
+def _answers_ok(answers: dict[str, str], limit: int, max_chars: int) -> bool:
+    return len(answers) <= limit and all(len(key) <= 40 and len(value) <= max_chars for key, value in answers.items())
+
+
+class CvWriteRequest(BaseModel):
+    task: Literal["summary", "bullets"]
+    answers: dict[str, str]
+
+
+class CvFollowUpRequest(BaseModel):
+    answer: str = Field(max_length=MAX_ANSWER_CHARS)
+
+
+class CvTranslateRequest(BaseModel):
+    items: dict[str, str]
+
+
+def _cv_error(error: cv_writer.CvWriterError) -> JSONResponse:
+    return _error(STATUS_BY_CV_ERROR.get(error.code, 503), error.code, error.message)
+
+
+@app.post("/api/cv/write/stream")
+def cv_write_route(payload: CvWriteRequest, request: Request):
+    """Agent 5, streamed: the summary or one item's bullets, each line sent only once every
+    fact in it is found in the person's answers. Lines: {"type": "line", "text", "facts"},
+    {"type": "rejected", "count"}, {"type": "fallback", "text"} when no line survived a second
+    try, then {"type": "done"}; or {"type": "error", "code", "message"}."""
+    if not payload.answers or not _answers_ok(payload.answers, MAX_ANSWERS, MAX_ANSWER_CHARS):
+        return _error(422, "CV_ANSWERS_INVALID", "The answers are empty or too long.")
+    if limited := _rate_limited(request, 1):
+        return limited
+
+    answers = {key: cv_writer.strip_contact(value) for key, value in payload.answers.items()}
+    source = "\n".join(answers.values())
+
+    def attempt(asked: dict[str, str], rejected: list[str]):
+        sent = 0
+        for text in cv_writer.write_lines(payload.task, asked):
+            missing = unsupported(text, source)
+            if missing:
+                rejected.extend(fact for fact in missing if fact not in rejected)
+                continue
+            sent += 1
+            yield _line({"type": "line", "text": text, "facts": line_facts(text)})
+        if rejected:
+            yield _line({"type": "rejected", "count": len(rejected)})
+        return sent
+
+    def lines():
+        rejected: list[str] = []
+        try:
+            sent = yield from attempt(answers, rejected)
+            if not sent and rejected:
+                # Once more, naming what it must not use; then the person's own words.
+                sent = yield from attempt({**answers, "rejected": ", ".join(rejected)}, [])
+            if not sent:
+                own = max(answers.values(), key=len).strip()[:MAX_FALLBACK_CHARS]
+                yield _line({"type": "fallback", "text": own})
+        except cv_writer.CvWriterError as error:
+            yield _line({"type": "error", "code": error.code, "message": error.message})
+            return
+        yield _line({"type": "done"})
+
+    headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    return StreamingResponse(lines(), media_type="application/x-ndjson", headers=headers)
+
+
+@app.post("/api/cv/follow-up")
+def cv_follow_up_route(payload: CvFollowUpRequest, request: Request):
+    """Agent 5: one follow-up question when a job or project answer is too vague, or null."""
+    if limited := _rate_limited(request, 1):
+        return limited
+    try:
+        return {"question": cv_writer.follow_up(payload.answer)}
+    except cv_writer.CvWriterError as error:
+        return _cv_error(error)
+
+
+def _keeps_every_token(original: str, translated: str) -> bool:
+    """A translation is kept only when each number and Latin word of the original is in it."""
+    plain = translated.translate(DIGITS).lower()
+    return all(token.lower() in plain for token in LATIN_WORD.findall(original.translate(DIGITS)))
+
+
+@app.post("/api/cv/translate")
+def cv_translate_route(payload: CvTranslateRequest, request: Request):
+    """Agent 5: English for short Arabic fields. A value whose numbers or Latin words were
+    lost in translation comes back as the person wrote it."""
+    if not _answers_ok(payload.items, 10, 200):
+        return _error(422, "CV_ANSWERS_INVALID", "Too many items, or an item is too long.")
+    if limited := _rate_limited(request, 1):
+        return limited
+    try:
+        translated = cv_writer.translate(payload.items)
+    except cv_writer.CvWriterError as error:
+        return _cv_error(error)
+    items = {}
+    for key, original in payload.items.items():
+        value = translated.get(key) or original
+        items[key] = value if _keeps_every_token(original, value) else original
+    return {"items": items}
 
 
 # Registered last so every API route above takes precedence over the site's catch-all.
