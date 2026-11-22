@@ -3050,12 +3050,7 @@ label {
 }
 
 .cvb-upload {
-  display: grid;
-  gap: 0.6rem;
   margin-top: 1rem;
-  padding: 1rem;
-  border: 1px dashed var(--line2);
-  border-radius: 14px;
 }
 
 .cvb-builder {

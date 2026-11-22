@@ -1,4 +1,4 @@
-import { Check, Circle, Lock } from "lucide-react";
+import { Check, Circle, FileUp, Lock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -107,6 +107,9 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   const [slow, setSlow] = useState(false);
   const [importing, setImporting] = useState<"idle" | "choose" | "reading">("idle");
   const [importError, setImportError] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
   const [downloadError, setDownloadError] = useState("");
   const [categories, setCategories] = useState<Map<string, string>>(new Map());
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
@@ -403,6 +406,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   }
 
   async function importCv(file: File) {
+    setFileName(file.name);
     setImporting("reading");
     setImportError("");
     try {
@@ -536,25 +540,58 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
             </button>
           </div>
           {importing !== "idle" && (
-            <div className="cvb-upload">
-              <label htmlFor="cvb-file">{t("cvb_upload_label")}</label>
+            <div className="upload cvb-upload">
+              {/* The same drop zone as the CV step (Agent 1), so both ways in look alike. */}
+              <div
+                className={dragging ? "dropzone dropzone-active" : "dropzone"}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setDragging(false);
+                  const file = event.dataTransfer.files[0];
+                  if (file && importing !== "reading") importCv(file);
+                }}
+              >
+                {importing === "reading" ? (
+                  <>
+                    <span className="spinner" aria-hidden="true" />
+                    <p className="dropzone-title" role="status">
+                      {t("cvb_reading")}
+                    </p>
+                    <p className="dropzone-hint">
+                      <bdi>{fileName}</bdi>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <span className="dropzone-icon" aria-hidden="true">
+                      <FileUp size={26} />
+                    </span>
+                    <p className="dropzone-title">{t("drop")}</p>
+                    <p className="dropzone-hint">{t("drop_hint")}</p>
+                    <button className="btn btn-primary" type="button" onClick={() => fileRef.current?.click()}>
+                      {t("choose")}
+                    </button>
+                  </>
+                )}
+              </div>
               <input
-                id="cvb-file"
+                ref={fileRef}
                 type="file"
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                disabled={importing === "reading"}
+                hidden
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) importCv(file);
+                  event.target.value = "";
                 }}
               />
-              {importing === "reading" && (
-                <p role="status">
-                  <span className="spinner spinner-sm" aria-hidden="true" /> {t("cvb_reading")}
-                </p>
-              )}
               {importError && (
-                <p className="cvb-error" role="alert">
+                <p className="upload-error" role="alert">
                   {importError}
                 </p>
               )}
