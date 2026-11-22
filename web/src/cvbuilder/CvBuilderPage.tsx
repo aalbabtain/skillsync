@@ -20,6 +20,8 @@ import { hasArabic, isSkipWord, normalizeDate } from "./validate";
 const STORAGE_KEY = "skillsync-cv";
 const WORD_MS = 55;
 const FOLLOW_UP_MIN_WORDS = 8;
+// With nothing new for this long while writing, the page says the model is slow.
+const SLOW_AFTER_MS = 8000;
 
 type Writing = { target: "summary" | Group; lines: string[]; shown: string };
 type Failure = { message: string; retry: () => void; skip: () => void };
@@ -64,6 +66,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   const [writing, setWriting] = useState<Writing | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [followKey, setFollowKey] = useState<string | null>(null);
+  const [slow, setSlow] = useState(false);
   const [importing, setImporting] = useState<"idle" | "choose" | "reading">("idle");
   const [importError, setImportError] = useState("");
   const [downloadError, setDownloadError] = useState("");
@@ -105,6 +108,16 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   }, [state?.log.length, writing?.shown, error, followKey]);
 
   const categoryOf = useCallback((skill: string) => categories.get(skill.toLowerCase()) ?? "Other skills", [categories]);
+
+  // A long wait while writing (a busy model, a switch to the next one) is said, not left silent.
+  const writingKey = writing ? `${writing.lines.length}:${writing.shown.length > 0}` : "";
+  useEffect(() => {
+    setSlow(false);
+    if (!writing) return;
+    const timer = window.setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [writingKey]);
 
   // ---------- Writing with the model ----------
 
@@ -186,8 +199,11 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         const entry: LogEntry = { kind: "written", target: group, lines: texts, facts: [...new Set(lines.flatMap((line) => line.facts))], fallback: !lines.length };
         setState((s) => {
           if (!s) return s;
-          const withEnglish = { ...s, english: { ...translated.english, ...s.english }, log: [...s.log, entry] };
-          return saveItem(withEnglish, group, texts);
+          const english = { ...translated.english, ...s.english };
+          // The item keeps the English form of what was translated (job title, role).
+          const answers = { ...s.answers };
+          for (const key of groupKeys(group)) if (english[key]) answers[key] = english[key];
+          return saveItem({ ...s, answers, english, log: [...s.log, entry] }, group, texts);
         });
       } catch (caught) {
         // Without the model, the person's own description becomes the item's line.
@@ -225,9 +241,11 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     [failed, write],
   );
 
-  // At the end, the short Arabic answers left get their English form once.
+  // When a step is finished, its short Arabic answers get their English form in one call, so
+  // the CV turns English as the person goes rather than only at the end.
+  const stepNow = state ? (current(state)?.step ?? (done(state) ? STEPS.length : -1)) : -1;
   useEffect(() => {
-    if (!state || !done(state) || writing) return;
+    if (!state || writing || stepNow < 1) return;
     const left = TRANSLATED_KEYS.filter((key) => state.answers[key] && hasArabic(state.answers[key]) && !state.english[key]);
     if (!left.length) return;
     let active = true;
@@ -237,7 +255,9 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     return () => {
       active = false;
     };
-  }, [state, writing, translateNeeded]);
+    // Only when the step changes, not on every answer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepNow]);
 
   // ---------- The conversation ----------
 
@@ -676,7 +696,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
       link.download = `${resume.personal.name.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "") || "CV"}-CV.docx`;
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      track("cv-download");
+      track("cv-built");
     } catch {
       setDownloadError(t("cvb_download_failed"));
     }
@@ -689,7 +709,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
       window.removeEventListener("afterprint", clear);
     };
     window.addEventListener("afterprint", clear);
-    track("cv-download");
+    track("cv-built");
     window.print();
     window.setTimeout(clear, 1000);
   }
@@ -725,9 +745,12 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
           <div className="cvb-log" ref={logRef} aria-live="polite">
             {log}
             {writing && (
-              <p className="cvb-written cvb-typing" dir="auto">
-                {writingLabel}
-              </p>
+              <div className="cvb-written cvb-working" role="status">
+                <p>
+                  <span className="spinner spinner-sm" aria-hidden="true" /> {writingLabel}
+                </p>
+                {slow && <p className="cvb-hint">{t("cvb_slow")}</p>}
+              </div>
             )}
             {error && (
               <p className="cvb-msg is-bot is-error" role="alert">
@@ -742,7 +765,15 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
           <h3 id="cvb-preview-title" className="cvb-preview-head">
             {t("cvb_preview")}
           </h3>
-          {resume && <CvPreview resume={resume} live={followKey ? undefined : draft} fresh={fresh} translatingLabel={t("cvb_translating")} />}
+          {resume && (
+            <CvPreview
+              resume={resume}
+              live={followKey ? undefined : draft}
+              fresh={fresh}
+              writing={writing && !writing.lines.length && !writing.shown ? writing.target : undefined}
+              translatingLabel={t("cvb_translating")}
+            />
+          )}
           {finished && (
             <div className="cvb-ats">
               <h4>{t("cvb_ats_title")}</h4>

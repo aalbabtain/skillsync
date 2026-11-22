@@ -11,6 +11,8 @@ type Props = {
   fresh?: string[];
   // Shown inside the page when Arabic text waits for its English form.
   translatingLabel: string;
+  // What the model is writing and has not sent a line for yet: a placeholder shows there.
+  writing?: "summary" | "job" | "project";
 };
 
 /**
@@ -18,7 +20,8 @@ type Props = {
  * (centred name, one contact line, ruled headings, dates at the end of each title line). It is
  * also the PDF: printing the page shows this element alone.
  */
-export default function CvPreview({ resume, live, fresh = [], translatingLabel }: Props) {
+export default function CvPreview({ resume, live, fresh = [], translatingLabel, writing }: Props) {
+  const pending = <span className="cv-pending">Writing…</span>;
   const mark = (text: string): ReactNode => {
     let node: ReactNode = text;
     if (hasArabic(text)) {
@@ -55,7 +58,7 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel }
       </p>
 
       <h3 className="cv-h">Professional Summary</h3>
-      {resume.summary ? <p>{mark(resume.summary)}</p> : <p className="cv-empty">…</p>}
+      {resume.summary ? <p>{mark(resume.summary)}</p> : writing === "summary" ? <p>{pending}</p> : <p className="cv-empty">…</p>}
 
       {resume.experience.length > 0 && (
         <>
@@ -65,6 +68,7 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel }
               <TitleRow title={mark([job.title, job.company].filter(Boolean).join(", "))} dates={dates(job.start, job.end)} />
               {job.role_line && <p className="cv-role">{mark(job.role_line)}</p>}
               <Bullets lines={job.bullets} mark={mark} />
+              {writing === "job" && index === resume.experience.length - 1 && !job.bullets.length && <ul><li>{pending}</li></ul>}
             </div>
           ))}
         </>
@@ -95,6 +99,7 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel }
             <TitleRow title={mark(project.name)} link={bare(project.url)} dates={dates(project.start, project.end)} />
             {project.role_line && <p className="cv-role">{mark(project.role_line)}</p>}
             <Bullets lines={project.bullets} mark={mark} />
+            {writing === "project" && index === resume.projects.length - 1 && !project.bullets.length && <ul><li>{pending}</li></ul>}
           </div>
         ))
       ) : (

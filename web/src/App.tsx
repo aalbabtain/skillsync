@@ -127,7 +127,7 @@ export default function App() {
   }, [step]);
 
   return (
-    <div className="page">
+    <div className={view === "builder" ? "page page-wide" : "page"}>
       <header className="site-head">
         <div className="wrap head-inner">
           <a

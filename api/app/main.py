@@ -125,7 +125,7 @@ def health() -> dict[str, str]:
 STATS_TTL_SECONDS = 300
 # A failed read is retried sooner, so a GoatCounter hiccup does not hide the count for long.
 STATS_RETRY_SECONDS = 60
-_stats_cache: dict = {"at": 0.0, "checked": None}
+_stats_cache: dict = {"at": 0.0, "checked": None, "built": None}
 
 
 def _get_json(url: str, token: str = ""):
@@ -171,25 +171,32 @@ def _read_goatcounter(code: str, path: str) -> int:
     return int("".join(ch for ch in str(body.get("count", "")) if ch.isdigit()))
 
 
+# The steps the landing counts: a CV whose skills were extracted, and a CV built and downloaded.
+COUNTED_STEPS = {"checked": "step-skills", "built": "step-cv-built"}
+
+
 @app.get("/api/stats")
 def stats() -> dict[str, int | None]:
-    """How many CVs were checked, for the landing. Asked here rather than in the browser, where
-    ad blockers often stop requests to goatcounter.com; cached for a few minutes."""
+    """How many CVs were checked and how many were built, for the landing. Asked here rather
+    than in the browser, where ad blockers often stop requests to goatcounter.com; cached for a
+    few minutes."""
     code = _goatcounter_code()
     if not code:
-        return {"checked": None}
+        return {name: None for name in COUNTED_STEPS}
     now = time.monotonic()
     ttl = STATS_TTL_SECONDS if _stats_cache["checked"] is not None else STATS_RETRY_SECONDS
     if _stats_cache["at"] and now - _stats_cache["at"] < ttl:
-        return {"checked": _stats_cache["checked"]}
-    try:
-        checked = _read_goatcounter(code, "step-skills")
-    except (OSError, ValueError) as error:
-        # The counter setting off, GoatCounter refusing or down; the landing then shows nothing.
-        logger.warning("GoatCounter count unavailable: %s", error)
-        checked = None
-    _stats_cache.update(at=now, checked=checked)
-    return {"checked": checked}
+        return {name: _stats_cache[name] for name in COUNTED_STEPS}
+    counts: dict[str, int | None] = {}
+    for name, path in COUNTED_STEPS.items():
+        try:
+            counts[name] = _read_goatcounter(code, path)
+        except (OSError, ValueError) as error:
+            # The counter setting off, GoatCounter refusing or down; the landing then shows nothing.
+            logger.warning("GoatCounter count unavailable for %s: %s", path, error)
+            counts[name] = None
+    _stats_cache.update(at=now, **counts)
+    return counts
 
 
 @app.post("/api/runs")

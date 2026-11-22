@@ -23,7 +23,7 @@ export function startAnalytics(code: string) {
 }
 
 /** Counts one step of the flow, once per visit, so a reload or Back does not count it twice. */
-export function track(step: "start" | "skills" | "postings" | "gap" | "plan" | "cv-builder" | "cv-download") {
+export function track(step: "start" | "skills" | "postings" | "gap" | "plan" | "cv-builder" | "cv-built") {
   if (counted.has(step)) return;
   const counter = window.goatcounter;
   if (!counter?.count) return;
@@ -36,13 +36,17 @@ export function track(step: "start" | "skills" | "postings" | "gap" | "plan" | "
  * blockers that stop goatcounter.com in the browser cannot hide it. Zero is shown; null (the
  * counter is off or unreachable) shows nothing.
  */
-export async function fetchCheckedCount(): Promise<number | null> {
+export type Counts = { checked: number | null; built: number | null };
+
+export async function fetchCounts(): Promise<Counts> {
+  const none = { checked: null, built: null };
   try {
     const response = await fetch("/api/stats");
-    if (!response.ok) return null;
-    const body = (await response.json()) as { checked?: number | null };
-    return typeof body.checked === "number" ? body.checked : null;
+    if (!response.ok) return none;
+    const body = (await response.json()) as Partial<Counts>;
+    const count = (value: unknown) => (typeof value === "number" ? value : null);
+    return { checked: count(body.checked), built: count(body.built) };
   } catch {
-    return null;
+    return none;
   }
 }

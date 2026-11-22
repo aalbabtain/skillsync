@@ -39,6 +39,9 @@ const en = {
   particles_cv: "Your CV",
   stat_checked: "CVs checked so far",
   stat_checked_one: "CV checked so far",
+  stat_built: "CVs built so far",
+  stat_built_one: "CV built so far",
+  hero_build: "Build your CV in minutes",
   how_label: "It starts with your CV",
   how_title: "Five steps from a CV to a plan.",
   how_note: "Every skill on your list comes with the line from your CV that proves it.",
@@ -269,8 +272,6 @@ const en = {
   err_RATE_LIMITED:
     "You have reached the hourly limit for extractions from your network. Try again in a little while.",
   nav_build: "Build your CV",
-  hero_build_q: "No CV yet?",
-  hero_build_link: "Build one in a short conversation",
   cvb_eyebrow: "Agent 5 · CV writer",
   cvb_title: "Build your CV",
   cvb_lead: "A short conversation, one question at a time. SkillSync writes the lines, and code checks that every tool, number and name in them comes from your answers.",
@@ -385,6 +386,7 @@ const en = {
   cvb_prev_year: "Previous year",
   cvb_next_year: "Next year",
   cvb_present: "Present (I still work there)",
+  cvb_slow: "Still writing. The AI model is busy right now, so this can take up to a minute.",
   cvb_send: "Send",
   cvb_skip: "Skip",
   cvb_back: "Back",
@@ -470,6 +472,9 @@ const ar: Record<MessageKey, string> = {
   particles_cv: "سيرتك",
   stat_checked: "السير الذاتية المفحوصة حتى الآن",
   stat_checked_one: "السير الذاتية المفحوصة حتى الآن",
+  stat_built: "السير الذاتية المبنية حتى الآن",
+  stat_built_one: "السير الذاتية المبنية حتى الآن",
+  hero_build: "ابنِ سيرتك في دقائق",
   how_label: "البداية من سيرتك الذاتية",
   how_title: "خمس خطوات من سيرتك الذاتية إلى خطة.",
   how_note: "كل مهارة في قائمتك يرافقها السطر الذي يثبتها من سيرتك الذاتية.",
@@ -698,8 +703,6 @@ const ar: Record<MessageKey, string> = {
   err_REQUIREMENTS_QUOTA_EXCEEDED: "استُنفد حد طلبات Gemini. حاول مرة أخرى لاحقًا.",
   err_RATE_LIMITED: "وصلت إلى الحد المسموح به من عمليات الاستخراج في الساعة. حاول مرة أخرى بعد قليل.",
   nav_build: "ابنِ سيرتك",
-  hero_build_q: "ليست لديك سيرة بعد؟",
-  hero_build_link: "ابنِها في محادثة قصيرة",
   cvb_eyebrow: "الوكيل 5 · كاتب السيرة",
   cvb_title: "ابنِ سيرتك",
   cvb_lead: "محادثة قصيرة، سؤال واحد كل مرة. يكتب SkillSync الأسطر، ويتحقق الكود من أن كل أداة ورقم واسم فيها جاءت من إجاباتك.",
@@ -814,6 +817,7 @@ const ar: Record<MessageKey, string> = {
   cvb_prev_year: "السنة السابقة",
   cvb_next_year: "السنة التالية",
   cvb_present: "حتى الآن (ما زلت أعمل هناك)",
+  cvb_slow: "ما زلنا نكتب. نموذج الذكاء الاصطناعي مشغول الآن، وقد يستغرق ذلك دقيقة.",
   cvb_send: "إرسال",
   cvb_skip: "تخطَّ",
   cvb_back: "رجوع",
@@ -895,9 +899,10 @@ function initialLang(): Lang {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "en" || saved === "ar") return saved;
   } catch {
-    // Storage can be blocked; fall back to the browser language.
+    // Storage can be blocked; fall back to Arabic.
   }
-  return navigator.language?.toLowerCase().startsWith("ar") ? "ar" : "en";
+  // Arabic first: the site is made for the Saudi market. The header button switches it.
+  return "ar";
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

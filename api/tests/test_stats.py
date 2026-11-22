@@ -10,28 +10,28 @@ client = TestClient(app)
 
 def _reset(monkeypatch, code="skillsync"):
     monkeypatch.setattr(main.settings, "goatcounter_code", code)
-    monkeypatch.setattr(main, "_stats_cache", {"at": 0.0, "checked": None})
+    monkeypatch.setattr(main, "_stats_cache", {"at": 0.0, "checked": None, "built": None})
 
 
 def test_stats_reports_the_checked_count(monkeypatch):
     _reset(monkeypatch)
-    monkeypatch.setattr(main, "_read_goatcounter", lambda code, path: 7)
+    monkeypatch.setattr(main, "_read_goatcounter", lambda code, path: {"step-skills": 7, "step-cv-built": 2}[path])
 
-    assert client.get("/api/stats").json() == {"checked": 7}
+    assert client.get("/api/stats").json() == {"checked": 7, "built": 2}
 
 
 def test_stats_reports_zero(monkeypatch):
     _reset(monkeypatch)
     monkeypatch.setattr(main, "_read_goatcounter", lambda code, path: 0)
 
-    assert client.get("/api/stats").json() == {"checked": 0}
+    assert client.get("/api/stats").json() == {"checked": 0, "built": 0}
 
 
 def test_stats_is_empty_without_a_code(monkeypatch):
     _reset(monkeypatch, code="")
     monkeypatch.setattr(main, "_read_goatcounter", lambda code, path: 7)
 
-    assert client.get("/api/stats").json() == {"checked": None}
+    assert client.get("/api/stats").json() == {"checked": None, "built": None}
 
 
 def test_stats_is_empty_when_goatcounter_fails(monkeypatch):
@@ -42,7 +42,7 @@ def test_stats_is_empty_when_goatcounter_fails(monkeypatch):
 
     monkeypatch.setattr(main, "_read_goatcounter", fail)
 
-    assert client.get("/api/stats").json() == {"checked": None}
+    assert client.get("/api/stats").json() == {"checked": None, "built": None}
 
 
 def test_stats_asks_goatcounter_once_per_few_minutes(monkeypatch):
@@ -57,7 +57,7 @@ def test_stats_asks_goatcounter_once_per_few_minutes(monkeypatch):
     client.get("/api/stats")
     client.get("/api/stats")
 
-    assert calls == ["step-skills"]
+    assert calls == ["step-skills", "step-cv-built"]
 
 
 class FakeResponse:

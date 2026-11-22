@@ -2375,13 +2375,24 @@ a {
   margin-top: 1.5rem;
 }
 
-/* How many CVs were checked, from GoatCounter; a soft pulse marks it as live. */
+/* How many CVs were checked and built, from GoatCounter; a soft pulse marks them as live. */
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  margin-top: 1.5rem;
+}
+
 .hero-stat {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-top: 1.5rem;
+  margin: 0;
   color: var(--muted);
+}
+
+.hero-build svg {
+  flex: none;
 }
 
 .hero-stat-dot {
@@ -2874,7 +2885,14 @@ label {
    keeps the site's dark look. Yellow marks what is being typed, light blue what was just
    written, a dashed line Arabic text that will be written in English. */
 
-.cvb {
+/* The builder uses more of a wide screen than the other pages, so the CV can be read at a
+   size close to print. */
+.page-wide .wrap,
+.page-wide .demo-note {
+  max-width: 1380px;
+}
+
+.cvb.wrap {
   padding-block: 1.5rem 3rem;
 }
 
@@ -2972,7 +2990,7 @@ label {
 
 .cvb-builder {
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr) minmax(0, 0.95fr);
+  grid-template-columns: 180px minmax(0, 1fr) minmax(0, 1.25fr);
   gap: 1.1rem;
   align-items: start;
 }
@@ -3330,7 +3348,7 @@ label {
   background: #fff;
   color: #111827;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  font: 0.72rem/1.45 Calibri, Carlito, "Segoe UI", Arial, sans-serif;
+  font: 0.82rem/1.45 Calibri, Carlito, "Segoe UI", Arial, sans-serif;
   text-align: start;
 }
 
@@ -3401,6 +3419,24 @@ label {
 .cv-paper .cv-fresh {
   border-radius: 2px;
   background: #dff2ff;
+}
+
+.cv-paper .cv-pending {
+  color: #6b7280;
+  font-style: italic;
+  animation: cv-pending 1.4s ease-in-out infinite;
+}
+
+@keyframes cv-pending {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.cvb-working p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .cv-paper .cv-tr {
@@ -3545,7 +3581,8 @@ label {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cvb-typing::after {
+  .cvb-typing::after,
+  .cv-paper .cv-pending {
     animation: none;
   }
 }

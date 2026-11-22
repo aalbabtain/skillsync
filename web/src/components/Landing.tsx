@@ -5,6 +5,7 @@ import {
   CircleX,
   ClipboardList,
   FileCheck2,
+  FileText,
   FileUp,
   GitCompareArrows,
   GraduationCap,
@@ -16,7 +17,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { fetchCheckedCount } from "../analytics";
+import { fetchCounts } from "../analytics";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { useCountUp, useReducedMotion } from "../motion";
@@ -107,13 +108,17 @@ export default function Landing({ onStart, counterCode }: Props) {
   const [fieldReady, setFieldReady] = useState(false);
   const cvWord = t("particles_cv");
   const [checked, setChecked] = useState<number | null>(null);
+  const [built, setBuilt] = useState<number | null>(null);
   const shownChecked = useCountUp(checked ?? 0, !playing);
+  const shownBuilt = useCountUp(built ?? 0, !playing);
 
   useEffect(() => {
     if (!counterCode) return;
     let active = true;
-    fetchCheckedCount().then((count) => {
-      if (active) setChecked(count);
+    fetchCounts().then((counts) => {
+      if (!active) return;
+      setChecked(counts.checked);
+      setBuilt(counts.built);
     });
     return () => {
       active = false;
@@ -188,21 +193,35 @@ export default function Landing({ onStart, counterCode }: Props) {
           <p className="lead rise d2">{t("lead")}</p>
           <div className="hero-cta rise d2">
             {startButton}
-            <a className="btn btn-ghost btn-lg" href="#how">
-              {t("see_how")}
+            <a className="btn btn-ghost btn-lg hero-build" href="#cv-builder">
+              <FileText size={18} aria-hidden="true" />
+              {t("hero_build")}
             </a>
           </div>
           <p className="hero-alt rise d2">
-            {t("hero_build_q")} <a href="#cv-builder">{t("hero_build_link")}</a>
+            <a href="#how">{t("see_how")}</a>
           </p>
-          {checked !== null && (
-            <p className="hero-stat rise d2">
-              <span className="hero-stat-dot" aria-hidden="true" />
-              <span className="hero-stat-n" dir="ltr">
-                {shownChecked.toLocaleString("en-US")}
-              </span>
-              <span className="hero-stat-label">{t(checked === 1 ? "stat_checked_one" : "stat_checked")}</span>
-            </p>
+          {(checked !== null || built !== null) && (
+            <div className="hero-stats rise d2">
+              {checked !== null && (
+                <p className="hero-stat">
+                  <span className="hero-stat-dot" aria-hidden="true" />
+                  <span className="hero-stat-n" dir="ltr">
+                    {shownChecked.toLocaleString("en-US")}
+                  </span>
+                  <span className="hero-stat-label">{t(checked === 1 ? "stat_checked_one" : "stat_checked")}</span>
+                </p>
+              )}
+              {built !== null && (
+                <p className="hero-stat">
+                  <span className="hero-stat-dot" aria-hidden="true" />
+                  <span className="hero-stat-n" dir="ltr">
+                    {shownBuilt.toLocaleString("en-US")}
+                  </span>
+                  <span className="hero-stat-label">{t(built === 1 ? "stat_built_one" : "stat_built")}</span>
+                </p>
+              )}
+            </div>
           )}
         </div>
       </section>

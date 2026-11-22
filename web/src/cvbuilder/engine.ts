@@ -90,9 +90,13 @@ export function answer(state: State, text: string): Result {
   const stored = question.kind === "date" ? normalizeDate(value) ?? value : question.kind === "gpa" ? westernDigits(value) : value;
   const skipped = { ...state.skipped };
   delete skipped[question.key];
+  // A changed answer needs its English form again.
+  const english = { ...state.english };
+  delete english[question.key];
   const next: State = {
     ...state,
     answers: { ...state.answers, [question.key]: stored },
+    english,
     skipped,
     log: [...state.log, { kind: "answer", key: question.key, text: value }],
   };
