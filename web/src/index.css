@@ -2852,3 +2852,562 @@ label {
     cursor: text;
   }
 }
+
+/* ---------- CV builder ----------
+   Three columns: progress rail, the conversation, and the live CV. The CV is a white A4-like
+   page in the owner's reference layout, because that is what prints and downloads; the rest
+   keeps the site's dark look. Yellow marks what is being typed, light blue what was just
+   written, a dashed line Arabic text that will be written in English. */
+
+.cvb {
+  padding-block: 1.5rem 3rem;
+}
+
+.cvb-welcome {
+  padding: 1.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.cvb-welcome h2 {
+  font-size: clamp(1.6rem, 3.8vw, 2.2rem);
+  line-height: 1.2;
+}
+
+.cvb-lead,
+.cvb-english {
+  max-width: 64ch;
+  margin-top: 0.5rem;
+  color: var(--muted);
+}
+
+.cvb-english {
+  margin-top: 1rem;
+  font-size: 0.92rem;
+}
+
+.cvb-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.2rem;
+}
+
+.cvb-mode {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  padding: 1.1rem;
+  text-align: start;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg2);
+  color: var(--text);
+  font: inherit;
+}
+
+.cvb-mode:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.cvb-mode:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.cvb-mode strong {
+  font-size: 1.02rem;
+}
+
+.cvb-mode span {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.cvb-mode .cvb-soon {
+  justify-self: start;
+  padding: 0.05rem 0.55rem;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.cvb-upload {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px dashed var(--line2);
+  border-radius: 14px;
+}
+
+.cvb-builder {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) minmax(0, 0.95fr);
+  gap: 1.1rem;
+  align-items: start;
+}
+
+.cvb-rail {
+  position: sticky;
+  top: 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.cvb-rail h3 {
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.cvb-rail ol {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cvb-rail li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.cvb-dot {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--line2);
+  border-radius: 50%;
+  font-size: 0.7rem;
+}
+
+.cvb-rail li.is-done {
+  color: var(--text);
+}
+
+.cvb-rail li.is-done .cvb-dot {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--bg);
+}
+
+.cvb-rail li.is-skipped .cvb-dot {
+  border-style: dashed;
+}
+
+.cvb-rail li.is-current {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
+.cvb-rail li.is-current .cvb-dot {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cvb-rail .btn {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.cvb-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 560px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.cvb-log {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  max-height: 560px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.cvb-msg {
+  max-width: 88%;
+  padding: 0.6rem 0.9rem;
+  border-radius: 14px;
+  font-size: 0.94rem;
+  overflow-wrap: anywhere;
+}
+
+.cvb-msg.is-bot {
+  justify-self: start;
+  border: 1px solid var(--line);
+  border-start-start-radius: 4px;
+  background: var(--bg2);
+}
+
+.cvb-msg.is-me {
+  justify-self: end;
+  border-start-end-radius: 4px;
+  background: var(--blue);
+  color: #fff;
+}
+
+.cvb-msg.is-skip {
+  justify-self: end;
+  border: 1px dashed var(--line2);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.cvb-msg.is-error {
+  border-color: rgba(240, 163, 163, 0.5);
+  color: #f0a3a3;
+}
+
+.cvb-ex {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.cvb-edit {
+  margin-inline-start: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #dbe6ff;
+  font: inherit;
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+
+.cvb-written {
+  justify-self: stretch;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(127, 209, 168, 0.4);
+  border-radius: 12px;
+  background: rgba(127, 209, 168, 0.06);
+  font-size: 0.92rem;
+}
+
+.cvb-written h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.cvb-written ul {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+}
+
+.cvb-written.is-fallback {
+  border-color: rgba(241, 207, 139, 0.45);
+  background: rgba(241, 207, 139, 0.06);
+}
+
+.cvb-written.is-fallback h4 {
+  color: #f1cf8b;
+}
+
+.cvb-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.cvb-facts bdi {
+  padding: 0.05rem 0.55rem;
+  border: 1px solid rgba(127, 209, 168, 0.45);
+  border-radius: 999px;
+  color: var(--ok);
+}
+
+.cvb-typing::after {
+  content: "▍";
+  color: var(--accent);
+  animation: cvb-blink 1s steps(1) infinite;
+}
+
+@keyframes cvb-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.cvb-composer {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.cvb-composer textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--bg2);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.cvb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cvb-row .cvb-send {
+  margin-inline-start: auto;
+}
+
+.cvb-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.cvb-preview {
+  position: sticky;
+  top: 1rem;
+}
+
+.cvb-preview-head {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.cv-paper {
+  padding: 22px 22px 26px;
+  border-radius: 4px;
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  font: 0.72rem/1.45 Calibri, Carlito, "Segoe UI", Arial, sans-serif;
+  text-align: start;
+}
+
+.cv-paper p {
+  margin: 0;
+}
+
+.cv-paper .cv-name {
+  text-align: center;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.cv-paper .cv-title {
+  margin-top: 2px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.cv-paper .cv-contact {
+  margin-top: 2px;
+  text-align: center;
+  color: #374151;
+}
+
+.cv-paper .cv-h {
+  margin: 10px 0 4px;
+  padding-bottom: 1px;
+  border-bottom: 1.2px solid #111827;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #111827;
+}
+
+.cv-paper .cv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.cv-paper .cv-row span:last-child {
+  white-space: nowrap;
+}
+
+.cv-paper .cv-role {
+  font-style: italic;
+  color: #374151;
+}
+
+.cv-paper ul {
+  margin: 2px 0 6px;
+  padding-inline-start: 16px;
+}
+
+.cv-paper .cv-empty {
+  color: #6b7280;
+}
+
+.cv-paper .cv-live {
+  border-radius: 2px;
+  background: #fff3c4;
+}
+
+.cv-paper .cv-fresh {
+  border-radius: 2px;
+  background: #dff2ff;
+}
+
+.cv-paper .cv-tr {
+  border-bottom: 1px dashed #6b7280;
+  font-family: var(--font-ar);
+  color: #374151;
+}
+
+.cvb-ats {
+  margin-top: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.cvb-ats h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+}
+
+.cvb-ats ul {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.cvb-ats li {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.cvb-ats li.is-ok svg {
+  color: var(--ok);
+}
+
+.cvb-ats li.is-todo {
+  color: var(--muted);
+}
+
+.cvb-ats li.is-todo svg {
+  color: #f1cf8b;
+}
+
+.cvb-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.cvb-error {
+  margin-top: 0.5rem;
+  color: #f0a3a3;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 1050px) {
+  .cvb-builder {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .cvb-rail {
+    position: static;
+    grid-column: 1 / -1;
+  }
+
+  .cvb-rail ol {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .cvb-builder,
+  .cvb-modes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cvb-preview {
+    position: static;
+  }
+
+  .cvb-welcome {
+    padding: 1.1rem 0.9rem;
+  }
+
+  .cvb-chat,
+  .cvb-log {
+    min-height: 0;
+  }
+
+  .cvb-log {
+    max-height: 60vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cvb-typing::after {
+    animation: none;
+  }
+}
+
+/* Download PDF prints the CV page alone, on A4 with the Word file's margins. */
+@page cv {
+  size: A4;
+  margin: 0.7in;
+}
+
+@media print {
+  body.print-cv * {
+    visibility: hidden;
+  }
+
+  body.print-cv .cv-paper,
+  body.print-cv .cv-paper * {
+    visibility: visible;
+  }
+
+  body.print-cv .cv-paper {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 100%;
+    padding: 0;
+    box-shadow: none;
+    font-size: 10.5pt;
+    page: cv;
+  }
+
+  body.print-cv .cv-live,
+  body.print-cv .cv-fresh {
+    background: none;
+  }
+}

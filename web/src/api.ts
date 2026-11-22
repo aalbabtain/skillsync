@@ -298,3 +298,79 @@ export async function streamPlan(
   });
   return done as unknown as PlanDone;
 }
+
+// ---------- CV builder (Agent 5) ----------
+
+export type CvLine = { text: string; facts: string[] };
+
+async function postJson<T>(url: string, body: unknown, fallback: string): Promise<T> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new ApiRequestError(payload?.detail?.code ?? "UNKNOWN", payload?.detail?.message ?? fallback);
+  }
+  return payload as T;
+}
+
+/**
+ * Agent 5, streamed: the summary or one job's or project's bullets. Each line arrives only
+ * after the server found every fact in it in the answers. When no line survived, resolves with
+ * the person's own words as `fallback`.
+ */
+export async function streamCvLines(
+  task: "summary" | "bullets",
+  answers: Record<string, string>,
+  onLine: (line: CvLine) => void,
+): Promise<{ fallback?: string }> {
+  const response = await fetch("/api/cv/write/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ task, answers }),
+  });
+  let fallback: string | undefined;
+  await readJsonLines(response, "The CV lines could not be written.", (line) => {
+    if (line.type === "line") onLine({ text: line.text, facts: line.facts ?? [] });
+    if (line.type === "fallback") fallback = line.text;
+    return line.type === "done";
+  });
+  return { fallback };
+}
+
+export async function cvFollowUp(answer: string): Promise<string | null> {
+  const { question } = await postJson<{ question: string | null }>("/api/cv/follow-up", { answer }, "No follow-up question.");
+  return question;
+}
+
+export async function cvTranslate(items: Record<string, string>): Promise<Record<string, string>> {
+  const result = await postJson<{ items: Record<string, string> }>("/api/cv/translate", { items }, "The translation failed.");
+  return result.items;
+}
+
+export type CvImported = {
+  resume: {
+    name: string; field: string; school: string; degree: string; grad: string; gpa: string;
+    skills: string[]; projects: { name: string; lines: string[] }[]; certs: string[]; langs: string[];
+  };
+  contact: { email: string; phone: string; linkedin: string; github: string };
+};
+
+export function cvImport(text: string): Promise<CvImported> {
+  return postJson<CvImported>("/api/cv/import", { text }, "The CV could not be read.");
+}
+
+export async function cvDocx(resume: unknown): Promise<Blob> {
+  const response = await fetch("/api/cv/docx", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(resume),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new ApiRequestError(payload?.detail?.code ?? "UNKNOWN", "The Word file could not be built.");
+  }
+  return response.blob();
+}
