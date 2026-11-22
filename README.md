@@ -21,7 +21,8 @@ candidates by concrete, verifiable skills.
 
 ## How it works
 
-Four agents run one after another, each handing its output to the next. All four are built.
+Four agents run one after another, each handing its output to the next. A fifth, the CV
+writer, has its own page. All five are built.
 
 | # | Agent | What it does | Model? | Status |
 |---|-------|--------------|--------|--------|
@@ -29,6 +30,7 @@ Four agents run one after another, each handing its output to the next. All four
 | 2 | **Requirements Extractor** | Reads the postings the person pastes and returns the skills each one asks for, with a quote and a level (required or preferred). Code checks the quotes and counts how many postings ask for each skill. | Gemini | Built |
 | 3 | **Gap Evaluator** | Sorts every required skill into *you have it*, *needs proof* (added by hand, not shown in the CV) or *missing*. | No, plain code | Built |
 | 4 | **Plan Builder** | Code orders the gap into phases; for each skill, retrieval (RAG) finds notes from a curated library of official documentation, and the model writes the topics and a project only from those notes. Code keeps a topic only when its source was retrieved for that skill. The person approves, edits or rejects each skill. | Gemini + embeddings | Built |
+| 5 | **CV Writer** | A separate page, "Build your CV": a short conversation, one question at a time, from scratch or from an uploaded CV. The CV preview fills in while the person types. The model writes the summary and the bullets in English, whatever language the answers are in; code sends a line to the page only when every tool, number, name and link in it is in the answers, and contact details never reach the model. Word download and PDF through print. | Gemini | Built |
 
 The model never decides what is verified: `api/app/verification.py` does, by matching each quote
 against the CV or posting text.
@@ -49,7 +51,10 @@ skillsync/
   api/                      FastAPI service
     app/
       main.py               routes, limits, error codes
-      agents/               cv_skills.py (Agent 1), requirements.py (Agent 2), mock_extractor.py
+      agents/               cv_skills.py (Agent 1), requirements.py (Agent 2), plan_builder.py
+                            and retrieval.py (Agent 4), cv_writer.py (Agent 5), mock_extractor.py
+      cv_check.py           Agent 5's grounding check: every fact in a written line is in the answers
+      cv_docx.py            the CV as a Word file, standard library only
       gap.py                Agent 3, plain code
       verification.py       quote checks, name normalization, counting
       skills_catalog.py     every known skill, its category and spellings, and related skills
@@ -66,6 +71,7 @@ skillsync/
     requirements.txt        runtime dependencies
     requirements-dev.txt    plus test tools
   web/src/                  React app; i18n.tsx holds every string in both languages
+  web/src/cvbuilder/        the CV builder: script, engine, checklist (tested with node --test), page
   Dockerfile, render.yaml   production build and Render service
   .github/workflows/ci.yml  tests, web build, image build
   run.ps1                   one-command setup and run on Windows
@@ -146,6 +152,11 @@ Every error uses `{"detail": {"code", "message"}}`, and the site shows each code
 | `POST` | `/api/requirements/extract/stream` | Agent 2, streamed: each posting in turn, one JSON line per verified requirement as soon as it is found, then the same counted result. The site uses this one |
 | `POST` | `/api/requirements/extract` | Agent 2: skills the pasted postings ask for, counted |
 | `POST` | `/api/gap` | Agent 3: confirmed skills against the requirements |
+| `POST` | `/api/cv/write/stream` | Agent 5, streamed: the summary or one job's or project's bullets, each line sent only once checked |
+| `POST` | `/api/cv/follow-up` | Agent 5: one follow-up question for a vague answer, or none |
+| `POST` | `/api/cv/translate` | Agent 5: English for short Arabic answers; numbers and Latin words must survive |
+| `POST` | `/api/cv/import` | Agent 5, update mode: the resume read from an uploaded CV's text, every value checked against it |
+| `POST` | `/api/cv/docx` | The CV as a Word file; nothing is kept |
 
 **`POST /api/runs`** takes a multipart `file` up to 5 MB: a PDF (up to 10 pages) or a Word
 `.docx`. The type is read from the file's first bytes, not its name, because browsers label
@@ -214,7 +225,8 @@ cd api
 python -m pytest
 ```
 
-237 tests, no network and no key: demo mode stands in for the model.
+287 tests, no network and no key: demo mode stands in for the model. The CV builder's
+conversation engine and checklist have their own tests: `cd web && npm test`.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career
@@ -253,7 +265,9 @@ docker run -p 8000:8000 skillsync
 - [x] Deployment on Render, CI, per-visitor limit
 - [x] Fictional CV cases with an expectations file
 - [x] Agent 4: learning plan with retrieval from a curated library, approve / edit / reject
-- [ ] CV builder: turn the plan's projects into CV lines
+- [x] Agent 5: CV builder, from scratch or from an uploaded CV, Word and PDF
+- [ ] CV builder: tailor a CV to one job posting
+- [ ] CV builder: offer finished plan projects as CV projects
 - [ ] Saved runs and accounts
 - [ ] Agent 1: short skill check for skills without evidence
 

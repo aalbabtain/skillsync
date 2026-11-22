@@ -29,8 +29,8 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (237 tests, no network, no key). The frontend check is
-`cd web; npm run build`.
+Runs `pytest` in `api` (287 tests, no network, no key). The frontend checks are
+`cd web; npm test` (the CV builder's engine) and `cd web; npm run build`.
 
 ## Run every CV case
 
@@ -103,6 +103,10 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `web/src/i18n.tsx` | Every user-facing string, in English and Arabic (right to left) |
 | `web/src/components/Landing.tsx` | The landing page: five full-screen chapters around a particle object, with a motion button |
 | `web/src/particles.ts`, `web/src/chapters.ts` | The landing's three.js particle field (loaded only on the landing) and the one-scroll-per-chapter glide |
+| `api/app/agents/cv_writer.py` | Agent 5, the CV writer: summary and bullets in English, streamed line by line; follow-up question; translation; import |
+| `api/app/cv_check.py` | Agent 5's grounding check: the tools, numbers, dates, names and links a line states, and which are not in the answers |
+| `api/app/cv_docx.py` | The CV as a Word file in the reference layout, standard library only |
+| `web/src/cvbuilder/` | The CV builder page (`#cv-builder`): script, engine, validation, ATS checklist, live preview |
 | `web/src/components/PlanPanel.tsx` | The plan page: streamed cards with sourced topics, hours a week, approve / edit / reject, print |
 | `web/src/analytics.ts` | Anonymous GoatCounter visit and step counts, on only when `GOATCOUNTER_CODE` is set |
 
@@ -114,6 +118,9 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
   ask for a skill is also plain code.
 - In the plan, the model never chooses the order, the phases or a link: code does, and a
   topic is kept only when it cites a note retrieved for that skill.
+- In the CV builder, a written line reaches the page only when every fact in it is in the
+  person's answers (`api/app/cv_check.py`), and contact details never reach the model. The CV
+  itself is always in English.
 - The skill category label is `Programming languages` (plural) in the prompt, the backend,
   the frontend and the tests. The Arabic site only translates it for display.
 - Every user-facing string lives in `web/src/i18n.tsx`, in both languages. Use logical CSS
