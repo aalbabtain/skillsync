@@ -23,3 +23,18 @@ test("English replaces them everywhere, and the rest is untouched", () => {
   assert.equal(english.personal.name, "Omar");
   assert.deepEqual(arabicTexts(english), []);
 });
+
+test("the short fields to polish, each with its kind, once", async () => {
+  const { polishable } = await import("./english.ts");
+  const items = polishable({
+    ...resume,
+    certifications: [{ name: "CAPM", issuer: "", date: "", url: "" }],
+    languages: ["spinsh"],
+    awards: ["first place hackathon"],
+  });
+  assert.deepEqual(items.find((item) => item.text === "CAPM"), { text: "CAPM", kind: "cert" });
+  assert.deepEqual(items.find((item) => item.text === "spinsh"), { text: "spinsh", kind: "langs" });
+  assert.ok(items.some((item) => item.text === "first place hackathon" && item.kind === "text"));
+  assert.ok(!items.some((item) => item.text === "Omar"));
+  assert.equal(new Set(items.map((item) => item.text)).size, items.length);
+});

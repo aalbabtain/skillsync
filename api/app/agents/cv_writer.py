@@ -282,3 +282,31 @@ def import_resume(cv_text: str, extractor: str | None = None) -> dict:
         skills = [item["name"] for item in mock_extractor.extract(cv_text)]
         return _kept(Imported(name=first, skills=skills), cv_text)
     return _kept(_ask("cv_import", Imported, strip_contact(cv_text)), cv_text)
+
+
+class Polished(BaseModel):
+    items: list[str]
+
+
+LOWER_WORDS = {"and", "of", "in", "the", "for", "at", "with", "to", "on", "a", "an"}
+
+
+def _tidy(text: str) -> str:
+    """Demo mode's polish: spaces and capital letters only, by code."""
+    words = text.split()
+    out = []
+    for i, word in enumerate(words):
+        if word.islower() and (i == 0 or word not in LOWER_WORDS) and not ARABIC.search(word):
+            word = word[:1].upper() + word[1:]
+        out.append(word)
+    return " ".join(out)
+
+
+def polish(items: list[dict[str, str]], extractor: str | None = None) -> list[str]:
+    """Each short field tidied and in English: spelling, capital letters, a certificate's full
+    name, a language's level. The route keeps only what app.cv_check.polished_ok accepts."""
+    if _demo(extractor):
+        return [_tidy(item["text"]) for item in items]
+    contents = json.dumps([{"kind": item["kind"], "text": strip_contact(item["text"])} for item in items], ensure_ascii=False)
+    found = _ask("cv_polish", Polished, contents).items
+    return [" ".join(text.split()) for text in found]

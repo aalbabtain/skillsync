@@ -374,3 +374,9 @@ export async function cvDocx(resume: unknown): Promise<Blob> {
   }
   return response.blob();
 }
+
+/** Agent 5, at the end: short fields tidied and in English, in the order given. */
+export async function cvPolish(items: { text: string; kind: "text" | "langs" | "cert" }[]): Promise<string[]> {
+  const result = await postJson<{ items: string[] }>("/api/cv/polish", { items }, "The CV could not be tidied.");
+  return result.items;
+}

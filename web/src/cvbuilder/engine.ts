@@ -206,6 +206,12 @@ export function load(raw: string | null): State | null {
   }
 }
 
+// "omar al-qahtani" is written "Omar Al-Qahtani"; a name with any capital stays as typed.
+function nameCase(name: string): string {
+  if (name !== name.toLowerCase()) return name.trim();
+  return name.trim().replace(/(^|[\s-])(\p{L})/gu, (_, gap: string, letter: string) => gap + letter.toUpperCase());
+}
+
 function list(text: string | undefined): string[] {
   return (text ?? "").split(/[,،\n]/).map((part) => part.trim()).filter(Boolean);
 }
@@ -220,7 +226,7 @@ export function toResume(state: State, categoryOf: (skill: string) => string = (
   const skills: Record<string, string[]> = {};
   for (const skill of list(a.skills)) (skills[categoryOf(skill)] ??= []).push(skill);
   return {
-    personal: { name: a.name ?? "", field: en("field"), target_title: en("target") },
+    personal: { name: nameCase(a.name ?? ""), field: en("field"), target_title: en("target") },
     contact: { email: a.email ?? "", phone: a.phone ?? "", location: en("location"), linkedin: a.linkedin ?? "", github: a.github ?? "" },
     summary: state.summary,
     experience: state.jobs.map(({ answers, lines: bullets }) => ({

@@ -98,3 +98,29 @@ def test_rate_limited_returns_429(monkeypatch):
     monkeypatch.setattr(rate_limiter, "take", lambda key, units=1: 60)
     response = client.post("/api/cv/follow-up", json={"answer": "built it"})
     assert response.status_code == 429
+
+
+def test_polish_keeps_fixes_and_refuses_inventions(monkeypatch):
+    def polish(items):
+        return ["Spanish", "Harvard University", "Certified Associate in Project Management (CAPM), PMI", "Arabic (Native), English (Fluent)"]
+
+    monkeypatch.setattr(cv_writer, "polish", polish)
+    body = {"items": [
+        {"text": "spinsh", "kind": "text"},
+        {"text": "King saud university", "kind": "text"},
+        {"text": "CAPM", "kind": "cert"},
+        {"text": "عربي وانجليزي", "kind": "langs"},
+    ]}
+    response = client.post("/api/cv/polish", json=body)
+    assert response.json() == {"items": [
+        "Spanish",
+        "King saud university",
+        "Certified Associate in Project Management (CAPM), PMI",
+        "Arabic (Native), English (Fluent)",
+    ]}
+
+
+def test_polish_in_demo_mode_tidies_capital_letters(monkeypatch):
+    monkeypatch.setattr(cv_skills, "extractor_mode", lambda: cv_skills.MOCK)
+    response = client.post("/api/cv/polish", json={"items": [{"text": "king saud university", "kind": "text"}]})
+    assert response.json() == {"items": ["King Saud University"]}

@@ -6,7 +6,9 @@ the ones that do not appear in the person's own words. Matching uses the same no
 skill verification, with Arabic-Indic digits read as Western digits.
 """
 
+import os
 import re
+from difflib import SequenceMatcher
 
 from app.skills_catalog import CATALOG
 from app.verification import normalize
@@ -148,3 +150,55 @@ def mentions(value: str, source: str) -> bool:
 
 def check_line(line: str, source: str) -> bool:
     return not unsupported(line, source)
+
+
+# ---------- What a polish may change in a short field ----------
+
+POLISH_SAME = 0.75
+# Words that join or qualify and carry no fact of their own.
+LINKING_WORDS = {"and", "of", "in", "the", "for", "at", "with", "to", "on", "a", "an"}
+# A language's level is said in standard words, whatever the person wrote ("good" is "Fluent").
+LEVEL_WORDS = {"native", "fluent", "professional", "working", "proficiency", "proficient", "intermediate",
+               "advanced", "basic", "beginner", "elementary", "conversational", "bilingual", "limited", "full"}
+# Multi-word skill names: one of their words matching lets the rest of the name in ("good
+# speaker" is "Public Speaking").
+SKILL_NAMES = [normalize(name).split() for name, _category, _aliases in CATALOG if " " in name]
+WORDS = re.compile(r"[^\W_]+", re.UNICODE)
+
+
+def _similar(a: str, b: str) -> bool:
+    """The same word, misspelt or in another form: close letters, or a shared stem of four
+    letters or more ("enginner" and "engineering", "speaker" and "speaking")."""
+    if a == b or SequenceMatcher(None, a, b).ratio() >= POLISH_SAME:
+        return True
+    stem = len(os.path.commonprefix([a, b]))
+    return stem >= 4 and stem >= 0.6 * min(len(a), len(b))
+
+
+def _numbers(text: str) -> list[str]:
+    return sorted(re.findall(r"\d+(?:[.,]\d+)?", text.translate(DIGITS)))
+
+
+def polished_ok(kind: str, original: str, polished: str) -> bool:
+    """Whether a polished field says nothing the person did not. Numbers never change. For a
+    certificate ("cert"), every word given stays and the full name may be written around it.
+    For anything else, every word is a spelling of a word given (or of two words joined), a
+    linking word, a language level ("langs"), or part of a skill name another of whose words
+    was given."""
+    if _numbers(original) != _numbers(polished):
+        return False
+    given = WORDS.findall(_plain(original))
+    written = WORDS.findall(_plain(polished))
+    if kind == "cert":
+        return all(any(_similar(word, other) for other in written) for word in given if not word.isdigit())
+    joined = {a + b for a, b in zip(given, given[1:])}
+    matched = {word for word in written if any(_similar(word, g) for g in [*given, *joined])}
+    for word in written:
+        if word in matched or word in LINKING_WORDS or word.isdigit():
+            continue
+        if kind == "langs" and word in LEVEL_WORDS:
+            continue
+        if any(word in name and any(other in matched for other in name if other != word) for name in SKILL_NAMES):
+            continue
+        return False
+    return True

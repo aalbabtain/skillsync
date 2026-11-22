@@ -29,7 +29,7 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (287 tests, no network, no key). The frontend checks are
+Runs `pytest` in `api` (298 tests, no network, no key). The frontend checks are
 `cd web; npm test` (the CV builder's engine) and `cd web; npm run build`.
 
 ## Run every CV case
@@ -104,7 +104,7 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `web/src/components/Landing.tsx` | The landing page: five full-screen chapters around a particle object, with a motion button |
 | `web/src/particles.ts`, `web/src/chapters.ts` | The landing's three.js particle field (loaded only on the landing) and the one-scroll-per-chapter glide |
 | `api/app/agents/cv_writer.py` | Agent 5, the CV writer: summary and bullets in English, streamed line by line; follow-up question; translation; import |
-| `api/app/cv_check.py` | Agent 5's grounding check: the tools, numbers, dates, names and links a line states, and which are not in the answers |
+| `api/app/cv_check.py` | Agent 5's grounding check: the tools, numbers, dates, names and links a line states, and which are not in the answers; and `polished_ok`, what a tidied field may change |
 | `api/app/cv_docx.py` | The CV as a Word file in the reference layout, standard library only |
 | `web/src/cvbuilder/` | The CV builder page (`#cv-builder`): script, engine, validation, ATS checklist, live preview |
 | `web/src/components/PlanPanel.tsx` | The plan page: streamed cards with sourced topics, hours a week, approve / edit / reject, print |

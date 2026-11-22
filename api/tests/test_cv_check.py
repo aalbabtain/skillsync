@@ -53,3 +53,28 @@ def test_link_given_is_supported():
 
 def test_each_fact_reported_once():
     assert unsupported("Used Docker, then Docker again", SOURCE) == ["Docker"]
+
+
+from app.cv_check import polished_ok  # noqa: E402
+
+
+def test_spelling_and_capital_letters_may_be_fixed():
+    assert polished_ok("text", "spinsh", "Spanish")
+    assert polished_ok("text", "King saud university", "King Saud University")
+    assert polished_ok("text", "software enginner", "Software Engineering")
+    assert polished_ok("text", "team work good speaker", "Teamwork, Public Speaking")
+    assert polished_ok("langs", "arabic native english good", "Arabic (Native), English (Fluent)")
+
+
+def test_nothing_new_may_be_added_to_a_field():
+    assert not polished_ok("text", "spinsh", "French")
+    assert not polished_ok("text", "King saud university", "Harvard University")
+    assert not polished_ok("text", "python", "Python, Django, Kubernetes")
+    assert not polished_ok("text", "3 years of python", "5 years of Python")
+
+
+def test_a_certificate_may_be_written_out_in_full_around_what_was_given():
+    assert polished_ok("cert", "CAPM", "Certified Associate in Project Management (CAPM), PMI")
+    assert polished_ok("cert", "aws cloud practitioner 2025", "AWS Certified Cloud Practitioner, Amazon Web Services, 2025")
+    assert not polished_ok("cert", "CAPM", "AWS Certified Solutions Architect")
+    assert not polished_ok("cert", "aws cloud practitioner 2025", "AWS Certified Cloud Practitioner, 2024")

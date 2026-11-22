@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 
 from app.agents import cv_skills, cv_writer, plan_builder, requirements, retrieval
 from app.cv_docx import Resume, build_docx, file_name
-from app.cv_check import DIGITS, facts as line_facts, unsupported
+from app.cv_check import DIGITS, facts as line_facts, polished_ok, unsupported
 from app.config import get_settings
 from app.frontend import register_frontend
 from app.gap import evaluate_gap
@@ -665,6 +665,7 @@ MAX_FALLBACK_CHARS = 200
 MAX_TRANSLATE_ITEMS = 30
 MAX_TRANSLATE_CHARS = 600
 STATUS_BY_CV_ERROR = {"CV_BUSY": 503, "CV_QUOTA": 429, "CV_UNAVAILABLE": 503, "CV_MALFORMED": 502}
+ARABIC_LETTERS = re.compile(r"[\u0600-\u06ff]")
 LATIN_WORD = re.compile(r"[A-Za-z][\w.+#-]*|\d+(?:[.,]\d+)?")
 
 
@@ -751,6 +752,40 @@ def _keeps_every_token(original: str, translated: str) -> bool:
     """A translation is kept only when each number and Latin word of the original is in it."""
     plain = translated.translate(DIGITS).lower()
     return all(token.lower() in plain for token in LATIN_WORD.findall(original.translate(DIGITS)))
+
+
+class PolishItem(BaseModel):
+    text: str = Field(min_length=1, max_length=MAX_TRANSLATE_CHARS)
+    kind: Literal["text", "langs", "cert"] = "text"
+
+
+class CvPolishRequest(BaseModel):
+    items: list[PolishItem] = Field(min_length=1, max_length=40)
+
+
+@app.post("/api/cv/polish")
+def cv_polish_route(payload: CvPolishRequest, request: Request):
+    """Agent 5, at the end: short fields with spelling and capital letters fixed, in English,
+    certificates written out and language levels named. A fix is kept only when it says
+    nothing new (app.cv_check.polished_ok); otherwise the person's own text comes back."""
+    if limited := _rate_limited(request, 1):
+        return limited
+    items = [item.model_dump() for item in payload.items]
+    try:
+        polished = cv_writer.polish(items)
+    except cv_writer.CvWriterError as error:
+        return _cv_error(error)
+    out = []
+    for item, value in zip(items, [*polished, *[""] * len(items)]):
+        original = item["text"]
+        if not value or ARABIC_LETTERS.search(value):
+            out.append(original)
+        elif ARABIC_LETTERS.search(original):
+            # A translation cannot be compared word by word; its numbers and Latin words must stay.
+            out.append(value if _keeps_every_token(original, value) else original)
+        else:
+            out.append(value if polished_ok(item["kind"], original, value) else original)
+    return {"items": out}
 
 
 @app.post("/api/cv/translate")

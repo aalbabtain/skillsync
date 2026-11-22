@@ -204,3 +204,9 @@ test("a project has its dates, from and to", () => {
   assert.equal(resume.projects[0].start, "Jan 2026");
   assert.equal(resume.projects[0].end, "Present");
 });
+
+test("a name typed in small letters is written with capitals", () => {
+  const resume = toResume({ ...start("scratch"), answers: { name: "omar al-qahtani" } });
+  assert.equal(resume.personal.name, "Omar Al-Qahtani");
+  assert.equal(toResume({ ...start("scratch"), answers: { name: "Sara AlHarbi" } }).personal.name, "Sara AlHarbi");
+});

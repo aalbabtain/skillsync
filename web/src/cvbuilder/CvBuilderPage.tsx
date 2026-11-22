@@ -3,12 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { track } from "../analytics";
-import { ApiRequestError, createRun, cvDocx, cvFollowUp, cvImport, cvTranslate, getSkillCatalog, streamCvLines } from "../api";
+import { ApiRequestError, createRun, cvDocx, cvFollowUp, cvImport, cvPolish, cvTranslate, getSkillCatalog, streamCvLines } from "../api";
 import type { CvLine } from "../api";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { checklist } from "./ats";
-import { applyEnglish, arabicTexts } from "./english";
+import { applyEnglish, arabicTexts, polishable } from "./english";
+import type { PolishKind } from "./english";
 import CvPreview from "./CvPreview";
 import { MonthGrid, RangePicker } from "./MonthPicker";
 import { suggestSkills } from "./skills";
@@ -23,8 +24,8 @@ const WORD_MS = 55;
 const FOLLOW_UP_MIN_WORDS = 8;
 // With nothing new for this long while writing, the page says the model is slow.
 const SLOW_AFTER_MS = 8000;
-// Arabic texts translated per request (the server takes up to 30).
-const TRANSLATE_BATCH = 30;
+// Fields polished per request (the server takes up to 40).
+const POLISH_BATCH = 40;
 // The printed CV's body size in points, largest first, and the extra room between sections;
 // the same steps as the Word file (api/app/cv_docx.py).
 const PRINT_SIZES = [13, 12.5, 12, 11.5, 11, 10.5, 10, 9.5];
@@ -470,45 +471,52 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     return applyEnglish(toResume(live, categoryOf), state.textEnglish ?? {});
   }, [state, draft, question, followKey, writing, categoryOf]);
 
-  // The finished CV is English only: whatever is still Arabic is translated in one pass.
+  // The finished CV is tidied and English only: the short fields the person typed (spelling,
+  // capital letters, certificates in full, language levels) and anything still in Arabic go to
+  // the writer in one pass; code keeps a fix only when it says nothing new.
   const [englishing, setEnglishing] = useState(false);
-  const englishTried = useRef("");
-  const leftArabic = useMemo(() => (resume && finished ? arabicTexts(resume) : []), [resume, finished]);
+  const polishTried = useRef("");
+  const toPolish = useMemo(() => {
+    if (!resume || !finished) return [];
+    const done = new Set(Object.values(state?.textEnglish ?? {}));
+    const seen = state?.textEnglish ?? {};
+    return polishable(resume).filter((item) => !done.has(item.text) && !(item.text in seen));
+  }, [resume, finished, state?.textEnglish]);
 
-  const translateLeft = useCallback(async (texts: string[]) => {
-    if (!texts.length) return true;
+  const polishAll = useCallback(async (items: { text: string; kind: PolishKind }[]): Promise<Record<string, string>> => {
+    const found: Record<string, string> = {};
+    if (!items.length) return found;
     setEnglishing(true);
     try {
-      const found: Record<string, string> = {};
-      for (let i = 0; i < texts.length; i += TRANSLATE_BATCH) {
-        const batch = texts.slice(i, i + TRANSLATE_BATCH);
-        const english = await cvTranslate(Object.fromEntries(batch.map((text, j) => [`t${j}`, text])));
-        batch.forEach((text, j) => {
-          const value = english[`t${j}`];
-          if (value && !hasArabic(value)) found[text] = value;
+      for (let i = 0; i < items.length; i += POLISH_BATCH) {
+        const batch = items.slice(i, i + POLISH_BATCH);
+        const polished = await cvPolish(batch);
+        batch.forEach((item, j) => {
+          found[item.text] = polished[j] || item.text;
         });
       }
       setState((s) => (s ? { ...s, textEnglish: { ...(s.textEnglish ?? {}), ...found } } : s));
-      return texts.every((text) => found[text]);
     } catch {
-      return false;
+      // The fields stay as typed; Arabic left is caught before any download.
     } finally {
       setEnglishing(false);
     }
+    return found;
   }, []);
 
   useEffect(() => {
-    const key = leftArabic.join("\n");
-    if (!leftArabic.length || writing || englishTried.current === key) return;
-    englishTried.current = key;
-    translateLeft(leftArabic);
-  }, [leftArabic, writing, translateLeft]);
+    const key = toPolish.map((item) => item.text).join("\n");
+    if (!toPolish.length || writing || polishTried.current === key) return;
+    polishTried.current = key;
+    polishAll(toPolish);
+  }, [toPolish, writing, polishAll]);
 
-  // Before any download: nothing Arabic may be left in the CV.
+  // Before any download: the polish has run, and nothing Arabic is left in the CV.
   async function readyInEnglish(): Promise<boolean> {
-    if (!leftArabic.length) return true;
-    if (await translateLeft(leftArabic)) return true;
-    setDownloadError(`${t("cvb_still_arabic")} ${leftArabic.join("، ")}`);
+    const found = toPolish.length ? await polishAll(toPolish) : {};
+    const left = resume ? arabicTexts(applyEnglish(resume, found)) : [];
+    if (!left.length) return true;
+    setDownloadError(`${t("cvb_still_arabic")} ${left.join("، ")}`);
     return false;
   }
 
