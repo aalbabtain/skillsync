@@ -29,7 +29,7 @@ export type Mode = "scratch" | "update";
 
 // Raised whenever the questions change, so a conversation saved under other questions is
 // started over instead of being read against the wrong script.
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 4;
 
 export type State = {
   version: typeof STATE_VERSION;

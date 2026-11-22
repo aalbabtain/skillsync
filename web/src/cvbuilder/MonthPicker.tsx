@@ -1,90 +1,111 @@
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useState } from "react";
 
 import { useI18n } from "../i18n";
 import { MONTH_NAMES } from "./validate";
 
-type Props = {
-  // Called with "Jun 2027", or "Present" when the person still works there.
+type GridProps = {
+  // Called with "Jun 2027", or "Present" when allowed and chosen.
   onPick: (value: string) => void;
   allowPresent: boolean;
-  // The button's text; by default "Choose month and year".
-  label?: string;
+  // The value already chosen, marked in the grid.
+  selected?: string;
+  // The year shown first when nothing is chosen yet.
+  startYear?: number;
 };
 
 /**
- * A month-and-year picker in the site's colours, opened from a button under the answer box.
- * No day: a CV only needs the month. Escape or picking a month closes it.
+ * A month-and-year grid in the site's colours, always open: dates are picked, not typed, and
+ * a CV needs no day. The year arrows point back and forward in the reading direction.
  */
-export default function MonthPicker({ onPick, allowPresent, label }: Props) {
+export function MonthGrid({ onPick, allowPresent, selected = "", startYear }: GridProps) {
   const { t, lang } = useI18n();
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
-  const [year, setYear] = useState(() => new Date().getFullYear());
-  const panel = useRef<HTMLDivElement>(null);
-  const toggle = useRef<HTMLButtonElement>(null);
+  const [picked, pickedYear] = selected.split(" ");
+  const [year, setYear] = useState(() => Number(pickedYear) || startYear || new Date().getFullYear());
   const names = MONTH_NAMES.map((_, i) =>
     new Intl.DateTimeFormat(lang === "ar" ? "ar" : "en", { month: "short" }).format(new Date(2000, i, 1)),
   );
 
-  useEffect(() => {
-    if (!open) return;
-    panel.current?.querySelector<HTMLButtonElement>("button.cvb-month")?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        toggle.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  return (
+    <div className="cvb-picker-panel" role="group" aria-label={t("cvb_pick_month")}>
+      <div className="cvb-picker-year">
+        <button className="cvb-year-step" type="button" aria-label={t("cvb_prev_year")} onClick={() => setYear((y) => y - 1)}>
+          <ChevronLeft size={18} aria-hidden="true" />
+        </button>
+        <output dir="ltr" aria-live="polite">
+          {year}
+        </output>
+        <button className="cvb-year-step" type="button" aria-label={t("cvb_next_year")} onClick={() => setYear((y) => y + 1)}>
+          <ChevronRight size={18} aria-hidden="true" />
+        </button>
+      </div>
+      <div className="cvb-months">
+        {names.map((name, i) => {
+          const value = `${MONTH_NAMES[i]} ${year}`;
+          return (
+            <button
+              className="cvb-month"
+              type="button"
+              key={i}
+              aria-pressed={picked === MONTH_NAMES[i] && Number(pickedYear) === year}
+              onClick={() => onPick(value)}
+            >
+              {name}
+            </button>
+          );
+        })}
+      </div>
+      {allowPresent && (
+        <button className="btn btn-ghost cvb-present" type="button" aria-pressed={selected === "Present"} onClick={() => onPick("Present")}>
+          {t("cvb_present")}
+        </button>
+      )}
+    </div>
+  );
+}
 
-  function pick(value: string) {
-    setOpen(false);
-    onPick(value);
-  }
+type RangeProps = {
+  from: string;
+  to: string;
+  onChange: (from: string, to: string) => void;
+};
+
+/** Start and end in one answer: pick the start, then the end (or Present). */
+export function RangePicker({ from, to, onChange }: RangeProps) {
+  const { t } = useI18n();
+  const [side, setSide] = useState<"from" | "to">(from ? "to" : "from");
 
   return (
-    <div className="cvb-picker">
-      <button
-        ref={toggle}
-        className="btn btn-ghost"
-        type="button"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <CalendarDays size={16} aria-hidden="true" />
-        <bdi>{label ?? t("cvb_pick_month")}</bdi>
-      </button>
-      {open && (
-        <div className="cvb-picker-panel" id={panelId} ref={panel} role="group" aria-label={t("cvb_pick_month")}>
-          <div className="cvb-picker-year">
-            <button className="cvb-year-step" type="button" aria-label={t("cvb_prev_year")} onClick={() => setYear((y) => y - 1)}>
-              <ChevronLeft size={18} aria-hidden="true" />
-            </button>
-            <output dir="ltr" aria-live="polite">
-              {year}
-            </output>
-            <button className="cvb-year-step" type="button" aria-label={t("cvb_next_year")} onClick={() => setYear((y) => y + 1)}>
-              <ChevronRight size={18} aria-hidden="true" />
-            </button>
-          </div>
-          <div className="cvb-months">
-            {names.map((name, i) => (
-              <button className="cvb-month" type="button" key={i} onClick={() => pick(`${MONTH_NAMES[i]} ${year}`)}>
-                {name}
-              </button>
-            ))}
-          </div>
-          {allowPresent && (
-            <button className="btn btn-ghost cvb-present" type="button" onClick={() => pick("Present")}>
-              {t("cvb_present")}
-            </button>
-          )}
-        </div>
-      )}
+    <div className="cvb-range">
+      <div className="cvb-range-tabs" role="group">
+        {(["from", "to"] as const).map((which) => (
+          <button
+            key={which}
+            type="button"
+            className="cvb-range-tab"
+            aria-pressed={side === which}
+            onClick={() => setSide(which)}
+          >
+            <CalendarDays size={15} aria-hidden="true" />
+            <span>{t(which === "from" ? "cvb_from" : "cvb_to")}</span>
+            <bdi dir="ltr">{(which === "from" ? from : to) || "…"}</bdi>
+          </button>
+        ))}
+      </div>
+      <MonthGrid
+        key={side}
+        allowPresent={side === "to"}
+        selected={side === "from" ? from : to}
+        startYear={side === "to" ? Number(from.split(" ")[1]) || undefined : undefined}
+        onPick={(value) => {
+          if (side === "from") {
+            onChange(value, to);
+            setSide("to");
+          } else {
+            onChange(from, value);
+          }
+        }}
+      />
     </div>
   );
 }

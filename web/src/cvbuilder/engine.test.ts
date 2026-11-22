@@ -74,7 +74,7 @@ test("no to hasJob skips the job questions", () => {
 });
 
 test("a finished project waits for its bullets, then add another repeats it", () => {
-  let state = say(atKey("projName"), "SkillSync", "built an API with FastAPI", "FastAPI", "Backend");
+  let state = say(atKey("projName"), "SkillSync", "Jan 2026 - Present", "built an API with FastAPI", "FastAPI", "Backend");
   const result = skip(state);
   assert.equal(result.needs, "project");
   state = result.state;
@@ -85,7 +85,7 @@ test("a finished project waits for its bullets, then add another repeats it", ()
   assert.equal(state.answers.projName, undefined);
   state = addAnother(state, true);
   assert.equal(current(state)?.key, "projName");
-  state = say(state, "Portfolio", "a site for my work", "skip", "skip", "https://sara.dev");
+  state = say(state, "Portfolio", "Mar 2025 - Jun 2025", "a site for my work", "skip", "skip", "https://sara.dev");
   state = addAnother(saveItem(state, "project", ["Built a personal site"]), false);
   assert.equal(state.projects.length, 2);
   assert.equal(current(state)?.key, "skills");
@@ -124,7 +124,7 @@ test("the script has nine steps in order", () => {
 });
 
 test("an answer can be logged with other words than it stores (a follow-up detail)", () => {
-  const state = say(atKey("projName"), "SkillSync");
+  const state = say(atKey("projName"), "SkillSync", "Jan 2026 - Present");
   const result = answer(state, "built it with Python. it reads a CV", "it reads a CV");
   assert.equal(result.state.answers.projWhat, "built it with Python. it reads a CV");
   assert.deepEqual(result.state.log.at(-2), { kind: "answer", key: "projWhat", text: "it reads a CV" });
@@ -161,7 +161,7 @@ test("job dates are one answer, from and to", () => {
 });
 
 test("rewritten lines replace an item's lines", () => {
-  let state = say(atKey("projName"), "SkillSync", "built an API", "skip", "skip");
+  let state = say(atKey("projName"), "SkillSync", "Jan 2026 - Present", "built an API", "skip", "skip");
   state = addAnother(saveItem(skip(state).state, "project", ["Built an API"]), false);
   state = replaceLines(state, "project", 0, ["Built the SkillSync API"]);
   assert.deepEqual(state.projects[0].lines, ["Built the SkillSync API"]);
@@ -195,4 +195,12 @@ test("the CV says the degree in words and the field as the major", () => {
 test("a conversation saved by an earlier version of the questions is not loaded", () => {
   const older = { ...start("scratch"), version: 1 };
   assert.equal(load(JSON.stringify(older)), null);
+});
+
+test("a project has its dates, from and to", () => {
+  const state = say(atKey("projDates"), "Jan 2026 - Present");
+  assert.equal(state.answers.projDates, "Jan 2026 – Present");
+  const resume = toResume({ ...state, projects: [{ answers: { projName: "SkillSync", projDates: "Jan 2026 – Present" }, lines: [] }] });
+  assert.equal(resume.projects[0].start, "Jan 2026");
+  assert.equal(resume.projects[0].end, "Present");
 });

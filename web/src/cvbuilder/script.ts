@@ -31,6 +31,7 @@ export const SCRIPT: Question[] = [
 
   { key: "hasProject", step: 5, kind: "choice", choices: ["yes", "no"] },
   { key: "projName", step: 5, kind: "latin", group: "project" },
+  { key: "projDates", step: 5, kind: "range", group: "project" },
   { key: "projWhat", step: 5, kind: "long", group: "project" },
   { key: "projTools", step: 5, kind: "text", group: "project", optional: true },
   { key: "projRole", step: 5, kind: "text", group: "project", optional: true },

@@ -10,7 +10,7 @@ import type { MessageKey } from "../i18n";
 import { checklist } from "./ats";
 import { applyEnglish, arabicTexts } from "./english";
 import CvPreview from "./CvPreview";
-import MonthPicker from "./MonthPicker";
+import { MonthGrid, RangePicker } from "./MonthPicker";
 import { suggestSkills } from "./skills";
 import type { CatalogEntry } from "./skills";
 import { addAnother, answer, back, cancelEdit, canEdit, current, done, load, replaceLines, saveItem, skip, start, toResume } from "./engine";
@@ -780,21 +780,10 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     composer = (
       <div className="cvb-composer">
         {editing}
+        {/* Dates are picked from the grid, never typed. */}
+        {question.kind === "date" && <MonthGrid key={question.key} allowPresent={false} selected={draft} onPick={(value) => submit(value)} />}
         {question.kind === "range" && (
-          <div className="cvb-range">
-            <MonthPicker
-              key={`${question.key}-from`}
-              label={`${t("cvb_from")}: ${rangeParts[0] || "…"}`}
-              allowPresent={false}
-              onPick={(value) => setDraft(`${value} – ${rangeParts[1]}`)}
-            />
-            <MonthPicker
-              key={`${question.key}-to`}
-              label={`${t("cvb_to")}: ${rangeParts[1] || "…"}`}
-              allowPresent
-              onPick={(value) => setDraft(`${rangeParts[0]} – ${value}`)}
-            />
-          </div>
+          <RangePicker key={question.key} from={rangeParts[0]} to={rangeParts[1]} onChange={(from, to) => setDraft(`${from} – ${to}`)} />
         )}
         <label className="visually-hidden" htmlFor="cvb-answer">
           {t("cvb_answer_label")}
@@ -822,6 +811,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
             ))}
           </div>
         )}
+        {question.kind !== "date" && question.kind !== "range" && (
         <textarea
           id="cvb-answer"
           placeholder={question.kind === "skills" && offered.length > 0 ? t("cvb_skills_more") : undefined}
@@ -838,6 +828,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
             }
           }}
         />
+        )}
         <div className="cvb-row">
           <button className="btn btn-ghost" type="button" disabled={!state.log.some((e) => e.kind === "answer" || e.kind === "skipped")} onClick={() => onBack()}>
             {t("cvb_back")}
@@ -847,14 +838,18 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
               {t("cvb_skip")}
             </button>
           )}
-          <button className="btn btn-primary cvb-send" type="button" disabled={thinking} onClick={() => submit(draft)}>
-            {thinking ? <span className="spinner" aria-hidden="true" /> : null}
-            {t("cvb_send")}
-          </button>
+          {question.kind !== "date" && (
+            <button
+              className="btn btn-primary cvb-send"
+              type="button"
+              disabled={thinking || (question.kind === "range" && !(rangeParts[0] && rangeParts[1]))}
+              onClick={() => submit(draft)}
+            >
+              {thinking ? <span className="spinner" aria-hidden="true" /> : null}
+              {t("cvb_send")}
+            </button>
+          )}
         </div>
-        {question.kind === "date" && (
-          <MonthPicker key={question.key} allowPresent={false} onPick={(value) => submit(value)} />
-        )}
       </div>
     );
   }

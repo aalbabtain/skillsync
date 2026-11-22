@@ -238,8 +238,8 @@ export function toResume(state: State, categoryOf: (skill: string) => string = (
     projects: state.projects.map(({ answers, lines: bullets }) => ({
       name: answers.projName ?? "",
       url: answers.projLink ?? "",
-      start: "",
-      end: "",
+      start: (answers.projDates ?? "").split(" – ")[0] ?? "",
+      end: (answers.projDates ?? "").split(" – ")[1] ?? "",
       role_line: [answers.projRole, answers.projTools].filter(Boolean).join(" | "),
       bullets,
     })),
