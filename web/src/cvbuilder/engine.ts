@@ -212,6 +212,11 @@ function nameCase(name: string): string {
   return name.trim().replace(/(^|[\s-])(\p{L})/gu, (_, gap: string, letter: string) => gap + letter.toUpperCase());
 }
 
+// "Software Engineering student" is the person; the degree's major is "Software Engineering".
+function asMajor(field: string): string {
+  return field.replace(/\s*\b(student|graduate|undergraduate|major)\b\s*/gi, " ").trim() || field;
+}
+
 function list(text: string | undefined): string[] {
   return (text ?? "").split(/[,،\n]/).map((part) => part.trim()).filter(Boolean);
 }
@@ -238,7 +243,7 @@ export function toResume(state: State, categoryOf: (skill: string) => string = (
       bullets,
     })),
     education: a.school
-      ? [{ institution: a.school, degree: DEGREE_TEXT[a.degree] ?? a.degree ?? "", major: en("field"), end: a.grad ?? "", gpa: a.gpa ?? "", achievements: [] }]
+      ? [{ institution: a.school, degree: DEGREE_TEXT[a.degree] ?? a.degree ?? "", major: asMajor(en("field")), end: a.grad ?? "", gpa: a.gpa ?? "", achievements: [] }]
       : [],
     skills,
     projects: state.projects.map(({ answers, lines: bullets }) => ({

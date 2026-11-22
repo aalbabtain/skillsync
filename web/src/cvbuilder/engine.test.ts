@@ -210,3 +210,9 @@ test("a name typed in small letters is written with capitals", () => {
   assert.equal(resume.personal.name, "Omar Al-Qahtani");
   assert.equal(toResume({ ...start("scratch"), answers: { name: "Sara AlHarbi" } }).personal.name, "Sara AlHarbi");
 });
+
+test("the major leaves out a word like student from the specialization", () => {
+  const state = { ...start("scratch"), answers: { name: "Sara", field: "Software Engineering student", school: "KSU", degree: "bachelor" } };
+  assert.equal(toResume(state).education[0].major, "Software Engineering");
+  assert.equal(toResume(state).personal.field, "Software Engineering student");
+});
