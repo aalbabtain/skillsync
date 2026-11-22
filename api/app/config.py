@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.6-flash"
     # Tried when the main model stays busy; empty means no fallback.
     gemini_fallback_model: str = ""
+    # Embeddings for the learning library (Agent 4's retrieval).
+    gemini_embedding_model: str = "gemini-embedding-001"
     skillsync_extractor: str = ""
     skillsync_static_dir: str = ""
     # Model requests per client address per hour; 0 turns the limit off.

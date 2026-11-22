@@ -1,0 +1,123 @@
+{
+  "input": {
+    "postings_count": 3,
+    "skills": [
+      {
+        "name": "Python",
+        "category": "Programming languages",
+        "evidence": "Built APIs in Python",
+        "verified": true
+      },
+      {
+        "name": "FastAPI",
+        "category": "Frameworks",
+        "evidence": "REST APIs in FastAPI",
+        "verified": true
+      },
+      {
+        "name": "AWS",
+        "category": "Cloud & DevOps",
+        "evidence": "",
+        "verified": false
+      }
+    ],
+    "gap": {
+      "missing": [
+        {
+          "name": "Terraform",
+          "category": "Cloud & DevOps",
+          "level": "preferred",
+          "frequency": 1,
+          "sources": [
+            {
+              "posting": 0,
+              "level": "preferred",
+              "evidence": "experience with Terraform"
+            }
+          ]
+        },
+        {
+          "name": "Kubernetes",
+          "category": "Cloud & DevOps",
+          "level": "required",
+          "frequency": 3,
+          "sources": [
+            {
+              "posting": 0,
+              "level": "required",
+              "evidence": "experience with Kubernetes"
+            }
+          ]
+        },
+        {
+          "name": "Docker",
+          "category": "Cloud & DevOps",
+          "level": "required",
+          "frequency": 2,
+          "sources": [
+            {
+              "posting": 0,
+              "level": "required",
+              "evidence": "containerized deployment with Docker"
+            }
+          ]
+        },
+        {
+          "name": "GitHub Actions",
+          "category": "Tools",
+          "level": "required",
+          "frequency": 2,
+          "sources": [
+            {
+              "posting": 0,
+              "level": "required",
+              "evidence": "experience with GitHub Actions"
+            }
+          ]
+        }
+      ],
+      "needs_proof": [
+        {
+          "name": "AWS",
+          "category": "Cloud & DevOps",
+          "level": "required",
+          "frequency": 2,
+          "sources": [
+            {
+              "posting": 0,
+              "level": "required",
+              "evidence": "experience with AWS"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expected": [
+    {
+      "name": "Kubernetes",
+      "phase": "core",
+      "builds_on": null
+    },
+    {
+      "name": "Docker",
+      "phase": "quick",
+      "builds_on": "FastAPI"
+    },
+    {
+      "name": "GitHub Actions",
+      "phase": "core",
+      "builds_on": null
+    },
+    {
+      "name": "Terraform",
+      "phase": "extra",
+      "builds_on": null
+    },
+    {
+      "name": "AWS",
+      "phase": "prove",
+      "builds_on": null
+    }
+  ]
+}

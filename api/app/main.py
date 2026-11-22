@@ -17,10 +17,11 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.agents import cv_skills, requirements
+from app.agents import cv_skills, plan_builder, requirements, retrieval
 from app.config import get_settings
 from app.frontend import register_frontend
 from app.gap import evaluate_gap
+from app.plan import order_plan, verify_card
 from app.rate_limit import RateLimiter, client_address
 from app.skills_catalog import CATALOG, RELATED
 from app.parsers import extract_document
@@ -501,6 +502,8 @@ class GapRequest(BaseModel):
 async def validation_error(request: Request, exc: RequestValidationError):
     if request.url.path == "/api/gap":
         return _error(422, "GAP_INVALID", "The skills or requirements are not in the expected shape.")
+    if request.url.path == "/api/plan/stream":
+        return _error(422, "PLAN_INVALID", "The gap or skills are not in the expected shape.")
     return JSONResponse(status_code=422, content={"detail": jsonable_encoder(exc.errors())})
 
 
@@ -525,6 +528,61 @@ def gap_route(payload: GapRequest):
         summary["missing_count"],
     )
     return result
+
+
+class PlanGap(BaseModel):
+    missing: list[GapRequirement] = Field(default_factory=list, max_length=MAX_GAP_REQUIREMENTS)
+    needs_proof: list[GapRequirement] = Field(default_factory=list, max_length=MAX_GAP_REQUIREMENTS)
+
+
+class PlanRequest(BaseModel):
+    language: Literal["en", "ar"] = "en"
+    gap: PlanGap
+    skills: list[GapSkill] = Field(default_factory=list, max_length=MAX_GAP_SKILLS)
+    postings_count: int = Field(ge=1, le=MAX_POSTINGS)
+
+
+@app.post("/api/plan/stream")
+def plan_route(payload: PlanRequest, request: Request):
+    """Agent 4, streamed. Code orders the gap into phases, retrieves library notes per skill,
+    the model writes each card from those notes only, and code keeps only sourced topics.
+    Lines: {"type": "skill", ...card} in plan order, then {"type": "done", "later",
+    "retrieval"}, or {"type": "error", "code", "message"}."""
+    gap = payload.gap.model_dump()
+    skills = [skill.model_dump() for skill in payload.skills]
+    items, later = order_plan(gap, skills, payload.postings_count)
+    if not items:
+        return _error(422, "PLAN_EMPTY", "Your gap is empty, so there is nothing to plan.")
+
+    if limited := _rate_limited(request, 1):
+        return limited
+
+    known = [s["name"] for s in skills if s.get("verified") and s.get("evidence")]
+    language = payload.language
+
+    def lines():
+        notes, mode = retrieval.retrieve(items)
+        by_id = {item["id"]: item for item in items}
+        sent: set[str] = set()
+        try:
+            for raw in plan_builder.stream(items, notes, known, language):
+                item = by_id.get(str(raw.get("id")))
+                if item is None or item["id"] in sent:
+                    continue
+                sent.add(item["id"])
+                yield _line({"type": "skill", **verify_card(raw, item, notes[item["id"]], language)})
+        except plan_builder.PlanError as error:
+            yield _line({"type": "error", "code": error.code, "message": error.message})
+            return
+        # A skill the model skipped still gets a card, built from its notes alone.
+        for item in items:
+            if item["id"] not in sent:
+                yield _line({"type": "skill", **verify_card({}, item, notes[item["id"]], language)})
+        logger.info("plan: %d skills, %d later, retrieval by %s", len(items), len(later), mode)
+        yield _line({"type": "done", "later": later, "retrieval": mode})
+
+    headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    return StreamingResponse(lines(), media_type="application/x-ndjson", headers=headers)
 
 
 # Registered last so every API route above takes precedence over the site's catch-all.

@@ -1,0 +1,38 @@
+{
+  "input": {
+    "postings_count": 2,
+    "skills": [
+      {
+        "name": "FastAPI",
+        "category": "Frameworks",
+        "evidence": "",
+        "verified": false
+      }
+    ],
+    "gap": {
+      "missing": [
+        {
+          "name": "Docker",
+          "category": "Cloud & DevOps",
+          "level": "required",
+          "frequency": 2,
+          "sources": [
+            {
+              "posting": 0,
+              "level": "required",
+              "evidence": "experience with Docker"
+            }
+          ]
+        }
+      ],
+      "needs_proof": []
+    }
+  },
+  "expected": [
+    {
+      "name": "Docker",
+      "phase": "core",
+      "builds_on": null
+    }
+  ]
+}

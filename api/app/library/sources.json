@@ -1,0 +1,1154 @@
+[
+ {
+  "id": "python-01",
+  "skill": "Python",
+  "title": "The Python tutorial",
+  "note": "Core syntax, control flow, functions and data structures, in the order a newcomer needs them.",
+  "url": "https://docs.python.org/3/tutorial/index.html",
+  "publisher": "Python Docs",
+  "lang": "en"
+ },
+ {
+  "id": "python-02",
+  "skill": "Python",
+  "title": "Modules and packages",
+  "note": "How to split code into modules, import them, and organise a project as packages.",
+  "url": "https://docs.python.org/3/tutorial/modules.html",
+  "publisher": "Python Docs",
+  "lang": "en"
+ },
+ {
+  "id": "python-03",
+  "skill": "Python",
+  "title": "Errors and exceptions",
+  "note": "Raising and handling exceptions, and writing clean-up code that always runs.",
+  "url": "https://docs.python.org/3/tutorial/errors.html",
+  "publisher": "Python Docs",
+  "lang": "en"
+ },
+ {
+  "id": "python-04",
+  "skill": "Python",
+  "title": "Virtual environments and packages",
+  "note": "Isolating a project's dependencies with venv and installing them with pip.",
+  "url": "https://docs.python.org/3/tutorial/venv.html",
+  "publisher": "Python Docs",
+  "lang": "en"
+ },
+ {
+  "id": "java-01",
+  "skill": "Java",
+  "title": "Learn Java",
+  "note": "Official learning path: the language basics, classes and objects, and the standard library.",
+  "url": "https://dev.java/learn/",
+  "publisher": "dev.java",
+  "lang": "en"
+ },
+ {
+  "id": "java-02",
+  "skill": "Java",
+  "title": "Classes and objects",
+  "note": "Declaring classes, constructors, fields and methods, and creating objects from them.",
+  "url": "https://dev.java/learn/classes-objects/",
+  "publisher": "dev.java",
+  "lang": "en"
+ },
+ {
+  "id": "java-03",
+  "skill": "Java",
+  "title": "The Collections Framework",
+  "note": "Lists, sets and maps, and choosing the right collection for the job.",
+  "url": "https://dev.java/learn/api/collections-framework/",
+  "publisher": "dev.java",
+  "lang": "en"
+ },
+ {
+  "id": "java-04",
+  "skill": "Java",
+  "title": "Exceptions",
+  "note": "Checked and unchecked exceptions, try-with-resources and good error handling.",
+  "url": "https://dev.java/learn/exceptions/",
+  "publisher": "dev.java",
+  "lang": "en"
+ },
+ {
+  "id": "javascript-01",
+  "skill": "JavaScript",
+  "title": "JavaScript guide",
+  "note": "The language from the ground up: values, functions, objects and control flow.",
+  "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide",
+  "publisher": "MDN Web Docs",
+  "lang": "en"
+ },
+ {
+  "id": "javascript-02",
+  "skill": "JavaScript",
+  "title": "Using promises",
+  "note": "Writing asynchronous code with promises and async/await, and handling their errors.",
+  "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises",
+  "publisher": "MDN Web Docs",
+  "lang": "en"
+ },
+ {
+  "id": "javascript-03",
+  "skill": "JavaScript",
+  "title": "JavaScript modules",
+  "note": "Splitting code into ES modules with import and export.",
+  "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules",
+  "publisher": "MDN Web Docs",
+  "lang": "en"
+ },
+ {
+  "id": "javascript-04",
+  "skill": "JavaScript",
+  "title": "Using the Fetch API",
+  "note": "Calling web APIs from the browser and reading JSON responses.",
+  "url": "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch",
+  "publisher": "MDN Web Docs",
+  "lang": "en"
+ },
+ {
+  "id": "typescript-01",
+  "skill": "TypeScript",
+  "title": "The TypeScript handbook",
+  "note": "Types for everyday JavaScript: annotations, inference and the compiler's checks.",
+  "url": "https://www.typescriptlang.org/docs/handbook/intro.html",
+  "publisher": "TypeScript Handbook",
+  "lang": "en"
+ },
+ {
+  "id": "typescript-02",
+  "skill": "TypeScript",
+  "title": "Everyday types",
+  "note": "Primitives, arrays, object types, unions and type aliases.",
+  "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html",
+  "publisher": "TypeScript Handbook",
+  "lang": "en"
+ },
+ {
+  "id": "typescript-03",
+  "skill": "TypeScript",
+  "title": "Narrowing",
+  "note": "How checks like typeof and in narrow a union to the type you can safely use.",
+  "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html",
+  "publisher": "TypeScript Handbook",
+  "lang": "en"
+ },
+ {
+  "id": "typescript-04",
+  "skill": "TypeScript",
+  "title": "Generics",
+  "note": "Writing functions and types that work over many types while staying checked.",
+  "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html",
+  "publisher": "TypeScript Handbook",
+  "lang": "en"
+ },
+ {
+  "id": "sql-01",
+  "skill": "SQL",
+  "title": "The SQL language",
+  "note": "Creating tables, inserting rows and querying them with SELECT.",
+  "url": "https://www.postgresql.org/docs/current/tutorial-sql.html",
+  "publisher": "PostgreSQL Docs",
+  "lang": "en"
+ },
+ {
+  "id": "sql-02",
+  "skill": "SQL",
+  "title": "Joins between tables",
+  "note": "Combining rows from several tables with inner and outer joins.",
+  "url": "https://www.postgresql.org/docs/current/tutorial-join.html",
+  "publisher": "PostgreSQL Docs",
+  "lang": "en"
+ },
+ {
+  "id": "sql-03",
+  "skill": "SQL",
+  "title": "Aggregate functions",
+  "note": "Counting, summing and grouping rows with GROUP BY and HAVING.",
+  "url": "https://www.postgresql.org/docs/current/tutorial-agg.html",
+  "publisher": "PostgreSQL Docs",
+  "lang": "en"
+ },
+ {
+  "id": "sql-04",
+  "skill": "SQL",
+  "title": "Indexes",
+  "note": "Speeding up queries with indexes, and when an index does not help.",
+  "url": "https://www.postgresql.org/docs/current/indexes-intro.html",
+  "publisher": "PostgreSQL Docs",
+  "lang": "en"
+ },
+ {
+  "id": "go-01",
+  "skill": "Go",
+  "title": "A tour of Go",
+  "note": "An interactive walk through Go's syntax, types, methods and concurrency.",
+  "url": "https://go.dev/tour/",
+  "publisher": "Go Docs",
+  "lang": "en"
+ },
+ {
+  "id": "go-02",
+  "skill": "Go",
+  "title": "Tutorial: get started with Go",
+  "note": "Installing Go, writing a first program and using external packages.",
+  "url": "https://go.dev/doc/tutorial/getting-started",
+  "publisher": "Go Docs",
+  "lang": "en"
+ },
+ {
+  "id": "go-03",
+  "skill": "Go",
+  "title": "Tutorial: a RESTful API with Gin",
+  "note": "Building a small web service that returns and accepts JSON.",
+  "url": "https://go.dev/doc/tutorial/web-service-gin",
+  "publisher": "Go Docs",
+  "lang": "en"
+ },
+ {
+  "id": "go-04",
+  "skill": "Go",
+  "title": "Effective Go",
+  "note": "Idiomatic Go: naming, error handling, interfaces and goroutines.",
+  "url": "https://go.dev/doc/effective_go",
+  "publisher": "Go Docs",
+  "lang": "en"
+ },
+ {
+  "id": "c-01",
+  "skill": "C#",
+  "title": "C# documentation",
+  "note": "The language tour: types, classes, LINQ and async programming.",
+  "url": "https://learn.microsoft.com/en-us/dotnet/csharp/",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "c-02",
+  "skill": "C#",
+  "title": "Object-oriented programming in C#",
+  "note": "Classes, inheritance, interfaces and encapsulation.",
+  "url": "https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/tutorials/oop",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "c-03",
+  "skill": "C#",
+  "title": "Language Integrated Query (LINQ)",
+  "note": "Querying collections and data with LINQ expressions.",
+  "url": "https://learn.microsoft.com/en-us/dotnet/csharp/linq/",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "c-04",
+  "skill": "C#",
+  "title": "Asynchronous programming",
+  "note": "async and await for I/O without blocking threads.",
+  "url": "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "react-01",
+  "skill": "React",
+  "title": "Quick start",
+  "note": "Components, JSX, props and state: the ideas every React app is built on.",
+  "url": "https://react.dev/learn",
+  "publisher": "React Docs",
+  "lang": "en"
+ },
+ {
+  "id": "react-02",
+  "skill": "React",
+  "title": "Managing state",
+  "note": "Where state should live, lifting it up, and keeping components in sync.",
+  "url": "https://react.dev/learn/managing-state",
+  "publisher": "React Docs",
+  "lang": "en"
+ },
+ {
+  "id": "react-03",
+  "skill": "React",
+  "title": "Synchronizing with effects",
+  "note": "Using effects to talk to the network or other systems, and cleaning them up.",
+  "url": "https://react.dev/learn/synchronizing-with-effects",
+  "publisher": "React Docs",
+  "lang": "en"
+ },
+ {
+  "id": "react-04",
+  "skill": "React",
+  "title": "Responding to events",
+  "note": "Handling clicks and input, and updating state from event handlers.",
+  "url": "https://react.dev/learn/responding-to-events",
+  "publisher": "React Docs",
+  "lang": "en"
+ },
+ {
+  "id": "next-js-01",
+  "skill": "Next.js",
+  "title": "Learn Next.js",
+  "note": "Building a full app step by step: routing, data fetching and deployment.",
+  "url": "https://nextjs.org/learn",
+  "publisher": "Next.js Docs",
+  "lang": "en"
+ },
+ {
+  "id": "next-js-02",
+  "skill": "Next.js",
+  "title": "Routing",
+  "note": "File-based routes, layouts and dynamic segments in the App Router.",
+  "url": "https://nextjs.org/docs/app/building-your-application/routing",
+  "publisher": "Next.js Docs",
+  "lang": "en"
+ },
+ {
+  "id": "next-js-03",
+  "skill": "Next.js",
+  "title": "Data fetching",
+  "note": "Fetching data on the server and caching it.",
+  "url": "https://nextjs.org/docs/app/building-your-application/data-fetching",
+  "publisher": "Next.js Docs",
+  "lang": "en"
+ },
+ {
+  "id": "next-js-04",
+  "skill": "Next.js",
+  "title": "Deploying",
+  "note": "Building for production and the ways a Next.js app can be hosted.",
+  "url": "https://nextjs.org/docs/app/building-your-application/deploying",
+  "publisher": "Next.js Docs",
+  "lang": "en"
+ },
+ {
+  "id": "node-js-01",
+  "skill": "Node.js",
+  "title": "Introduction to Node.js",
+  "note": "Running JavaScript on the server, the event loop and the module system.",
+  "url": "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs",
+  "publisher": "Node.js Docs",
+  "lang": "en"
+ },
+ {
+  "id": "node-js-02",
+  "skill": "Node.js",
+  "title": "The Node.js event loop",
+  "note": "How Node handles many requests on one thread without blocking.",
+  "url": "https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick",
+  "publisher": "Node.js Docs",
+  "lang": "en"
+ },
+ {
+  "id": "node-js-03",
+  "skill": "Node.js",
+  "title": "Working with files",
+  "note": "Reading and writing files with the fs module.",
+  "url": "https://nodejs.org/en/learn/manipulating-files/reading-files-with-nodejs",
+  "publisher": "Node.js Docs",
+  "lang": "en"
+ },
+ {
+  "id": "node-js-04",
+  "skill": "Node.js",
+  "title": "npm and package.json",
+  "note": "Installing packages and describing a project's dependencies and scripts.",
+  "url": "https://nodejs.org/en/learn/getting-started/an-introduction-to-the-npm-package-manager",
+  "publisher": "Node.js Docs",
+  "lang": "en"
+ },
+ {
+  "id": "django-01",
+  "skill": "Django",
+  "title": "Writing your first Django app",
+  "note": "Projects, apps, URLs and views, built up over a short tutorial.",
+  "url": "https://docs.djangoproject.com/en/stable/intro/tutorial01/",
+  "publisher": "Django Docs",
+  "lang": "en"
+ },
+ {
+  "id": "django-02",
+  "skill": "Django",
+  "title": "Models and databases",
+  "note": "Defining models, migrations and querying with the ORM.",
+  "url": "https://docs.djangoproject.com/en/stable/topics/db/models/",
+  "publisher": "Django Docs",
+  "lang": "en"
+ },
+ {
+  "id": "django-03",
+  "skill": "Django",
+  "title": "Templates",
+  "note": "Rendering HTML with Django's template language.",
+  "url": "https://docs.djangoproject.com/en/stable/topics/templates/",
+  "publisher": "Django Docs",
+  "lang": "en"
+ },
+ {
+  "id": "django-04",
+  "skill": "Django",
+  "title": "Testing in Django",
+  "note": "Writing and running tests for views and models.",
+  "url": "https://docs.djangoproject.com/en/stable/topics/testing/overview/",
+  "publisher": "Django Docs",
+  "lang": "en"
+ },
+ {
+  "id": "fastapi-01",
+  "skill": "FastAPI",
+  "title": "FastAPI tutorial",
+  "note": "Path operations, parameters and request bodies, step by step.",
+  "url": "https://fastapi.tiangolo.com/tutorial/",
+  "publisher": "FastAPI Docs",
+  "lang": "en"
+ },
+ {
+  "id": "fastapi-02",
+  "skill": "FastAPI",
+  "title": "Request body with Pydantic",
+  "note": "Declaring and validating JSON bodies with Pydantic models.",
+  "url": "https://fastapi.tiangolo.com/tutorial/body/",
+  "publisher": "FastAPI Docs",
+  "lang": "en"
+ },
+ {
+  "id": "fastapi-03",
+  "skill": "FastAPI",
+  "title": "Dependencies",
+  "note": "Sharing logic such as database sessions and auth through dependencies.",
+  "url": "https://fastapi.tiangolo.com/tutorial/dependencies/",
+  "publisher": "FastAPI Docs",
+  "lang": "en"
+ },
+ {
+  "id": "fastapi-04",
+  "skill": "FastAPI",
+  "title": "Testing",
+  "note": "Testing an API with the TestClient.",
+  "url": "https://fastapi.tiangolo.com/tutorial/testing/",
+  "publisher": "FastAPI Docs",
+  "lang": "en"
+ },
+ {
+  "id": "spring-boot-01",
+  "skill": "Spring Boot",
+  "title": "Building a RESTful web service",
+  "note": "A first Spring Boot service that answers HTTP requests with JSON.",
+  "url": "https://spring.io/guides/gs/rest-service/",
+  "publisher": "Spring Guides",
+  "lang": "en"
+ },
+ {
+  "id": "spring-boot-02",
+  "skill": "Spring Boot",
+  "title": "Accessing data with JPA",
+  "note": "Storing and querying entities with Spring Data JPA.",
+  "url": "https://spring.io/guides/gs/accessing-data-jpa/",
+  "publisher": "Spring Guides",
+  "lang": "en"
+ },
+ {
+  "id": "spring-boot-03",
+  "skill": "Spring Boot",
+  "title": "Testing the web layer",
+  "note": "Testing controllers with Spring's test support.",
+  "url": "https://spring.io/guides/gs/testing-web/",
+  "publisher": "Spring Guides",
+  "lang": "en"
+ },
+ {
+  "id": "spring-boot-04",
+  "skill": "Spring Boot",
+  "title": "Spring Boot with Docker",
+  "note": "Packaging a Spring Boot app as a container image.",
+  "url": "https://spring.io/guides/gs/spring-boot-docker/",
+  "publisher": "Spring Guides",
+  "lang": "en"
+ },
+ {
+  "id": "flutter-01",
+  "skill": "Flutter",
+  "title": "Get started with Flutter",
+  "note": "Installing Flutter and building a first app.",
+  "url": "https://docs.flutter.dev/get-started",
+  "publisher": "Flutter Docs",
+  "lang": "en"
+ },
+ {
+  "id": "flutter-02",
+  "skill": "Flutter",
+  "title": "Building layouts",
+  "note": "Composing screens from rows, columns and other widgets.",
+  "url": "https://docs.flutter.dev/ui/layout",
+  "publisher": "Flutter Docs",
+  "lang": "en"
+ },
+ {
+  "id": "flutter-03",
+  "skill": "Flutter",
+  "title": "State management",
+  "note": "Approaches to sharing state between widgets.",
+  "url": "https://docs.flutter.dev/data-and-backend/state-mgmt",
+  "publisher": "Flutter Docs",
+  "lang": "en"
+ },
+ {
+  "id": "flutter-04",
+  "skill": "Flutter",
+  "title": "Fetching data from the internet",
+  "note": "Calling an API and showing the result in a widget.",
+  "url": "https://docs.flutter.dev/cookbook/networking/fetch-data",
+  "publisher": "Flutter Docs",
+  "lang": "en"
+ },
+ {
+  "id": "postgresql-01",
+  "skill": "PostgreSQL",
+  "title": "PostgreSQL tutorial",
+  "note": "Creating a database, tables and first queries.",
+  "url": "https://www.postgresql.org/docs/current/tutorial.html",
+  "publisher": "PostgreSQL Docs",
+  "lang": "en"
+ },
+ {
+  "id": "postgresql-02",
+  "skill": "PostgreSQL",
+  "title": "Data definition",
+  "note": "Tables, constraints, keys and schemas.",
+  "url": "https://www.postgresql.org/docs/current/ddl.html",
+  "publisher": "PostgreSQL Docs",
+  "lang": "en"
+ },
+ {
+  "id": "postgresql-03",
+  "skill": "PostgreSQL",
+  "title": "Indexes",
+  "note": "Index types and how to make queries faster with them.",
+  "url": "https://www.postgresql.org/docs/current/indexes.html",
+  "publisher": "PostgreSQL Docs",
+  "lang": "en"
+ },
+ {
+  "id": "postgresql-04",
+  "skill": "PostgreSQL",
+  "title": "Transactions",
+  "note": "Grouping changes so they all happen or none do.",
+  "url": "https://www.postgresql.org/docs/current/tutorial-transactions.html",
+  "publisher": "PostgreSQL Docs",
+  "lang": "en"
+ },
+ {
+  "id": "mongodb-01",
+  "skill": "MongoDB",
+  "title": "Introduction to MongoDB",
+  "note": "Documents, collections and how they differ from tables.",
+  "url": "https://www.mongodb.com/docs/manual/introduction/",
+  "publisher": "MongoDB Docs",
+  "lang": "en"
+ },
+ {
+  "id": "mongodb-02",
+  "skill": "MongoDB",
+  "title": "CRUD operations",
+  "note": "Inserting, reading, updating and deleting documents.",
+  "url": "https://www.mongodb.com/docs/manual/crud/",
+  "publisher": "MongoDB Docs",
+  "lang": "en"
+ },
+ {
+  "id": "mongodb-03",
+  "skill": "MongoDB",
+  "title": "Aggregation",
+  "note": "Transforming and summarising documents with pipelines.",
+  "url": "https://www.mongodb.com/docs/manual/aggregation/",
+  "publisher": "MongoDB Docs",
+  "lang": "en"
+ },
+ {
+  "id": "mongodb-04",
+  "skill": "MongoDB",
+  "title": "Data modeling",
+  "note": "Embedding versus referencing, and designing documents for your queries.",
+  "url": "https://www.mongodb.com/docs/manual/data-modeling/",
+  "publisher": "MongoDB Docs",
+  "lang": "en"
+ },
+ {
+  "id": "redis-01",
+  "skill": "Redis",
+  "title": "Redis data types",
+  "note": "Strings, lists, hashes and sets, and what each is good for.",
+  "url": "https://redis.io/docs/latest/develop/data-types/",
+  "publisher": "Redis Docs",
+  "lang": "en"
+ },
+ {
+  "id": "redis-02",
+  "skill": "Redis",
+  "title": "Redis as a cache",
+  "note": "Caching slow results and expiring them with TTLs.",
+  "url": "https://redis.io/docs/latest/develop/use/client-side-caching/",
+  "publisher": "Redis Docs",
+  "lang": "en"
+ },
+ {
+  "id": "redis-03",
+  "skill": "Redis",
+  "title": "Pub/sub",
+  "note": "Sending messages between services with publish and subscribe.",
+  "url": "https://redis.io/docs/latest/develop/interact/pubsub/",
+  "publisher": "Redis Docs",
+  "lang": "en"
+ },
+ {
+  "id": "redis-04",
+  "skill": "Redis",
+  "title": "Getting started",
+  "note": "Installing Redis and running first commands.",
+  "url": "https://redis.io/docs/latest/get-started/",
+  "publisher": "Redis Docs",
+  "lang": "en"
+ },
+ {
+  "id": "aws-01",
+  "skill": "AWS",
+  "title": "What is Amazon S3",
+  "note": "Storing and serving files in buckets, with access control.",
+  "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+  "publisher": "AWS Docs",
+  "lang": "en"
+ },
+ {
+  "id": "aws-02",
+  "skill": "AWS",
+  "title": "What is Amazon EC2",
+  "note": "Running virtual servers, choosing instance types and connecting to them.",
+  "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html",
+  "publisher": "AWS Docs",
+  "lang": "en"
+ },
+ {
+  "id": "aws-03",
+  "skill": "AWS",
+  "title": "What is AWS Lambda",
+  "note": "Running code without managing servers, triggered by events.",
+  "url": "https://docs.aws.amazon.com/lambda/latest/dg/welcome.html",
+  "publisher": "AWS Docs",
+  "lang": "en"
+ },
+ {
+  "id": "aws-04",
+  "skill": "AWS",
+  "title": "What is IAM",
+  "note": "Users, roles and policies, and granting only the access needed.",
+  "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html",
+  "publisher": "AWS Docs",
+  "lang": "en"
+ },
+ {
+  "id": "azure-01",
+  "skill": "Azure",
+  "title": "Azure fundamentals",
+  "note": "Core Azure concepts: regions, resource groups and core services.",
+  "url": "https://learn.microsoft.com/en-us/training/paths/azure-fundamentals-describe-cloud-concepts/",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "azure-02",
+  "skill": "Azure",
+  "title": "Azure App Service",
+  "note": "Hosting web apps and APIs without managing servers.",
+  "url": "https://learn.microsoft.com/en-us/azure/app-service/overview",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "azure-03",
+  "skill": "Azure",
+  "title": "Azure Blob Storage",
+  "note": "Storing files and serving them over HTTP.",
+  "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "azure-04",
+  "skill": "Azure",
+  "title": "Azure Functions",
+  "note": "Event-driven code that runs on demand.",
+  "url": "https://learn.microsoft.com/en-us/azure/azure-functions/functions-overview",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "google-cloud-01",
+  "skill": "Google Cloud",
+  "title": "Cloud Run overview",
+  "note": "Running containers that scale to zero, from a single image.",
+  "url": "https://cloud.google.com/run/docs/overview/what-is-cloud-run",
+  "publisher": "Google Cloud Docs",
+  "lang": "en"
+ },
+ {
+  "id": "google-cloud-02",
+  "skill": "Google Cloud",
+  "title": "Cloud Storage",
+  "note": "Buckets and objects for files of any size.",
+  "url": "https://cloud.google.com/storage/docs/introduction",
+  "publisher": "Google Cloud Docs",
+  "lang": "en"
+ },
+ {
+  "id": "google-cloud-03",
+  "skill": "Google Cloud",
+  "title": "IAM overview",
+  "note": "Roles and permissions for people and services.",
+  "url": "https://cloud.google.com/iam/docs/overview",
+  "publisher": "Google Cloud Docs",
+  "lang": "en"
+ },
+ {
+  "id": "google-cloud-04",
+  "skill": "Google Cloud",
+  "title": "BigQuery introduction",
+  "note": "A serverless warehouse for analysing large data with SQL.",
+  "url": "https://cloud.google.com/bigquery/docs/introduction",
+  "publisher": "Google Cloud Docs",
+  "lang": "en"
+ },
+ {
+  "id": "docker-01",
+  "skill": "Docker",
+  "title": "Docker overview",
+  "note": "Images, containers and the Docker engine, and why containers make deployments repeatable.",
+  "url": "https://docs.docker.com/get-started/docker-overview/",
+  "publisher": "Docker Docs",
+  "lang": "en"
+ },
+ {
+  "id": "docker-02",
+  "skill": "Docker",
+  "title": "Writing a Dockerfile",
+  "note": "Describing how an image is built, layer by layer, for an app and its dependencies.",
+  "url": "https://docs.docker.com/get-started/docker-concepts/building-images/writing-a-dockerfile/",
+  "publisher": "Docker Docs",
+  "lang": "en"
+ },
+ {
+  "id": "docker-03",
+  "skill": "Docker",
+  "title": "Docker Compose",
+  "note": "Running several containers together, such as an API and its database, from one file.",
+  "url": "https://docs.docker.com/compose/",
+  "publisher": "Docker Docs",
+  "lang": "en"
+ },
+ {
+  "id": "docker-04",
+  "skill": "Docker",
+  "title": "Multi-stage builds",
+  "note": "Keeping images small by building in one stage and shipping only the result.",
+  "url": "https://docs.docker.com/build/building/multi-stage/",
+  "publisher": "Docker Docs",
+  "lang": "en"
+ },
+ {
+  "id": "kubernetes-01",
+  "skill": "Kubernetes",
+  "title": "Deployments",
+  "note": "Running several copies of an app and replacing them safely.",
+  "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/",
+  "publisher": "Kubernetes Docs",
+  "lang": "en"
+ },
+ {
+  "id": "kubernetes-02",
+  "skill": "Kubernetes",
+  "title": "Services",
+  "note": "A stable address and load balancing in front of a set of pods.",
+  "url": "https://kubernetes.io/docs/concepts/services-networking/service/",
+  "publisher": "Kubernetes Docs",
+  "lang": "en"
+ },
+ {
+  "id": "kubernetes-03",
+  "skill": "Kubernetes",
+  "title": "ConfigMaps and Secrets",
+  "note": "Passing settings and passwords to pods without baking them into images.",
+  "url": "https://kubernetes.io/docs/concepts/configuration/configmap/",
+  "publisher": "Kubernetes Docs",
+  "lang": "en"
+ },
+ {
+  "id": "kubernetes-04",
+  "skill": "Kubernetes",
+  "title": "Performing a rolling update",
+  "note": "Updating an app with no downtime and rolling it back.",
+  "url": "https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/",
+  "publisher": "Kubernetes Docs",
+  "lang": "en"
+ },
+ {
+  "id": "terraform-01",
+  "skill": "Terraform",
+  "title": "What is Terraform",
+  "note": "Describing infrastructure as code and applying it repeatably.",
+  "url": "https://developer.hashicorp.com/terraform/intro",
+  "publisher": "HashiCorp Docs",
+  "lang": "en"
+ },
+ {
+  "id": "terraform-02",
+  "skill": "Terraform",
+  "title": "Resources",
+  "note": "Declaring the pieces of infrastructure Terraform manages.",
+  "url": "https://developer.hashicorp.com/terraform/language/resources",
+  "publisher": "HashiCorp Docs",
+  "lang": "en"
+ },
+ {
+  "id": "terraform-03",
+  "skill": "Terraform",
+  "title": "Input variables",
+  "note": "Making configurations reusable with variables and outputs.",
+  "url": "https://developer.hashicorp.com/terraform/language/values/variables",
+  "publisher": "HashiCorp Docs",
+  "lang": "en"
+ },
+ {
+  "id": "terraform-04",
+  "skill": "Terraform",
+  "title": "State",
+  "note": "How Terraform records what it created, and keeping that record safe.",
+  "url": "https://developer.hashicorp.com/terraform/language/state",
+  "publisher": "HashiCorp Docs",
+  "lang": "en"
+ },
+ {
+  "id": "github-actions-01",
+  "skill": "GitHub Actions",
+  "title": "Understanding GitHub Actions",
+  "note": "Workflows, jobs, steps and the events that start them.",
+  "url": "https://docs.github.com/en/actions/about-github-actions/understanding-github-actions",
+  "publisher": "GitHub Docs",
+  "lang": "en"
+ },
+ {
+  "id": "github-actions-02",
+  "skill": "GitHub Actions",
+  "title": "Building and testing Python",
+  "note": "Running a Python project's tests on every push.",
+  "url": "https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-python",
+  "publisher": "GitHub Docs",
+  "lang": "en"
+ },
+ {
+  "id": "github-actions-03",
+  "skill": "GitHub Actions",
+  "title": "Publishing Docker images",
+  "note": "Building an image in a workflow and pushing it to a registry.",
+  "url": "https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images",
+  "publisher": "GitHub Docs",
+  "lang": "en"
+ },
+ {
+  "id": "github-actions-04",
+  "skill": "GitHub Actions",
+  "title": "Using secrets",
+  "note": "Giving workflows keys and passwords without putting them in the repository.",
+  "url": "https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions",
+  "publisher": "GitHub Docs",
+  "lang": "en"
+ },
+ {
+  "id": "ci-cd-01",
+  "skill": "CI/CD",
+  "title": "Continuous integration",
+  "note": "Testing every change automatically before it is merged.",
+  "url": "https://docs.github.com/en/actions/about-github-actions/about-continuous-integration-with-github-actions",
+  "publisher": "GitHub Docs",
+  "lang": "en"
+ },
+ {
+  "id": "ci-cd-02",
+  "skill": "CI/CD",
+  "title": "Continuous deployment",
+  "note": "Shipping every merged change to an environment automatically.",
+  "url": "https://docs.github.com/en/actions/use-cases-and-examples/deploying/about-continuous-deployment-with-github-actions",
+  "publisher": "GitHub Docs",
+  "lang": "en"
+ },
+ {
+  "id": "ci-cd-03",
+  "skill": "CI/CD",
+  "title": "Deployment environments",
+  "note": "Separating test and production, with approvals before release.",
+  "url": "https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-deployments/managing-environments-for-deployment",
+  "publisher": "GitHub Docs",
+  "lang": "en"
+ },
+ {
+  "id": "ci-cd-04",
+  "skill": "CI/CD",
+  "title": "Workflow syntax",
+  "note": "Writing pipelines: triggers, jobs, matrices and conditions.",
+  "url": "https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions",
+  "publisher": "GitHub Docs",
+  "lang": "en"
+ },
+ {
+  "id": "linux-01",
+  "skill": "Linux",
+  "title": "The Linux command line for beginners",
+  "note": "Moving around the file system and running commands in a terminal.",
+  "url": "https://ubuntu.com/tutorials/command-line-for-beginners",
+  "publisher": "Ubuntu Tutorials",
+  "lang": "en"
+ },
+ {
+  "id": "linux-02",
+  "skill": "Linux",
+  "title": "Files and permissions",
+  "note": "Reading, changing and understanding file permissions.",
+  "url": "https://ubuntu.com/tutorials/command-line-for-beginners#5-moving-and-manipulating-files",
+  "publisher": "Ubuntu Tutorials",
+  "lang": "en"
+ },
+ {
+  "id": "linux-03",
+  "skill": "Linux",
+  "title": "Installing software with apt",
+  "note": "Finding and installing packages from the command line.",
+  "url": "https://ubuntu.com/server/docs/package-management",
+  "publisher": "Ubuntu Tutorials",
+  "lang": "en"
+ },
+ {
+  "id": "linux-04",
+  "skill": "Linux",
+  "title": "Services with systemd",
+  "note": "Starting, stopping and checking long-running services.",
+  "url": "https://ubuntu.com/server/docs/service-management",
+  "publisher": "Ubuntu Tutorials",
+  "lang": "en"
+ },
+ {
+  "id": "git-01",
+  "skill": "Git",
+  "title": "Git basics",
+  "note": "Recording changes: staging, committing and viewing history.",
+  "url": "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository",
+  "publisher": "Pro Git",
+  "lang": "en"
+ },
+ {
+  "id": "git-02",
+  "skill": "Git",
+  "title": "Branching",
+  "note": "Creating branches, switching between them and merging.",
+  "url": "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging",
+  "publisher": "Pro Git",
+  "lang": "en"
+ },
+ {
+  "id": "git-03",
+  "skill": "Git",
+  "title": "Working with remotes",
+  "note": "Pushing and pulling, and collaborating through a shared repository.",
+  "url": "https://git-scm.com/book/en/v2/Git-Basics-Working-with-Remotes",
+  "publisher": "Pro Git",
+  "lang": "en"
+ },
+ {
+  "id": "git-04",
+  "skill": "Git",
+  "title": "Undoing things",
+  "note": "Fixing a commit, unstaging files and reverting changes safely.",
+  "url": "https://git-scm.com/book/en/v2/Git-Basics-Undoing-Things",
+  "publisher": "Pro Git",
+  "lang": "en"
+ },
+ {
+  "id": "rest-apis-01",
+  "skill": "REST APIs",
+  "title": "HTTP overview",
+  "note": "Requests, responses, methods and status codes.",
+  "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview",
+  "publisher": "MDN Web Docs",
+  "lang": "en"
+ },
+ {
+  "id": "rest-apis-02",
+  "skill": "REST APIs",
+  "title": "HTTP request methods",
+  "note": "GET, POST, PUT and DELETE, and which is safe to repeat.",
+  "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods",
+  "publisher": "MDN Web Docs",
+  "lang": "en"
+ },
+ {
+  "id": "rest-apis-03",
+  "skill": "REST APIs",
+  "title": "HTTP response status codes",
+  "note": "What 200, 404, 422 and 500 tell the client.",
+  "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status",
+  "publisher": "MDN Web Docs",
+  "lang": "en"
+ },
+ {
+  "id": "rest-apis-04",
+  "skill": "REST APIs",
+  "title": "Designing a REST API",
+  "note": "Resources, URLs and consistent errors, with an example service.",
+  "url": "https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "machine-learning-01",
+  "skill": "Machine Learning",
+  "title": "Getting started with scikit-learn",
+  "note": "Fitting a model, predicting and evaluating it in a few lines.",
+  "url": "https://scikit-learn.org/stable/getting_started.html",
+  "publisher": "scikit-learn Docs",
+  "lang": "en"
+ },
+ {
+  "id": "machine-learning-02",
+  "skill": "Machine Learning",
+  "title": "Supervised learning",
+  "note": "Classification and regression, and the common models for each.",
+  "url": "https://scikit-learn.org/stable/supervised_learning.html",
+  "publisher": "scikit-learn Docs",
+  "lang": "en"
+ },
+ {
+  "id": "machine-learning-03",
+  "skill": "Machine Learning",
+  "title": "Model evaluation",
+  "note": "Choosing metrics and cross-validation to judge a model fairly.",
+  "url": "https://scikit-learn.org/stable/modules/cross_validation.html",
+  "publisher": "scikit-learn Docs",
+  "lang": "en"
+ },
+ {
+  "id": "machine-learning-04",
+  "skill": "Machine Learning",
+  "title": "Preprocessing data",
+  "note": "Scaling, encoding and cleaning features before training.",
+  "url": "https://scikit-learn.org/stable/modules/preprocessing.html",
+  "publisher": "scikit-learn Docs",
+  "lang": "en"
+ },
+ {
+  "id": "pandas-01",
+  "skill": "Pandas",
+  "title": "10 minutes to pandas",
+  "note": "Series and DataFrames, selection and basic operations.",
+  "url": "https://pandas.pydata.org/docs/user_guide/10min.html",
+  "publisher": "pandas Docs",
+  "lang": "en"
+ },
+ {
+  "id": "pandas-02",
+  "skill": "Pandas",
+  "title": "Reading and writing data",
+  "note": "Loading CSV, Excel and SQL data into DataFrames.",
+  "url": "https://pandas.pydata.org/docs/user_guide/io.html",
+  "publisher": "pandas Docs",
+  "lang": "en"
+ },
+ {
+  "id": "pandas-03",
+  "skill": "Pandas",
+  "title": "Group by",
+  "note": "Splitting data into groups and summarising each one.",
+  "url": "https://pandas.pydata.org/docs/user_guide/groupby.html",
+  "publisher": "pandas Docs",
+  "lang": "en"
+ },
+ {
+  "id": "pandas-04",
+  "skill": "Pandas",
+  "title": "Working with missing data",
+  "note": "Finding, filling and dropping missing values.",
+  "url": "https://pandas.pydata.org/docs/user_guide/missing_data.html",
+  "publisher": "pandas Docs",
+  "lang": "en"
+ },
+ {
+  "id": "power-bi-01",
+  "skill": "Power BI",
+  "title": "Get started with Power BI",
+  "note": "Connecting to data and building a first report.",
+  "url": "https://learn.microsoft.com/en-us/power-bi/fundamentals/desktop-getting-started",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "power-bi-02",
+  "skill": "Power BI",
+  "title": "Data modeling",
+  "note": "Relationships between tables and a clean model for reports.",
+  "url": "https://learn.microsoft.com/en-us/power-bi/transform-model/desktop-modeling-view",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "power-bi-03",
+  "skill": "Power BI",
+  "title": "DAX basics",
+  "note": "Writing measures and calculated columns with DAX.",
+  "url": "https://learn.microsoft.com/en-us/power-bi/transform-model/desktop-quickstart-learn-dax-basics",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "power-bi-04",
+  "skill": "Power BI",
+  "title": "Publishing reports",
+  "note": "Sharing reports and dashboards with others.",
+  "url": "https://learn.microsoft.com/en-us/power-bi/create-reports/desktop-upload-desktop-files",
+  "publisher": "Microsoft Learn",
+  "lang": "en"
+ },
+ {
+  "id": "data-analysis-01",
+  "skill": "Data Analysis",
+  "title": "Exploring data with pandas",
+  "note": "Loading a dataset and asking first questions of it.",
+  "url": "https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html",
+  "publisher": "pandas Docs",
+  "lang": "en"
+ },
+ {
+  "id": "data-analysis-02",
+  "skill": "Data Analysis",
+  "title": "Descriptive statistics",
+  "note": "Means, medians, spread and what they say about the data.",
+  "url": "https://docs.python.org/3/library/statistics.html",
+  "publisher": "Python Docs",
+  "lang": "en"
+ },
+ {
+  "id": "data-analysis-03",
+  "skill": "Data Analysis",
+  "title": "Reshaping and pivot tables",
+  "note": "Turning long data wide and summarising it in tables.",
+  "url": "https://pandas.pydata.org/docs/user_guide/reshaping.html",
+  "publisher": "pandas Docs",
+  "lang": "en"
+ },
+ {
+  "id": "data-analysis-04",
+  "skill": "Data Analysis",
+  "title": "Visualizing data",
+  "note": "Plotting distributions and trends to communicate findings.",
+  "url": "https://pandas.pydata.org/docs/user_guide/visualization.html",
+  "publisher": "pandas Docs",
+  "lang": "en"
+ }
+]

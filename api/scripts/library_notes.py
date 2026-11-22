@@ -1,0 +1,233 @@
+"""The learning library's notes, as written and reviewed by people.
+
+Each note is a short summary in our own words of what one official page teaches, with the
+page's address. `python scripts/build_library.py` writes them to app/library/sources.json, the
+file the server reads. Edit here, rebuild, and review the diff.
+"""
+
+PUBLISHERS = {
+    "docs.python.org": "Python Docs",
+    "dev.java": "dev.java",
+    "docs.oracle.com": "Oracle Java Docs",
+    "developer.mozilla.org": "MDN Web Docs",
+    "www.typescriptlang.org": "TypeScript Handbook",
+    "www.postgresql.org": "PostgreSQL Docs",
+    "go.dev": "Go Docs",
+    "learn.microsoft.com": "Microsoft Learn",
+    "react.dev": "React Docs",
+    "nextjs.org": "Next.js Docs",
+    "nodejs.org": "Node.js Docs",
+    "docs.djangoproject.com": "Django Docs",
+    "fastapi.tiangolo.com": "FastAPI Docs",
+    "spring.io": "Spring Guides",
+    "docs.flutter.dev": "Flutter Docs",
+    "www.mongodb.com": "MongoDB Docs",
+    "redis.io": "Redis Docs",
+    "docs.aws.amazon.com": "AWS Docs",
+    "cloud.google.com": "Google Cloud Docs",
+    "docs.docker.com": "Docker Docs",
+    "kubernetes.io": "Kubernetes Docs",
+    "developer.hashicorp.com": "HashiCorp Docs",
+    "docs.github.com": "GitHub Docs",
+    "git-scm.com": "Pro Git",
+    "ubuntu.com": "Ubuntu Tutorials",
+    "scikit-learn.org": "scikit-learn Docs",
+    "pandas.pydata.org": "pandas Docs",
+    "www.w3.org": "W3C",
+}
+
+# skill: [(id suffix, title, note, url), ...]
+NOTES = {
+    "Python": [
+        ("01", "The Python tutorial", "Core syntax, control flow, functions and data structures, in the order a newcomer needs them.", "https://docs.python.org/3/tutorial/index.html"),
+        ("02", "Modules and packages", "How to split code into modules, import them, and organise a project as packages.", "https://docs.python.org/3/tutorial/modules.html"),
+        ("03", "Errors and exceptions", "Raising and handling exceptions, and writing clean-up code that always runs.", "https://docs.python.org/3/tutorial/errors.html"),
+        ("04", "Virtual environments and packages", "Isolating a project's dependencies with venv and installing them with pip.", "https://docs.python.org/3/tutorial/venv.html"),
+    ],
+    "Java": [
+        ("01", "Learn Java", "Official learning path: the language basics, classes and objects, and the standard library.", "https://dev.java/learn/"),
+        ("02", "Classes and objects", "Declaring classes, constructors, fields and methods, and creating objects from them.", "https://dev.java/learn/classes-objects/"),
+        ("03", "The Collections Framework", "Lists, sets and maps, and choosing the right collection for the job.", "https://dev.java/learn/api/collections-framework/"),
+        ("04", "Exceptions", "Checked and unchecked exceptions, try-with-resources and good error handling.", "https://dev.java/learn/exceptions/"),
+    ],
+    "JavaScript": [
+        ("01", "JavaScript guide", "The language from the ground up: values, functions, objects and control flow.", "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide"),
+        ("02", "Using promises", "Writing asynchronous code with promises and async/await, and handling their errors.", "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises"),
+        ("03", "JavaScript modules", "Splitting code into ES modules with import and export.", "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules"),
+        ("04", "Using the Fetch API", "Calling web APIs from the browser and reading JSON responses.", "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch"),
+    ],
+    "TypeScript": [
+        ("01", "The TypeScript handbook", "Types for everyday JavaScript: annotations, inference and the compiler's checks.", "https://www.typescriptlang.org/docs/handbook/intro.html"),
+        ("02", "Everyday types", "Primitives, arrays, object types, unions and type aliases.", "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html"),
+        ("03", "Narrowing", "How checks like typeof and in narrow a union to the type you can safely use.", "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"),
+        ("04", "Generics", "Writing functions and types that work over many types while staying checked.", "https://www.typescriptlang.org/docs/handbook/2/generics.html"),
+    ],
+    "SQL": [
+        ("01", "The SQL language", "Creating tables, inserting rows and querying them with SELECT.", "https://www.postgresql.org/docs/current/tutorial-sql.html"),
+        ("02", "Joins between tables", "Combining rows from several tables with inner and outer joins.", "https://www.postgresql.org/docs/current/tutorial-join.html"),
+        ("03", "Aggregate functions", "Counting, summing and grouping rows with GROUP BY and HAVING.", "https://www.postgresql.org/docs/current/tutorial-agg.html"),
+        ("04", "Indexes", "Speeding up queries with indexes, and when an index does not help.", "https://www.postgresql.org/docs/current/indexes-intro.html"),
+    ],
+    "Go": [
+        ("01", "A tour of Go", "An interactive walk through Go's syntax, types, methods and concurrency.", "https://go.dev/tour/"),
+        ("02", "Tutorial: get started with Go", "Installing Go, writing a first program and using external packages.", "https://go.dev/doc/tutorial/getting-started"),
+        ("03", "Tutorial: a RESTful API with Gin", "Building a small web service that returns and accepts JSON.", "https://go.dev/doc/tutorial/web-service-gin"),
+        ("04", "Effective Go", "Idiomatic Go: naming, error handling, interfaces and goroutines.", "https://go.dev/doc/effective_go"),
+    ],
+    "C#": [
+        ("01", "C# documentation", "The language tour: types, classes, LINQ and async programming.", "https://learn.microsoft.com/en-us/dotnet/csharp/"),
+        ("02", "Object-oriented programming in C#", "Classes, inheritance, interfaces and encapsulation.", "https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/tutorials/oop"),
+        ("03", "Language Integrated Query (LINQ)", "Querying collections and data with LINQ expressions.", "https://learn.microsoft.com/en-us/dotnet/csharp/linq/"),
+        ("04", "Asynchronous programming", "async and await for I/O without blocking threads.", "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/"),
+    ],
+    "React": [
+        ("01", "Quick start", "Components, JSX, props and state: the ideas every React app is built on.", "https://react.dev/learn"),
+        ("02", "Managing state", "Where state should live, lifting it up, and keeping components in sync.", "https://react.dev/learn/managing-state"),
+        ("03", "Synchronizing with effects", "Using effects to talk to the network or other systems, and cleaning them up.", "https://react.dev/learn/synchronizing-with-effects"),
+        ("04", "Responding to events", "Handling clicks and input, and updating state from event handlers.", "https://react.dev/learn/responding-to-events"),
+    ],
+    "Next.js": [
+        ("01", "Learn Next.js", "Building a full app step by step: routing, data fetching and deployment.", "https://nextjs.org/learn"),
+        ("02", "Routing", "File-based routes, layouts and dynamic segments in the App Router.", "https://nextjs.org/docs/app/building-your-application/routing"),
+        ("03", "Data fetching", "Fetching data on the server and caching it.", "https://nextjs.org/docs/app/building-your-application/data-fetching"),
+        ("04", "Deploying", "Building for production and the ways a Next.js app can be hosted.", "https://nextjs.org/docs/app/building-your-application/deploying"),
+    ],
+    "Node.js": [
+        ("01", "Introduction to Node.js", "Running JavaScript on the server, the event loop and the module system.", "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs"),
+        ("02", "The Node.js event loop", "How Node handles many requests on one thread without blocking.", "https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick"),
+        ("03", "Working with files", "Reading and writing files with the fs module.", "https://nodejs.org/en/learn/manipulating-files/reading-files-with-nodejs"),
+        ("04", "npm and package.json", "Installing packages and describing a project's dependencies and scripts.", "https://nodejs.org/en/learn/getting-started/an-introduction-to-the-npm-package-manager"),
+    ],
+    "Django": [
+        ("01", "Writing your first Django app", "Projects, apps, URLs and views, built up over a short tutorial.", "https://docs.djangoproject.com/en/stable/intro/tutorial01/"),
+        ("02", "Models and databases", "Defining models, migrations and querying with the ORM.", "https://docs.djangoproject.com/en/stable/topics/db/models/"),
+        ("03", "Templates", "Rendering HTML with Django's template language.", "https://docs.djangoproject.com/en/stable/topics/templates/"),
+        ("04", "Testing in Django", "Writing and running tests for views and models.", "https://docs.djangoproject.com/en/stable/topics/testing/overview/"),
+    ],
+    "FastAPI": [
+        ("01", "FastAPI tutorial", "Path operations, parameters and request bodies, step by step.", "https://fastapi.tiangolo.com/tutorial/"),
+        ("02", "Request body with Pydantic", "Declaring and validating JSON bodies with Pydantic models.", "https://fastapi.tiangolo.com/tutorial/body/"),
+        ("03", "Dependencies", "Sharing logic such as database sessions and auth through dependencies.", "https://fastapi.tiangolo.com/tutorial/dependencies/"),
+        ("04", "Testing", "Testing an API with the TestClient.", "https://fastapi.tiangolo.com/tutorial/testing/"),
+    ],
+    "Spring Boot": [
+        ("01", "Building a RESTful web service", "A first Spring Boot service that answers HTTP requests with JSON.", "https://spring.io/guides/gs/rest-service/"),
+        ("02", "Accessing data with JPA", "Storing and querying entities with Spring Data JPA.", "https://spring.io/guides/gs/accessing-data-jpa/"),
+        ("03", "Testing the web layer", "Testing controllers with Spring's test support.", "https://spring.io/guides/gs/testing-web/"),
+        ("04", "Spring Boot with Docker", "Packaging a Spring Boot app as a container image.", "https://spring.io/guides/gs/spring-boot-docker/"),
+    ],
+    "Flutter": [
+        ("01", "Get started with Flutter", "Installing Flutter and building a first app.", "https://docs.flutter.dev/get-started"),
+        ("02", "Building layouts", "Composing screens from rows, columns and other widgets.", "https://docs.flutter.dev/ui/layout"),
+        ("03", "State management", "Approaches to sharing state between widgets.", "https://docs.flutter.dev/data-and-backend/state-mgmt"),
+        ("04", "Fetching data from the internet", "Calling an API and showing the result in a widget.", "https://docs.flutter.dev/cookbook/networking/fetch-data"),
+    ],
+    "PostgreSQL": [
+        ("01", "PostgreSQL tutorial", "Creating a database, tables and first queries.", "https://www.postgresql.org/docs/current/tutorial.html"),
+        ("02", "Data definition", "Tables, constraints, keys and schemas.", "https://www.postgresql.org/docs/current/ddl.html"),
+        ("03", "Indexes", "Index types and how to make queries faster with them.", "https://www.postgresql.org/docs/current/indexes.html"),
+        ("04", "Transactions", "Grouping changes so they all happen or none do.", "https://www.postgresql.org/docs/current/tutorial-transactions.html"),
+    ],
+    "MongoDB": [
+        ("01", "Introduction to MongoDB", "Documents, collections and how they differ from tables.", "https://www.mongodb.com/docs/manual/introduction/"),
+        ("02", "CRUD operations", "Inserting, reading, updating and deleting documents.", "https://www.mongodb.com/docs/manual/crud/"),
+        ("03", "Aggregation", "Transforming and summarising documents with pipelines.", "https://www.mongodb.com/docs/manual/aggregation/"),
+        ("04", "Data modeling", "Embedding versus referencing, and designing documents for your queries.", "https://www.mongodb.com/docs/manual/data-modeling/"),
+    ],
+    "Redis": [
+        ("01", "Redis data types", "Strings, lists, hashes and sets, and what each is good for.", "https://redis.io/docs/latest/develop/data-types/"),
+        ("02", "Redis as a cache", "Caching slow results and expiring them with TTLs.", "https://redis.io/docs/latest/develop/use/client-side-caching/"),
+        ("03", "Pub/sub", "Sending messages between services with publish and subscribe.", "https://redis.io/docs/latest/develop/interact/pubsub/"),
+        ("04", "Getting started", "Installing Redis and running first commands.", "https://redis.io/docs/latest/get-started/"),
+    ],
+    "AWS": [
+        ("01", "What is Amazon S3", "Storing and serving files in buckets, with access control.", "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"),
+        ("02", "What is Amazon EC2", "Running virtual servers, choosing instance types and connecting to them.", "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html"),
+        ("03", "What is AWS Lambda", "Running code without managing servers, triggered by events.", "https://docs.aws.amazon.com/lambda/latest/dg/welcome.html"),
+        ("04", "What is IAM", "Users, roles and policies, and granting only the access needed.", "https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html"),
+    ],
+    "Azure": [
+        ("01", "Azure fundamentals", "Core Azure concepts: regions, resource groups and core services.", "https://learn.microsoft.com/en-us/training/paths/azure-fundamentals-describe-cloud-concepts/"),
+        ("02", "Azure App Service", "Hosting web apps and APIs without managing servers.", "https://learn.microsoft.com/en-us/azure/app-service/overview"),
+        ("03", "Azure Blob Storage", "Storing files and serving them over HTTP.", "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"),
+        ("04", "Azure Functions", "Event-driven code that runs on demand.", "https://learn.microsoft.com/en-us/azure/azure-functions/functions-overview"),
+    ],
+    "Google Cloud": [
+        ("01", "Cloud Run overview", "Running containers that scale to zero, from a single image.", "https://cloud.google.com/run/docs/overview/what-is-cloud-run"),
+        ("02", "Cloud Storage", "Buckets and objects for files of any size.", "https://cloud.google.com/storage/docs/introduction"),
+        ("03", "IAM overview", "Roles and permissions for people and services.", "https://cloud.google.com/iam/docs/overview"),
+        ("04", "BigQuery introduction", "A serverless warehouse for analysing large data with SQL.", "https://cloud.google.com/bigquery/docs/introduction"),
+    ],
+    "Docker": [
+        ("01", "Docker overview", "Images, containers and the Docker engine, and why containers make deployments repeatable.", "https://docs.docker.com/get-started/docker-overview/"),
+        ("02", "Writing a Dockerfile", "Describing how an image is built, layer by layer, for an app and its dependencies.", "https://docs.docker.com/get-started/docker-concepts/building-images/writing-a-dockerfile/"),
+        ("03", "Docker Compose", "Running several containers together, such as an API and its database, from one file.", "https://docs.docker.com/compose/"),
+        ("04", "Multi-stage builds", "Keeping images small by building in one stage and shipping only the result.", "https://docs.docker.com/build/building/multi-stage/"),
+    ],
+    "Kubernetes": [
+        ("01", "Deployments", "Running several copies of an app and replacing them safely.", "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"),
+        ("02", "Services", "A stable address and load balancing in front of a set of pods.", "https://kubernetes.io/docs/concepts/services-networking/service/"),
+        ("03", "ConfigMaps and Secrets", "Passing settings and passwords to pods without baking them into images.", "https://kubernetes.io/docs/concepts/configuration/configmap/"),
+        ("04", "Performing a rolling update", "Updating an app with no downtime and rolling it back.", "https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/"),
+    ],
+    "Terraform": [
+        ("01", "What is Terraform", "Describing infrastructure as code and applying it repeatably.", "https://developer.hashicorp.com/terraform/intro"),
+        ("02", "Resources", "Declaring the pieces of infrastructure Terraform manages.", "https://developer.hashicorp.com/terraform/language/resources"),
+        ("03", "Input variables", "Making configurations reusable with variables and outputs.", "https://developer.hashicorp.com/terraform/language/values/variables"),
+        ("04", "State", "How Terraform records what it created, and keeping that record safe.", "https://developer.hashicorp.com/terraform/language/state"),
+    ],
+    "GitHub Actions": [
+        ("01", "Understanding GitHub Actions", "Workflows, jobs, steps and the events that start them.", "https://docs.github.com/en/actions/about-github-actions/understanding-github-actions"),
+        ("02", "Building and testing Python", "Running a Python project's tests on every push.", "https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-python"),
+        ("03", "Publishing Docker images", "Building an image in a workflow and pushing it to a registry.", "https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images"),
+        ("04", "Using secrets", "Giving workflows keys and passwords without putting them in the repository.", "https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions"),
+    ],
+    "CI/CD": [
+        ("01", "Continuous integration", "Testing every change automatically before it is merged.", "https://docs.github.com/en/actions/about-github-actions/about-continuous-integration-with-github-actions"),
+        ("02", "Continuous deployment", "Shipping every merged change to an environment automatically.", "https://docs.github.com/en/actions/use-cases-and-examples/deploying/about-continuous-deployment-with-github-actions"),
+        ("03", "Deployment environments", "Separating test and production, with approvals before release.", "https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-deployments/managing-environments-for-deployment"),
+        ("04", "Workflow syntax", "Writing pipelines: triggers, jobs, matrices and conditions.", "https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions"),
+    ],
+    "Linux": [
+        ("01", "The Linux command line for beginners", "Moving around the file system and running commands in a terminal.", "https://ubuntu.com/tutorials/command-line-for-beginners"),
+        ("02", "Files and permissions", "Reading, changing and understanding file permissions.", "https://ubuntu.com/tutorials/command-line-for-beginners#5-moving-and-manipulating-files"),
+        ("03", "Installing software with apt", "Finding and installing packages from the command line.", "https://ubuntu.com/server/docs/package-management"),
+        ("04", "Services with systemd", "Starting, stopping and checking long-running services.", "https://ubuntu.com/server/docs/service-management"),
+    ],
+    "Git": [
+        ("01", "Git basics", "Recording changes: staging, committing and viewing history.", "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository"),
+        ("02", "Branching", "Creating branches, switching between them and merging.", "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging"),
+        ("03", "Working with remotes", "Pushing and pulling, and collaborating through a shared repository.", "https://git-scm.com/book/en/v2/Git-Basics-Working-with-Remotes"),
+        ("04", "Undoing things", "Fixing a commit, unstaging files and reverting changes safely.", "https://git-scm.com/book/en/v2/Git-Basics-Undoing-Things"),
+    ],
+    "REST APIs": [
+        ("01", "HTTP overview", "Requests, responses, methods and status codes.", "https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview"),
+        ("02", "HTTP request methods", "GET, POST, PUT and DELETE, and which is safe to repeat.", "https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods"),
+        ("03", "HTTP response status codes", "What 200, 404, 422 and 500 tell the client.", "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status"),
+        ("04", "Designing a REST API", "Resources, URLs and consistent errors, with an example service.", "https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design"),
+    ],
+    "Machine Learning": [
+        ("01", "Getting started with scikit-learn", "Fitting a model, predicting and evaluating it in a few lines.", "https://scikit-learn.org/stable/getting_started.html"),
+        ("02", "Supervised learning", "Classification and regression, and the common models for each.", "https://scikit-learn.org/stable/supervised_learning.html"),
+        ("03", "Model evaluation", "Choosing metrics and cross-validation to judge a model fairly.", "https://scikit-learn.org/stable/modules/cross_validation.html"),
+        ("04", "Preprocessing data", "Scaling, encoding and cleaning features before training.", "https://scikit-learn.org/stable/modules/preprocessing.html"),
+    ],
+    "Pandas": [
+        ("01", "10 minutes to pandas", "Series and DataFrames, selection and basic operations.", "https://pandas.pydata.org/docs/user_guide/10min.html"),
+        ("02", "Reading and writing data", "Loading CSV, Excel and SQL data into DataFrames.", "https://pandas.pydata.org/docs/user_guide/io.html"),
+        ("03", "Group by", "Splitting data into groups and summarising each one.", "https://pandas.pydata.org/docs/user_guide/groupby.html"),
+        ("04", "Working with missing data", "Finding, filling and dropping missing values.", "https://pandas.pydata.org/docs/user_guide/missing_data.html"),
+    ],
+    "Power BI": [
+        ("01", "Get started with Power BI", "Connecting to data and building a first report.", "https://learn.microsoft.com/en-us/power-bi/fundamentals/desktop-getting-started"),
+        ("02", "Data modeling", "Relationships between tables and a clean model for reports.", "https://learn.microsoft.com/en-us/power-bi/transform-model/desktop-modeling-view"),
+        ("03", "DAX basics", "Writing measures and calculated columns with DAX.", "https://learn.microsoft.com/en-us/power-bi/transform-model/desktop-quickstart-learn-dax-basics"),
+        ("04", "Publishing reports", "Sharing reports and dashboards with others.", "https://learn.microsoft.com/en-us/power-bi/create-reports/desktop-upload-desktop-files"),
+    ],
+    "Data Analysis": [
+        ("01", "Exploring data with pandas", "Loading a dataset and asking first questions of it.", "https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html"),
+        ("02", "Descriptive statistics", "Means, medians, spread and what they say about the data.", "https://docs.python.org/3/library/statistics.html"),
+        ("03", "Reshaping and pivot tables", "Turning long data wide and summarising it in tables.", "https://pandas.pydata.org/docs/user_guide/reshaping.html"),
+        ("04", "Visualizing data", "Plotting distributions and trends to communicate findings.", "https://pandas.pydata.org/docs/user_guide/visualization.html"),
+    ],
+}
