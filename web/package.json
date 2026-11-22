@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test \"src/cvbuilder/*.test.ts\""
   },
   "dependencies": {
     "country-flag-icons": "^1.6.20",

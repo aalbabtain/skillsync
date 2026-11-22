@@ -1,0 +1,123 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+import { addAnother, answer, back, current, load, saveItem, skip, start, toResume } from "./engine.ts";
+import { indexOf, SCRIPT } from "./script.ts";
+import type { State } from "./types.ts";
+
+function say(state: State, ...texts: string[]): State {
+  for (const text of texts) {
+    const result = answer(state, text);
+    assert.equal(result.error, undefined, `"${text}" at ${current(state)?.key}: ${result.error}`);
+    state = result.state;
+  }
+  return state;
+}
+
+test("order follows the script", () => {
+  let state = start("scratch");
+  assert.equal(current(state)?.key, "name");
+  state = say(state, "Sara Alharbi");
+  assert.equal(current(state)?.key, "field");
+  assert.deepEqual(state.log.slice(-3).map((entry) => entry.kind), ["ask", "answer", "ask"]);
+});
+
+test("skip word on an optional question skips and never stores skip", () => {
+  let state = say(start("scratch"), "Sara Alharbi", "Software Engineering student");
+  const result = answer(state, "skip");
+  assert.equal(result.error, undefined);
+  assert.equal(result.state.answers.target, undefined);
+  assert.equal(result.state.skipped.target, true);
+  assert.equal(current(result.state)?.key, "email");
+  state = result.state;
+  assert.equal(answer(state, "تخطي").error, "needed");
+});
+
+test("skip on a required question returns error needed", () => {
+  const state = start("scratch");
+  assert.equal(skip(state).error, "needed");
+  assert.equal(current(skip(state).state)?.key, "name");
+});
+
+test("Arabic letters in name are refused with latin", () => {
+  assert.equal(answer(start("scratch"), "سارة الحربي").error, "latin");
+});
+
+test("background asks for the summary", () => {
+  let state = say(start("scratch"), "Sara Alharbi", "SE student", "skip", "s@x.io", "+966 50 000 0000", "Riyadh", "skip", "skip");
+  const result = answer(state, "final-year student who likes APIs");
+  assert.equal(result.needs, "summary");
+});
+
+test("back edits an earlier answer and resumes where the person was", () => {
+  let state = say(start("scratch"), "Sara Alharbi", "SE student", "skip", "s@x.io");
+  state = back(state, "field");
+  assert.equal(current(state)?.key, "field");
+  state = say(state, "Software Engineering student");
+  assert.equal(state.answers.field, "Software Engineering student");
+  assert.equal(current(state)?.key, "phone");
+});
+
+test("back with no key goes to the previous question", () => {
+  const state = back(say(start("scratch"), "Sara Alharbi"), undefined);
+  assert.equal(current(state)?.key, "name");
+});
+
+function atKey(key: string, extra: Partial<State> = {}): State {
+  return { ...start("scratch"), at: indexOf(key), ...extra };
+}
+
+test("no to hasJob skips the job questions", () => {
+  const state = say(atKey("hasJob"), "no");
+  assert.equal(current(state)?.key, "school");
+  assert.ok(state.log.some((entry) => entry.kind === "note" && entry.id === "no_job"));
+});
+
+test("a finished project waits for its bullets, then add another repeats it", () => {
+  let state = say(atKey("projName"), "SkillSync", "built an API with FastAPI", "FastAPI", "Backend");
+  const result = skip(state);
+  assert.equal(result.needs, "project");
+  state = result.state;
+  assert.equal(current(state), null);
+  state = saveItem(state, "project", ["Built the API with FastAPI"]);
+  assert.equal(state.projects.length, 1);
+  assert.equal(state.projects[0].answers.projName, "SkillSync");
+  assert.equal(state.answers.projName, undefined);
+  state = addAnother(state, true);
+  assert.equal(current(state)?.key, "projName");
+  state = say(state, "Portfolio", "a site for my work", "skip", "skip", "https://sara.dev");
+  state = addAnother(saveItem(state, "project", ["Built a personal site"]), false);
+  assert.equal(state.projects.length, 2);
+  assert.equal(current(state)?.key, "certs");
+});
+
+test("update mode asks only what is missing", () => {
+  const state = start("update", { answers: { name: "Sara Alharbi", field: "SE student", email: "s@x.io", phone: "+966 50 000 0000", location: "Riyadh" } });
+  assert.equal(current(state)?.key, "target");
+  assert.equal(current(say(state, "skip"))?.key, "linkedin");
+});
+
+test("load returns null for version 0 or bad JSON", () => {
+  assert.equal(load(null), null);
+  assert.equal(load("{not json"), null);
+  assert.equal(load(JSON.stringify({ ...start("scratch"), version: 0 })), null);
+  const saved = say(start("scratch"), "Sara Alharbi");
+  assert.deepEqual(load(JSON.stringify(saved)), saved);
+});
+
+test("toResume uses English values, items and skill categories", () => {
+  let state = { ...start("scratch"), answers: { name: "Sara Alharbi", field: "طالبة هندسة", skills: "Python, FastAPI، Teamwork", school: "King Saud University", degree: "B.Sc.", grad: "Jun 2027", langs: "Arabic, English" }, english: { field: "Software Engineering student" } };
+  state = { ...state, summary: "A summary.", projects: [{ answers: { projName: "SkillSync", projTools: "FastAPI", projRole: "Backend", projLink: "https://x.dev" }, lines: ["Built it"] }] };
+  const resume = toResume(state, (name) => (name === "Teamwork" ? "Soft skills" : "Programming languages"));
+  assert.equal(resume.personal.field, "Software Engineering student");
+  assert.deepEqual(resume.skills, { "Programming languages": ["Python", "FastAPI"], "Soft skills": ["Teamwork"] });
+  assert.deepEqual(resume.projects[0], { name: "SkillSync", url: "https://x.dev", start: "", end: "", role_line: "Backend | FastAPI", bullets: ["Built it"] });
+  assert.equal(resume.education[0].end, "Jun 2027");
+  assert.deepEqual(resume.languages, ["Arabic", "English"]);
+  assert.equal(resume.summary, "A summary.");
+});
+
+test("the script has nine steps in order", () => {
+  const steps = SCRIPT.map((question) => question.step);
+  assert.deepEqual([...new Set(steps)], [0, 1, 2, 3, 4, 5, 6, 7, 8]);
+});
