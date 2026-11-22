@@ -101,6 +101,7 @@ test("load returns null for version 0 or bad JSON", () => {
   assert.equal(load(null), null);
   assert.equal(load("{not json"), null);
   assert.equal(load(JSON.stringify({ ...start("scratch"), version: 0 })), null);
+  assert.equal(load(JSON.stringify({ ...start("scratch"), log: [{ kind: "ask", key: "major" }] })), null);
   const saved = say(start("scratch"), "Sara Alharbi");
   assert.deepEqual(load(JSON.stringify(saved)), saved);
 });
@@ -160,4 +161,9 @@ test("the CV says the degree in words and the field as the major", () => {
   const school = toResume(state).education[0];
   assert.equal(school.degree, "Bachelor's degree");
   assert.equal(school.major, "Software Engineering");
+});
+
+test("a conversation saved by an earlier version of the questions is not loaded", () => {
+  const older = { ...start("scratch"), version: 1 };
+  assert.equal(load(JSON.stringify(older)), null);
 });

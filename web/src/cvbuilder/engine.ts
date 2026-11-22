@@ -1,6 +1,7 @@
 // The conversation as a state machine over SCRIPT. Pure functions: each returns a new State,
 // and the page renders it. No React, no DOM, no network.
 import { DEGREE_TEXT, groupKeys, indexOf, SCRIPT } from "./script.ts";
+import { STATE_VERSION } from "./types.ts";
 import type { Group, Item, LogEntry, Mode, Question, Resume, State } from "./types.ts";
 import { isSkipWord, normalizeDate, validate, westernDigits } from "./validate.ts";
 import type { Problem } from "./validate.ts";
@@ -14,7 +15,7 @@ export type Result = {
 
 export function start(mode: Mode, imported?: { answers?: Record<string, string>; jobs?: Item[]; projects?: Item[] }): State {
   const state: State = {
-    version: 1,
+    version: STATE_VERSION,
     mode,
     at: -1,
     answers: { ...(imported?.answers ?? {}) },
@@ -184,7 +185,11 @@ export function load(raw: string | null): State | null {
   if (!raw) return null;
   try {
     const state = JSON.parse(raw) as State;
-    if (state?.version !== 1 || !Array.isArray(state.log) || typeof state.answers !== "object") return null;
+    if (state?.version !== STATE_VERSION || !Array.isArray(state.log) || typeof state.answers !== "object") return null;
+    // Every question the log refers to must still be in the script.
+    const keys = new Set(SCRIPT.map((question) => question.key));
+    const known = state.log.every((entry) => !("key" in entry) || keys.has(entry.key));
+    if (!known || typeof state.at !== "number" || state.at < 0 || state.at > SCRIPT.length) return null;
     return state;
   } catch {
     return null;

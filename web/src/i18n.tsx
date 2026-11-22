@@ -387,6 +387,7 @@ const en = {
   cvb_next_year: "Next year",
   cvb_present: "Present (I still work there)",
   cvb_slow: "Still writing. The AI model is busy right now, so this can take up to a minute.",
+  cvb_crashed: "Your saved answers could not be opened, so they were cleared. Sorry about that.",
   cvb_send: "Send",
   cvb_skip: "Skip",
   cvb_back: "Back",
@@ -818,6 +819,7 @@ const ar: Record<MessageKey, string> = {
   cvb_next_year: "السنة التالية",
   cvb_present: "حتى الآن (ما زلت أعمل هناك)",
   cvb_slow: "ما زلنا نكتب. نموذج الذكاء الاصطناعي مشغول الآن، وقد يستغرق ذلك دقيقة.",
+  cvb_crashed: "تعذّر فتح إجاباتك المحفوظة، فحُذفت. نعتذر عن ذلك.",
   cvb_send: "إرسال",
   cvb_skip: "تخطَّ",
   cvb_back: "رجوع",
@@ -926,7 +928,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const value = useMemo<I18n>(() => {
     const table = messages[lang];
     const t = (key: MessageKey, vars?: Vars) =>
-      table[key].replace(/\{(\w+)\}/g, (match, name: string) =>
+      (table[key] ?? messages.en[key] ?? "").replace(/\{(\w+)\}/g, (match, name: string) =>
         vars && name in vars ? String(vars[name]) : match,
       );
 

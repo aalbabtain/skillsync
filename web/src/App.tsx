@@ -15,6 +15,7 @@ import type { Entry } from "./components/SkillsPanel";
 import Stepper from "./components/Stepper";
 import type { StepId } from "./components/Stepper";
 import UploadPanel from "./components/UploadPanel";
+import BuilderBoundary from "./cvbuilder/BuilderBoundary";
 import CvBuilderPage from "./cvbuilder/CvBuilderPage";
 import { useI18n } from "./i18n";
 
@@ -176,7 +177,9 @@ export default function App() {
       )}
 
       {view === "builder" ? (
-        <CvBuilderPage demoMode={demoMode} />
+        <BuilderBoundary>
+          <CvBuilderPage demoMode={demoMode} />
+        </BuilderBoundary>
       ) : view === "landing" ? (
         <Landing
           counterCode={analyticsCode}
