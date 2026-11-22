@@ -3389,45 +3389,53 @@ label {
   font-size: 0.95rem;
 }
 
+/* The CV page. Sizes are in em from one base size, in the reference CV's proportions (body
+   10, name 24, title 13, headings 11, contact 9.5), so printing can grow or shrink the whole
+   page from that one size; --cv-gap widens the room between sections on a short CV. */
 .cv-paper {
-  padding: 22px 22px 26px;
+  --cv-gap: 1;
+  padding: 22px 26px 26px;
   border-radius: 4px;
   background: #fff;
   color: #111827;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  font: 0.82rem/1.45 Calibri, Carlito, "Segoe UI", Arial, sans-serif;
+  font: 0.82rem/1.22 Calibri, Carlito, "Segoe UI", Arial, sans-serif;
   text-align: start;
 }
 
-.cv-paper p {
+.cv-paper p,
+.cv-paper h4,
+.cv-paper ul {
   margin: 0;
+  font-family: inherit;
+  letter-spacing: normal;
 }
 
 .cv-paper .cv-name {
   text-align: center;
-  font-size: 1.55rem;
+  font-size: 2.4em;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .cv-paper .cv-title {
-  margin-top: 2px;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 1.3em;
   font-weight: 700;
 }
 
 .cv-paper .cv-contact {
-  margin-top: 2px;
+  margin-top: 0.1em;
   text-align: center;
-  color: #374151;
+  font-size: 0.95em;
+  color: #111827;
 }
 
 .cv-paper .cv-h {
-  margin: 10px 0 4px;
+  margin: calc(0.55em * var(--cv-gap)) 0 calc(0.25em * var(--cv-gap));
   padding-bottom: 1px;
-  border-bottom: 1.2px solid #111827;
-  font-size: 0.78rem;
+  border-bottom: 1px solid #111827;
+  font-size: 1.1em;
   font-weight: 700;
   text-transform: uppercase;
   color: #111827;
@@ -3437,7 +3445,7 @@ label {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 4px;
+  margin-top: calc(0.3em * var(--cv-gap));
 }
 
 .cv-paper .cv-row span:last-child {
@@ -3446,12 +3454,10 @@ label {
 
 .cv-paper .cv-role {
   font-style: italic;
-  color: #374151;
 }
 
 .cv-paper ul {
-  margin: 2px 0 6px;
-  padding-inline-start: 16px;
+  padding-inline-start: 1.4em;
 }
 
 .cv-paper .cv-empty {
@@ -3634,35 +3640,47 @@ label {
   }
 }
 
-/* Download PDF prints the CV page alone, on A4 with the Word file's margins. */
+/* Download PDF prints a copy of the CV page alone (#cv-print), on A4 with the Word file's
+   margins and no browser header or footer; the page sets its size so it fills one sheet. */
+#cv-print {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: -10000px;
+  box-sizing: border-box;
+  width: 210mm;
+  padding: 0.44in 0.625in 0.39in;
+  background: #fff;
+}
+
+#cv-print .cv-paper {
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#cv-print .cv-live,
+#cv-print .cv-fresh,
+#cv-print .cv-tr {
+  border: 0;
+  background: none;
+}
+
 @page cv {
   size: A4;
-  margin: 0.7in;
+  margin: 0;
 }
 
 @media print {
-  body.print-cv * {
-    visibility: hidden;
+  body.print-cv > *:not(#cv-print) {
+    display: none !important;
   }
 
-  body.print-cv .cv-paper,
-  body.print-cv .cv-paper * {
-    visibility: visible;
+  body.print-cv {
+    background: #fff;
   }
 
-  body.print-cv .cv-paper {
-    position: absolute;
-    inset-block-start: 0;
-    inset-inline-start: 0;
-    width: 100%;
-    padding: 0;
-    box-shadow: none;
-    font-size: 10.5pt;
+  body.print-cv #cv-print {
+    position: static;
     page: cv;
-  }
-
-  body.print-cv .cv-live,
-  body.print-cv .cv-fresh {
-    background: none;
   }
 }

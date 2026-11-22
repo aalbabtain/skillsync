@@ -59,12 +59,12 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
           : empty("[Email | Phone | City]")}
       </p>
 
-      {(!final || resume.summary) && <h3 className="cv-h">Professional Summary</h3>}
+      {(!final || resume.summary) && <h4 className="cv-h">Professional Summary</h4>}
       {final && !resume.summary ? null : resume.summary ? <p>{mark(resume.summary)}</p> : writing === "summary" ? <p>{pending}</p> : <p className="cv-empty">…</p>}
 
       {resume.experience.length > 0 && (
         <>
-          <h3 className="cv-h">Experience</h3>
+          <h4 className="cv-h">Experience</h4>
           {resume.experience.map((job, index) => (
             <div key={index}>
               <TitleRow title={mark([job.title, job.company].filter(Boolean).join(", "))} dates={dates(job.start, job.end)} />
@@ -76,7 +76,7 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
         </>
       )}
 
-      {(!final || resume.education.length > 0) && <h3 className="cv-h">Education</h3>}
+      {(!final || resume.education.length > 0) && <h4 className="cv-h">Education</h4>}
       {final && !resume.education.length ? null : resume.education.length ? (
         resume.education.map((school, index) => (
           <div key={index}>
@@ -94,7 +94,7 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
         <p className="cv-empty">…</p>
       )}
 
-      {(!final || resume.projects.length > 0) && <h3 className="cv-h">Projects</h3>}
+      {(!final || resume.projects.length > 0) && <h4 className="cv-h">Projects</h4>}
       {final && !resume.projects.length ? null : resume.projects.length ? (
         resume.projects.map((project, index) => (
           <div key={index}>
@@ -108,7 +108,7 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
         <p className="cv-empty">…</p>
       )}
 
-      {(!final || skills.length > 0) && <h3 className="cv-h">Technical Skills</h3>}
+      {(!final || skills.length > 0) && <h4 className="cv-h">Technical Skills</h4>}
       {final && !skills.length ? null : skills.length ? (
         skills.map(([category, items]) => (
           <p key={category}>
@@ -121,7 +121,7 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
 
       {resume.certifications.length > 0 && (
         <>
-          <h3 className="cv-h">Certifications</h3>
+          <h4 className="cv-h">Certifications</h4>
           {resume.certifications.map((cert, index) => (
             <p key={index}>{mark(cert.name)}</p>
           ))}
@@ -129,19 +129,19 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
       )}
       {resume.languages.length > 0 && (
         <>
-          <h3 className="cv-h">Languages</h3>
+          <h4 className="cv-h">Languages</h4>
           <p>{mark(resume.languages.join(", "))}</p>
         </>
       )}
       {resume.volunteering.length > 0 && (
         <>
-          <h3 className="cv-h">Volunteering</h3>
+          <h4 className="cv-h">Volunteering</h4>
           <Bullets lines={resume.volunteering} mark={mark} />
         </>
       )}
       {resume.awards.length > 0 && (
         <>
-          <h3 className="cv-h">Awards</h3>
+          <h4 className="cv-h">Awards</h4>
           <Bullets lines={resume.awards} mark={mark} />
         </>
       )}

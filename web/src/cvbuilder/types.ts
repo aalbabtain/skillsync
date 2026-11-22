@@ -47,6 +47,8 @@ export type State = {
   projects: Item[];
   // English for answers given in Arabic, from /api/cv/translate.
   english: Record<string, string>;
+  // English for any text still in Arabic in the finished CV, by its Arabic text.
+  textEnglish?: Record<string, string>;
   log: LogEntry[];
 };
 

@@ -8,6 +8,7 @@ import type { CvLine } from "../api";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { checklist } from "./ats";
+import { applyEnglish, arabicTexts } from "./english";
 import CvPreview from "./CvPreview";
 import MonthPicker from "./MonthPicker";
 import { suggestSkills } from "./skills";
@@ -22,6 +23,40 @@ const WORD_MS = 55;
 const FOLLOW_UP_MIN_WORDS = 8;
 // With nothing new for this long while writing, the page says the model is slow.
 const SLOW_AFTER_MS = 8000;
+// Arabic texts translated per request (the server takes up to 30).
+const TRANSLATE_BATCH = 30;
+// The printed CV's body size in points, largest first, and the extra room between sections;
+// the same steps as the Word file (api/app/cv_docx.py).
+const PRINT_SIZES = [13, 12.5, 12, 11.5, 11, 10.5, 10, 9.5];
+const PRINT_SPREADS = [2.5, 2, 1.6, 1.3, 1];
+const A4_HEIGHT_MM = 297;
+
+// The largest size, then the widest spacing, at which the CV stays on one A4 sheet.
+function fitToPage(sheet: HTMLElement) {
+  const paper = sheet.querySelector<HTMLElement>(".cv-paper");
+  if (!paper) return;
+  const probe = document.createElement("div");
+  probe.style.height = `${A4_HEIGHT_MM}mm`;
+  document.body.appendChild(probe);
+  const pageHeight = probe.getBoundingClientRect().height;
+  probe.remove();
+  const fits = () => sheet.getBoundingClientRect().height <= pageHeight;
+  let size = PRINT_SIZES[PRINT_SIZES.length - 1];
+  for (const candidate of PRINT_SIZES) {
+    paper.style.fontSize = `${candidate}pt`;
+    paper.style.setProperty("--cv-gap", "1");
+    if (fits()) {
+      size = candidate;
+      break;
+    }
+  }
+  paper.style.fontSize = `${size}pt`;
+  for (const spread of PRINT_SPREADS) {
+    paper.style.setProperty("--cv-gap", String(spread));
+    if (fits()) return;
+  }
+  paper.style.setProperty("--cv-gap", "1");
+}
 
 type Writing = { target: "summary" | Group; lines: string[]; shown: string };
 type Failure = { message: string; retry: () => void; skip: () => void };
@@ -428,8 +463,50 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
       if (Object.keys(item.answers).length) live = group === "job" ? { ...live, jobs: [...live.jobs, item] } : { ...live, projects: [...live.projects, item] };
     }
     if (writing?.target === "summary") live = { ...live, summary: [...writing.lines, writing.shown].join(" ").trim() };
-    return toResume(live, categoryOf);
+    return applyEnglish(toResume(live, categoryOf), state.textEnglish ?? {});
   }, [state, draft, question, followKey, writing, categoryOf]);
+
+  // The finished CV is English only: whatever is still Arabic is translated in one pass.
+  const [englishing, setEnglishing] = useState(false);
+  const englishTried = useRef("");
+  const leftArabic = useMemo(() => (resume && finished ? arabicTexts(resume) : []), [resume, finished]);
+
+  const translateLeft = useCallback(async (texts: string[]) => {
+    if (!texts.length) return true;
+    setEnglishing(true);
+    try {
+      const found: Record<string, string> = {};
+      for (let i = 0; i < texts.length; i += TRANSLATE_BATCH) {
+        const batch = texts.slice(i, i + TRANSLATE_BATCH);
+        const english = await cvTranslate(Object.fromEntries(batch.map((text, j) => [`t${j}`, text])));
+        batch.forEach((text, j) => {
+          const value = english[`t${j}`];
+          if (value && !hasArabic(value)) found[text] = value;
+        });
+      }
+      setState((s) => (s ? { ...s, textEnglish: { ...(s.textEnglish ?? {}), ...found } } : s));
+      return texts.every((text) => found[text]);
+    } catch {
+      return false;
+    } finally {
+      setEnglishing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const key = leftArabic.join("\n");
+    if (!leftArabic.length || writing || englishTried.current === key) return;
+    englishTried.current = key;
+    translateLeft(leftArabic);
+  }, [leftArabic, writing, translateLeft]);
+
+  // Before any download: nothing Arabic may be left in the CV.
+  async function readyInEnglish(): Promise<boolean> {
+    if (!leftArabic.length) return true;
+    if (await translateLeft(leftArabic)) return true;
+    setDownloadError(`${t("cvb_still_arabic")} ${leftArabic.join("، ")}`);
+    return false;
+  }
 
   const fresh = writing ? [...writing.lines, writing.shown, [...writing.lines, writing.shown].join(" ").trim()] : [];
 
@@ -750,6 +827,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   async function downloadWord() {
     if (!resume) return;
     setDownloadError("");
+    if (!(await readyInEnglish())) return;
     try {
       const blob = await cvDocx(resume);
       const url = URL.createObjectURL(blob);
@@ -764,10 +842,21 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     }
   }
 
-  function printPdf() {
+  async function printPdf() {
+    setDownloadError("");
+    if (!(await readyInEnglish())) return;
+    const page = document.querySelector(".cvb-preview .cv-paper");
+    if (!page) return;
+    // A copy of the CV alone, sized to fill one A4 sheet (see #cv-print in index.css).
+    const sheet = document.createElement("div");
+    sheet.id = "cv-print";
+    sheet.innerHTML = page.outerHTML;
+    document.body.appendChild(sheet);
+    fitToPage(sheet);
     document.body.classList.add("print-cv");
     const clear = () => {
       document.body.classList.remove("print-cv");
+      sheet.remove();
       window.removeEventListener("afterprint", clear);
     };
     window.addEventListener("afterprint", clear);
@@ -850,14 +939,19 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
               </ul>
               <p className="cvb-hint">{t("cvb_ats_note")}</p>
               <div className="cvb-downloads">
-                <button className="btn btn-primary" type="button" onClick={downloadWord}>
+                <button className="btn btn-primary" type="button" disabled={englishing} onClick={downloadWord}>
                   {t("cvb_word")}
                 </button>
-                <button className="btn btn-ghost" type="button" onClick={printPdf}>
+                <button className="btn btn-ghost" type="button" disabled={englishing} onClick={printPdf}>
                   {t("cvb_pdf")}
                 </button>
               </div>
               <p className="cvb-hint">{t("cvb_pdf_hint")}</p>
+              {englishing && (
+                <p className="cvb-hint" role="status">
+                  <span className="spinner spinner-sm" aria-hidden="true" /> {t("cvb_englishing")}
+                </p>
+              )}
               {downloadError && (
                 <p className="cvb-error" role="alert">
                   {downloadError}

@@ -597,6 +597,9 @@ def plan_route(payload: PlanRequest, request: Request):
 MAX_ANSWER_CHARS = 1500
 MAX_ANSWERS = 20
 MAX_FALLBACK_CHARS = 200
+# The finished CV's last Arabic texts go in one request: fields, list items, lines.
+MAX_TRANSLATE_ITEMS = 30
+MAX_TRANSLATE_CHARS = 600
 STATUS_BY_CV_ERROR = {"CV_BUSY": 503, "CV_QUOTA": 429, "CV_UNAVAILABLE": 503, "CV_MALFORMED": 502}
 LATIN_WORD = re.compile(r"[A-Za-z][\w.+#-]*|\d+(?:[.,]\d+)?")
 
@@ -690,7 +693,7 @@ def _keeps_every_token(original: str, translated: str) -> bool:
 def cv_translate_route(payload: CvTranslateRequest, request: Request):
     """Agent 5: English for short Arabic fields. A value whose numbers or Latin words were
     lost in translation comes back as the person wrote it."""
-    if not _answers_ok(payload.items, 10, 200):
+    if not _answers_ok(payload.items, MAX_TRANSLATE_ITEMS, MAX_TRANSLATE_CHARS):
         return _error(422, "CV_ANSWERS_INVALID", "Too many items, or an item is too long.")
     if limited := _rate_limited(request, 1):
         return limited

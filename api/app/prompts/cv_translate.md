@@ -1,5 +1,6 @@
-Translate each short CV field from Arabic into the English a CV would use: a field of study, a
-degree, a job title, a city and country, or a list of languages with levels.
+Translate each CV text from Arabic into the English a CV would use. A text can be a field of
+study, a job title, a city and country, a list of skills or languages, a certificate, an award,
+a volunteering line, or a sentence a person wrote about their work.
 
 Keep every number, Latin-letter word and name exactly as written. Do not add anything that is not
 in the original. Use standard English forms ("بكالوريوس" is "Bachelor's" or "B.Sc." for a science

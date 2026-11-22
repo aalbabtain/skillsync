@@ -66,3 +66,28 @@ def test_route_returns_attachment():
 
 def test_route_refuses_a_resume_without_a_name():
     assert client.post("/api/cv/docx", json={**SAMPLE, "personal": {"name": ""}}).status_code == 422
+
+
+def body_size(data: bytes) -> float:
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        styles = archive.read("word/styles.xml").decode("utf-8")
+    import re
+
+    return int(re.search(r'<w:rPrDefault><w:rPr>.*?<w:sz w:val="(\d+)"', styles).group(1)) / 2
+
+
+def test_a_short_cv_gets_a_larger_font_to_fill_the_page():
+    assert body_size(build_docx(Resume.model_validate(SAMPLE))) == 13
+
+
+def test_a_long_cv_gets_a_smaller_font_to_stay_on_one_page():
+    long_project = {**SAMPLE["projects"][0], "bullets": ["Built " + "and tested a service " * 9] * 4}
+    resume = Resume.model_validate({**SAMPLE, "projects": [long_project] * 6})
+    assert 9.5 <= body_size(build_docx(resume)) < 11
+
+
+def test_layout_follows_the_reference_cv():
+    xml = document_xml(build_docx(Resume.model_validate(SAMPLE)))
+    assert '<w:pgMar w:top="640" w:right="900" w:bottom="560" w:left="900"' in xml
+    assert 'w:pos="10106"' in xml
+    assert 'Calibri' in zipfile.ZipFile(io.BytesIO(build_docx(Resume.model_validate(SAMPLE)))).read("word/styles.xml").decode()
