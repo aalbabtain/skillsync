@@ -418,22 +418,48 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
       const put = (key: string, value: string) => {
         if (value.trim()) answers[key] = value.trim();
       };
+      // Dates as the CV writes them ("Expected June 2027") become "Jun 2027" where possible.
+      const date = (text: string) => normalizeDate(text.replace(/^(expected|exp\.?|anticipated)\s+/i, "")) ?? text;
+      const range = (from: string, to: string) => [from, to].filter(Boolean).map(date).join(" – ");
       put("name", hasArabic(resume.name) ? "" : resume.name);
-      put("field", resume.field);
-      if (resume.projects.length) answers.hasProject = "yes";
+      put("field", resume.field || resume.title);
+      put("target", resume.title);
+      put("location", resume.location);
       put("email", contact.email);
       put("phone", contact.phone);
       put("linkedin", contact.linkedin);
       put("github", contact.github);
+      // The CV's own summary stands; the summary question is not asked again.
+      put("background", resume.summary);
       put("school", hasArabic(resume.school) ? "" : resume.school);
       put("degree", resume.degree);
-      put("skills", resume.skills.join(", "));
-      put("grad", normalizeDate(resume.grad) ?? resume.grad);
+      put("grad", date(resume.grad));
       put("gpa", resume.gpa);
+      put("skills", resume.skills.join(", "));
       put("certs", resume.certs.join("\n"));
       put("langs", resume.langs.join(", "));
-      const projects: Item[] = resume.projects.map((project) => ({ answers: { projName: project.name }, lines: project.lines }));
-      setState(start("update", { answers, projects }));
+      put("activities", resume.activities.join("\n"));
+      if (resume.jobs.length) answers.hasJob = "yes";
+      if (resume.projects.length) answers.hasProject = "yes";
+      const projects: Item[] = resume.projects.map((project) => ({
+        answers: Object.fromEntries(
+          Object.entries({
+            projName: project.name,
+            projDates: range(project.start, project.end),
+            projLink: project.url,
+            projRole: project.role,
+            projTools: project.tools,
+          }).filter(([, value]) => value),
+        ),
+        lines: project.lines,
+      }));
+      const jobs: Item[] = resume.jobs.map((job) => ({
+        answers: Object.fromEntries(
+          Object.entries({ company: job.company, jobTitle: job.title, jobDates: range(job.start, job.end) }).filter(([, value]) => value),
+        ),
+        lines: job.lines,
+      }));
+      setState({ ...start("update", { answers, projects, jobs }), summary: resume.summary });
       setImporting("idle");
     } catch (caught) {
       setImporting("choose");

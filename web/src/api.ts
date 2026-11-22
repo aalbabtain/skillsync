@@ -350,10 +350,15 @@ export async function cvTranslate(items: Record<string, string>): Promise<Record
   return result.items;
 }
 
+export type CvImportedProject = { name: string; url: string; start: string; end: string; role: string; tools: string; lines: string[] };
+export type CvImportedJob = { company: string; title: string; start: string; end: string; lines: string[] };
+
 export type CvImported = {
   resume: {
-    name: string; field: string; school: string; degree: string; grad: string; gpa: string;
-    skills: string[]; projects: { name: string; lines: string[] }[]; certs: string[]; langs: string[];
+    name: string; title: string; location: string; summary: string; field: string;
+    school: string; degree: string; grad: string; gpa: string;
+    skills: string[]; projects: CvImportedProject[]; jobs: CvImportedJob[];
+    certs: string[]; langs: string[]; activities: string[];
   };
   contact: { email: string; phone: string; linkedin: string; github: string };
 };

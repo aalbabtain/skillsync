@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { Resume } from "./types";
+import { splitDates } from "./english";
 import { hasArabic } from "./validate";
 
 type Props = {
@@ -137,6 +138,15 @@ export default function CvPreview({ resume, live, fresh = [], translatingLabel, 
         <>
           <h4 className="cv-h">Volunteering</h4>
           <Bullets lines={resume.volunteering} mark={mark} />
+        </>
+      )}
+      {resume.activities.length > 0 && (
+        <>
+          <h4 className="cv-h">Activities &amp; Memberships</h4>
+          {resume.activities.map((line, index) => {
+            const [title, dates] = splitDates(line);
+            return <TitleRow key={index} title={mark(title)} dates={dates} />;
+          })}
         </>
       )}
       {resume.awards.length > 0 && (

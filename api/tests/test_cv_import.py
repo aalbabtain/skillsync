@@ -66,7 +66,7 @@ def test_invented_value_dropped(monkeypatch):
     resume = cv_writer.import_resume(CV)
     assert resume["school"] == "" and resume["degree"] == "B.Sc. in Software Engineering"
     assert resume["skills"] == ["Python"]
-    assert resume["projects"] == [{"name": "SkillSync", "lines": ["Built the API with FastAPI"]}]
+    assert [(project["name"], project["lines"]) for project in resume["projects"]] == [("SkillSync", ["Built the API with FastAPI"])]
 
 
 def test_demo_import_backend_cv():
@@ -85,3 +85,52 @@ def test_import_route(monkeypatch):
 
 def test_import_route_refuses_short_text():
     assert client.post("/api/cv/import", json={"text": "hi"}).status_code == 422
+
+
+FULL_CV = """Example Candidate
+Software Engineer
+Riyadh, Saudi Arabia | candidate@example.com
+PROFESSIONAL SUMMARY
+Software Engineering student at King Saud University who builds web and mobile apps.
+EDUCATION
+King Saud University (KSU), Riyadh Expected June 2027
+B.Sc. in Software Engineering | GPA: 4.67/5
+PROJECTS
+Nakhlah – AI-Powered Date Fruit Platform (Team Project) | nakhlahsa.com Jan 2025 – May 2025
+UI/UX & Full-Stack Developer | Flutter, React, Firebase
+• Wrote the dashboard's authentication and data layer with Firebase Auth
+• Built the admin dashboard in React
+SkillSync – Skill Gap Analyzer (Course Project) | skillsync.example.com Oct 2025 – Present
+Full-Stack & AI Developer | Python, FastAPI, React
+• Built a bilingual web app with five agents
+ACTIVITIES & MEMBERSHIPS
+Member, Artificial Intelligence Club – King Saud University Mar 2026 – Present
+Student Member, Saudi Council of Engineers (SCE) Jun 2025 – Jun 2026"""
+
+
+def test_import_reads_every_section_and_cleans_what_the_model_copied(monkeypatch):
+    answer = {
+        "name": "Example Candidate", "title": "Software Engineer", "location": "Riyadh, Saudi Arabia",
+        "summary": "Software Engineering student at King Saud University who builds web and mobile apps.",
+        "school": "King Saud University (KSU)", "degree": "B.Sc. in Software Engineering", "grad": "Expected June 2027", "gpa": "4.67/5",
+        "projects": [
+            {"name": "Nakhlah – AI-Powered Date Fruit Platform (Team Project)", "url": "nakhlahsa.com", "start": "Jan 2025", "end": "May 2025",
+             "role": "UI/UX & Full-Stack Developer", "tools": "Flutter, React, Firebase",
+             "lines": ["• Wrote the dashboard's authentication and data layer with Firebase Auth", "- Built the admin dashboard in React"]},
+            {"name": "SkillSync – Skill Gap Analyzer (Course Project)", "url": "skillsync.example.com", "start": "Oct 2025", "end": "Present",
+             "role": "Full-Stack & AI Developer", "tools": "Python, FastAPI, React", "lines": ["Built a bilingual web app with five agents"]},
+            {"name": "Invented Project", "lines": ["Built a rocket"]},
+        ],
+        "activities": ["Member, Artificial Intelligence Club – King Saud University, Mar 2026 – Present", "Founder, Robotics Society"],
+    }
+    fake_import(monkeypatch, answer, [])
+    resume = cv_writer.import_resume(FULL_CV)
+    assert resume["title"] == "Software Engineer" and resume["location"] == "Riyadh, Saudi Arabia"
+    assert resume["summary"].startswith("Software Engineering student")
+    assert [project["name"] for project in resume["projects"]] == [
+        "Nakhlah – AI-Powered Date Fruit Platform (Team Project)", "SkillSync – Skill Gap Analyzer (Course Project)"]
+    nakhlah = resume["projects"][0]
+    assert nakhlah["url"] == "https://nakhlahsa.com" and nakhlah["start"] == "Jan 2025" and nakhlah["end"] == "May 2025"
+    assert nakhlah["role"] == "UI/UX & Full-Stack Developer" and nakhlah["tools"] == "Flutter, React, Firebase"
+    assert nakhlah["lines"] == ["Wrote the dashboard's authentication and data layer with Firebase Auth", "Built the admin dashboard in React"]
+    assert resume["activities"] == ["Member, Artificial Intelligence Club – King Saud University, Mar 2026 – Present"]

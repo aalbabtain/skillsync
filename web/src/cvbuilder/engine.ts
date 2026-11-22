@@ -228,6 +228,8 @@ function lines(text: string | undefined): string[] {
 export function toResume(state: State, categoryOf: (skill: string) => string = () => "Technical skills"): Resume {
   const a = state.answers;
   const en = (key: string) => state.english[key] || a[key] || "";
+  // A degree read from a CV may already name its major ("B.Sc. in Software Engineering").
+  const degreeText = DEGREE_TEXT[a.degree] ?? a.degree ?? "";
   const skills: Record<string, string[]> = {};
   for (const skill of list(a.skills)) (skills[categoryOf(skill)] ??= []).push(skill);
   return {
@@ -243,7 +245,7 @@ export function toResume(state: State, categoryOf: (skill: string) => string = (
       bullets,
     })),
     education: a.school
-      ? [{ institution: a.school, degree: DEGREE_TEXT[a.degree] ?? a.degree ?? "", major: asMajor(en("field")), end: a.grad ?? "", gpa: a.gpa ?? "", achievements: [] }]
+      ? [{ institution: a.school, degree: degreeText, major: / in /i.test(degreeText) ? "" : asMajor(en("field")), end: a.grad ?? "", gpa: a.gpa ?? "", achievements: [] }]
       : [],
     skills,
     projects: state.projects.map(({ answers, lines: bullets }) => ({
@@ -258,5 +260,6 @@ export function toResume(state: State, categoryOf: (skill: string) => string = (
     languages: list(en("langs")),
     volunteering: lines(a.volunteering),
     awards: lines(a.awards),
+    activities: (a.activities ?? "").split("\n").map((line) => line.trim()).filter(Boolean),
   };
 }

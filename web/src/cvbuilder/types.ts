@@ -73,4 +73,5 @@ export type Resume = {
   languages: string[];
   volunteering: string[];
   awards: string[];
+  activities: string[];
 };

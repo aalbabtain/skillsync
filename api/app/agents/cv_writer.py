@@ -61,11 +61,27 @@ class Translation(BaseModel):
 
 class ImportedProject(BaseModel):
     name: str = ""
+    url: str = ""
+    start: str = ""
+    end: str = ""
+    role: str = ""
+    tools: str = ""
+    lines: list[str] = []
+
+
+class ImportedJob(BaseModel):
+    company: str = ""
+    title: str = ""
+    start: str = ""
+    end: str = ""
     lines: list[str] = []
 
 
 class Imported(BaseModel):
     name: str = ""
+    title: str = ""
+    location: str = ""
+    summary: str = ""
     field: str = ""
     school: str = ""
     degree: str = ""
@@ -73,12 +89,17 @@ class Imported(BaseModel):
     gpa: str = ""
     skills: list[str] = []
     projects: list[ImportedProject] = []
+    jobs: list[ImportedJob] = []
     certs: list[str] = []
     langs: list[str] = []
+    activities: list[str] = []
 
 
-IMPORT_TEXT_FIELDS = ("name", "field", "school", "degree", "grad", "gpa")
+IMPORT_TEXT_FIELDS = ("name", "title", "location", "field", "school", "degree", "grad", "gpa")
+# A bullet copied with its mark ("• Built…", "- Built…") keeps only its words.
+BULLET_MARK = re.compile(r"^[\s•·▪●◦\-*–]+")
 MAX_IMPORT_ITEMS = 30
+MAX_IMPORT_LINES = 8
 LINKEDIN = re.compile(r"(?:https?://)?(?:www\.)?linkedin\.com/[^\s|,;]+", re.IGNORECASE)
 GITHUB = re.compile(r"(?:https?://)?(?:www\.)?github\.com/[^\s|,;]+", re.IGNORECASE)
 
@@ -256,21 +277,53 @@ def contact_from(cv_text: str) -> dict[str, str]:
     }
 
 
+def _in_cv(value: str, cv_text: str) -> str:
+    value = " ".join(value.split())
+    return value if value and mentions(value, cv_text) else ""
+
+
+def _lines(lines: list[str], cv_text: str) -> list[str]:
+    """Bullet points without their marks, each kept only when the grounding check passes."""
+    cleaned = [" ".join(BULLET_MARK.sub("", line).split()) for line in lines]
+    return [line for line in cleaned if line and check_line(line, cv_text)][:MAX_IMPORT_LINES]
+
+
 def _kept(found: Imported, cv_text: str) -> dict:
-    """Only values the CV itself contains: text fields and list items by mention, project
-    lines by the grounding check."""
-    resume = {key: (value if (value := getattr(found, key).strip()) and mentions(value, cv_text) else "") for key in IMPORT_TEXT_FIELDS}
-    for key in ("skills", "certs", "langs"):
-        items = [" ".join(item.split()) for item in getattr(found, key)]
-        resume[key] = list(dict.fromkeys(item for item in items if item and mentions(item, cv_text)))[:MAX_IMPORT_ITEMS]
+    """Only what the CV itself contains: fields and list items by mention, written lines (the
+    summary and bullet points) by the grounding check."""
+    resume = {key: _in_cv(getattr(found, key), cv_text) for key in IMPORT_TEXT_FIELDS}
+    summary = " ".join(found.summary.split())
+    resume["summary"] = summary if summary and check_line(summary, cv_text) else ""
+    for key in ("skills", "certs", "langs", "activities"):
+        items = [_in_cv(item, cv_text) for item in getattr(found, key)]
+        resume[key] = list(dict.fromkeys(item for item in items if item))[:MAX_IMPORT_ITEMS]
     projects = []
     for project in found.projects[:MAX_IMPORT_ITEMS]:
-        name = project.name.strip()
-        if not name or not mentions(name, cv_text):
+        name = _in_cv(project.name, cv_text)
+        if not name:
             continue
-        lines = [" ".join(line.split()) for line in project.lines]
-        projects.append({"name": name, "lines": [line for line in lines if line and check_line(line, cv_text)][:MAX_LINES]})
+        url = _in_cv(project.url, cv_text)
+        projects.append({
+            "name": name,
+            "url": _https(url) if url else "",
+            "start": _in_cv(project.start, cv_text),
+            "end": _in_cv(project.end, cv_text),
+            "role": _in_cv(project.role, cv_text),
+            "tools": _in_cv(project.tools, cv_text),
+            "lines": _lines(project.lines, cv_text),
+        })
     resume["projects"] = projects
+    jobs = []
+    for job in found.jobs[:MAX_IMPORT_ITEMS]:
+        company, title = _in_cv(job.company, cv_text), _in_cv(job.title, cv_text)
+        if not (company or title):
+            continue
+        jobs.append({
+            "company": company, "title": title,
+            "start": _in_cv(job.start, cv_text), "end": _in_cv(job.end, cv_text),
+            "lines": _lines(job.lines, cv_text),
+        })
+    resume["jobs"] = jobs
     return resume
 
 

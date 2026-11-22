@@ -107,6 +107,7 @@ class Resume(BaseModel):
     languages: list[str] = Field(default=[], max_length=10)
     volunteering: list[str] = Field(default=[], max_length=10)
     awards: list[str] = Field(default=[], max_length=10)
+    activities: list[str] = Field(default=[], max_length=15)
 
 
 def _run(text: str, *, bold: bool = False, italic: bool = False, size: int | None = None) -> str:
@@ -152,6 +153,21 @@ def _title_row(title: str, link: str, dates: str) -> str:
 
 def _bare(link: str) -> str:
     return re.sub(r"^https?://(www\.)?", "", link.strip()).rstrip("/")
+
+
+MONTH = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.? "
+TRAILING_DATES = re.compile(
+    rf"[,\s]*((?:{MONTH})?\d{{4}}\s*[–-]\s*(?:Present|(?:{MONTH})?\d{{4}})|{MONTH}\d{{4}})\s*$"
+)
+
+
+def split_dates(line: str) -> tuple[str, str]:
+    """An activity line and its dates at the end ("Member, AI Club, Mar 2026 – Present"), so the
+    dates sit at the line's end like every other section's."""
+    match = TRAILING_DATES.search(line)
+    if not match or match.start() == 0:
+        return line.strip(), ""
+    return line[: match.start()].strip(" ,–-"), match.group(1).replace(" - ", " – ")
 
 
 def _bullets(lines: list[str]) -> str:
@@ -208,6 +224,12 @@ def _body(resume: Resume) -> str:
         for cert in certs:
             title = " | ".join(part for part in (cert.name, cert.issuer) if part)
             out.append(_title_row(title, cert.url, cert.date))
+
+    if activities := [item for item in resume.activities if item.strip()]:
+        out.append(_heading("Activities & Memberships"))
+        for item in activities:
+            title, dates = split_dates(item)
+            out.append(_title_row(title, "", dates))
 
     for title, items in (("Languages", resume.languages), ("Volunteering", resume.volunteering), ("Awards", resume.awards)):
         if items := [item for item in items if item.strip()]:

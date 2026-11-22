@@ -91,3 +91,12 @@ def test_layout_follows_the_reference_cv():
     assert '<w:pgMar w:top="640" w:right="900" w:bottom="560" w:left="900"' in xml
     assert 'w:pos="10106"' in xml
     assert 'Calibri' in zipfile.ZipFile(io.BytesIO(build_docx(Resume.model_validate(SAMPLE)))).read("word/styles.xml").decode()
+
+
+def test_activities_have_their_section_with_dates_at_the_line_end():
+    resume = Resume.model_validate({**SAMPLE, "activities": ["Member, Artificial Intelligence Club – King Saud University, Mar 2026 – Present"]})
+    xml = document_xml(build_docx(resume))
+    text = docx.extract(build_docx(resume)).text
+    assert "ACTIVITIES & MEMBERSHIPS" in text
+    assert "Member, Artificial Intelligence Club – King Saud University" in text
+    assert '<w:r><w:tab/></w:r><w:r><w:t xml:space="preserve">Mar 2026 – Present</w:t>' in xml

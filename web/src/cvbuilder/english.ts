@@ -78,3 +78,14 @@ export function regroup(
   );
   return { ...resume, skills, certifications };
 }
+
+const MONTH = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\\.? ";
+const TRAILING_DATES = new RegExp(`[,\\s]*((?:${MONTH})?\\d{4}\\s*[–-]\\s*(?:Present|(?:${MONTH})?\\d{4})|${MONTH}\\d{4})\\s*$`);
+
+/** An activity line and its dates at the end, so the dates sit at the line's end as in every
+ * other section (the same rule as split_dates in api/app/cv_docx.py). */
+export function splitDates(line: string): [string, string] {
+  const match = TRAILING_DATES.exec(line);
+  if (!match || match.index === 0) return [line.trim(), ""];
+  return [line.slice(0, match.index).trim().replace(/^[,–\s-]+|[,–\s-]+$/g, ""), match[1].replace(" - ", " – ")];
+}

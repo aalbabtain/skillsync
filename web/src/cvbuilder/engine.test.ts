@@ -216,3 +216,17 @@ test("the major leaves out a word like student from the specialization", () => {
   assert.equal(toResume(state).education[0].major, "Software Engineering");
   assert.equal(toResume(state).personal.field, "Software Engineering student");
 });
+
+test("a degree written with its major is not given the major twice, and activities are kept", () => {
+  const state = { ...start("update"), answers: { name: "Sara", field: "Software Engineer", school: "KSU", degree: "B.Sc. in Software Engineering", activities: "Member, AI Club, Mar 2026 – Present\nStudent Member, SCE, Jun 2025 – Jun 2026" } };
+  const resume = toResume(state);
+  assert.equal(resume.education[0].degree, "B.Sc. in Software Engineering");
+  assert.equal(resume.education[0].major, "");
+  assert.deepEqual(resume.activities, ["Member, AI Club, Mar 2026 – Present", "Student Member, SCE, Jun 2025 – Jun 2026"]);
+});
+
+test("a date range splits off the end of an activity line", async () => {
+  const { splitDates } = await import("./english.ts");
+  assert.deepEqual(splitDates("Member, AI Club – King Saud University, Mar 2026 – Present"), ["Member, AI Club – King Saud University", "Mar 2026 – Present"]);
+  assert.deepEqual(splitDates("Volunteer at Riyadh Season 2024"), ["Volunteer at Riyadh Season 2024", ""]);
+});
