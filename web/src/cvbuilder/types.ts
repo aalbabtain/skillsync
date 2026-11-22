@@ -22,6 +22,7 @@ export type LogEntry =
   | { kind: "skipped"; key: string }
   | { kind: "written"; target: "summary" | Group; lines: string[]; facts: string[]; fallback?: boolean }
   | { kind: "note"; id: string }
+  | { kind: "follow"; key: string; text: string }
   | { kind: "another"; group: Group };
 
 export type Mode = "scratch" | "update";

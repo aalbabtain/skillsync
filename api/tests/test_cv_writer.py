@@ -68,6 +68,11 @@ def test_demo_bullets_split():
     ]
 
 
+def test_demo_bullets_come_from_the_description_only():
+    answers = {"projName": "SkillSync", "projWhat": "reads a CV. lists its skills", "projTools": "FastAPI, React"}
+    assert list(cv_writer.write_lines("bullets", answers, extractor=cv_skills.MOCK)) == ["Reads a CV", "Lists its skills"]
+
+
 def test_model_lines_streamed_one_by_one(monkeypatch):
     pieces = ['{"lines": [', line("Built the API with FastAPI"), ",", line("Deployed it on Render"), "]}"]
     fake_model(monkeypatch, {"main-model": pieces})

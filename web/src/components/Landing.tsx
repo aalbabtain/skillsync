@@ -192,6 +192,9 @@ export default function Landing({ onStart, counterCode }: Props) {
               {t("see_how")}
             </a>
           </div>
+          <p className="hero-alt rise d2">
+            {t("hero_build_q")} <a href="#cv-builder">{t("hero_build_link")}</a>
+          </p>
           {checked !== null && (
             <p className="hero-stat rise d2">
               <span className="hero-stat-dot" aria-hidden="true" />

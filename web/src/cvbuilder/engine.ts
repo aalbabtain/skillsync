@@ -134,6 +134,24 @@ export function addAnother(state: State, yes: boolean): State {
   return moveTo(next, yes ? first : nextIndex(next, last));
 }
 
+// The answer to a follow-up question joins the answer it was about; the current question is
+// then asked again.
+export function addDetail(state: State, key: string, text: string): State {
+  const detail = text.trim();
+  if (!detail) return state;
+  const before = (state.answers[key] ?? "").trim().replace(/[.،]+$/, "");
+  const log: LogEntry[] = [...state.log, { kind: "answer", key, text: detail }];
+  const question = current(state);
+  if (question) log.push({ kind: "ask", key: question.key });
+  return { ...state, answers: { ...state.answers, [key]: before ? `${before}. ${detail}` : detail }, log };
+}
+
+export function replaceLines(state: State, group: Group, index: number, lines: string[]): State {
+  const list = group === "job" ? "jobs" : "projects";
+  const items = state[list].map((item, i) => (i === index ? { ...item, lines } : item));
+  return { ...state, [list]: items };
+}
+
 // Ask an earlier question again (the previous one when no key is given), then come back here.
 export function back(state: State, key: string | undefined): State {
   const target = key ? indexOf(key) : previousAsked(state);

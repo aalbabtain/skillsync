@@ -1,4 +1,4 @@
-import { CircleHelp, Users, Workflow } from "lucide-react";
+import { CircleHelp, FileText, Users, Workflow } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { startAnalytics, track } from "./analytics";
@@ -15,18 +15,22 @@ import type { Entry } from "./components/SkillsPanel";
 import Stepper from "./components/Stepper";
 import type { StepId } from "./components/Stepper";
 import UploadPanel from "./components/UploadPanel";
+import CvBuilderPage from "./cvbuilder/CvBuilderPage";
 import { useI18n } from "./i18n";
 
 type Step = "cv" | "skills" | "postings" | "gap" | "plan";
 
 const STEPS: Step[] = ["cv", "skills", "postings", "gap", "plan"];
 
-type Route = { view: "landing"; anchor: string } | { view: "service"; step: Step };
+type Route = { view: "landing"; anchor: string } | { view: "service"; step: Step } | { view: "builder" };
+
+const BUILDER = "cv-builder";
 
 // The address is the source of truth, so Back, Forward and refresh behave as expected.
 function readRoute(): Route {
   const hash = window.location.hash.slice(1);
   if ((STEPS as string[]).includes(hash)) return { view: "service", step: hash as Step };
+  if (hash === BUILDER) return { view: "builder" };
   return { view: "landing", anchor: hash };
 }
 
@@ -154,6 +158,10 @@ export default function App() {
                 </a>
               </>
             )}
+            <a className="head-link head-build" href={`#${BUILDER}`} aria-current={view === "builder" ? "page" : undefined}>
+              <FileText size={16} aria-hidden="true" />
+              {t("nav_build")}
+            </a>
             <LanguageMenu />
           </nav>
         </div>
@@ -167,7 +175,9 @@ export default function App() {
         </div>
       )}
 
-      {view === "landing" ? (
+      {view === "builder" ? (
+        <CvBuilderPage demoMode={demoMode} />
+      ) : view === "landing" ? (
         <Landing
           counterCode={analyticsCode}
           onStart={() => {

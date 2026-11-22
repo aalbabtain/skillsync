@@ -28,6 +28,7 @@ QUOTA_STATUS = 429
 MAX_LINE_CHARS = 300
 MAX_LINES = 4
 MAX_DEMO_BULLETS = 3
+DESCRIPTION_KEYS = ("jobWhat", "projWhat")
 
 Task = Literal["summary", "bullets"]
 
@@ -125,7 +126,9 @@ def _demo_lines(task: Task, answers: dict[str, str]) -> list[str]:
         if target := answers.get("target", "").strip():
             text += f" Seeking a {target} role."
         return [text] if text else []
-    words = " ".join(value for key, value in answers.items() if key != "rejected")
+    # The description is what bullets are written from; names, tools and roles have their own lines.
+    described = [answers[key] for key in DESCRIPTION_KEYS if answers.get(key)]
+    words = " ".join(described or [value for key, value in answers.items() if key != "rejected"])
     parts = [part.strip() for part in re.split(r"[.؛;،]\s*", words)]
     return [_cap(part) for part in parts if len(part) > 3][:MAX_DEMO_BULLETS]
 

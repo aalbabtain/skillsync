@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { addAnother, answer, back, current, load, saveItem, skip, start, toResume } from "./engine.ts";
+import { addAnother, addDetail, answer, back, current, load, replaceLines, saveItem, skip, start, toResume } from "./engine.ts";
 import { indexOf, SCRIPT } from "./script.ts";
 import type { State } from "./types.ts";
 
@@ -120,4 +120,19 @@ test("toResume uses English values, items and skill categories", () => {
 test("the script has nine steps in order", () => {
   const steps = SCRIPT.map((question) => question.step);
   assert.deepEqual([...new Set(steps)], [0, 1, 2, 3, 4, 5, 6, 7, 8]);
+});
+
+test("a follow-up detail is added to the answer it asked about", () => {
+  let state = say(atKey("projName"), "SkillSync", "built it with Python");
+  state = addDetail(state, "projWhat", "it reads a CV and lists its skills");
+  assert.equal(state.answers.projWhat, "built it with Python. it reads a CV and lists its skills");
+  assert.equal(current(state)?.key, "projTools");
+  assert.deepEqual(state.log.at(-1), { kind: "ask", key: "projTools" });
+});
+
+test("rewritten lines replace an item's lines", () => {
+  let state = say(atKey("projName"), "SkillSync", "built an API", "skip", "skip");
+  state = addAnother(saveItem(skip(state).state, "project", ["Built an API"]), false);
+  state = replaceLines(state, "project", 0, ["Built the SkillSync API"]);
+  assert.deepEqual(state.projects[0].lines, ["Built the SkillSync API"]);
 });

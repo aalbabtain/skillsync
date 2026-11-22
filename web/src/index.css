@@ -2853,6 +2853,21 @@ label {
   }
 }
 
+.hero-alt {
+  margin-top: 0.9rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.hero-alt a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+.hero-alt a:hover {
+  color: var(--accent-hover);
+}
+
 /* ---------- CV builder ----------
    Three columns: progress rail, the conversation, and the live CV. The CV is a white A4-like
    page in the owner's reference layout, because that is what prints and downloads; the rest
@@ -3370,6 +3385,50 @@ label {
 
   .cvb-log {
     max-height: 60vh;
+  }
+}
+
+/* On phones the rail shrinks to the current step, so the conversation starts on the first
+   screen; the header keeps its Build your CV link next to the language button. */
+@media (max-width: 760px) {
+  .cvb-rail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .cvb-rail h3 {
+    margin: 0;
+  }
+
+  .cvb-rail ol {
+    display: block;
+  }
+
+  .cvb-rail li:not(.is-current) {
+    display: none;
+  }
+
+  .cvb-rail .cvb-hint {
+    flex-basis: 100%;
+    order: 3;
+  }
+
+  .cvb-rail .btn {
+    width: auto;
+    margin: 0;
+    margin-inline-start: auto;
+    margin-inline-end: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .head-link.head-build {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
   }
 }
 
