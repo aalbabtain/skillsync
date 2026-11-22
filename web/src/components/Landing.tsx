@@ -17,7 +17,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { fetchCounts } from "../analytics";
+import { fetchCounts, lastCounts } from "../analytics";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { useCountUp, useReducedMotion } from "../motion";
@@ -28,8 +28,6 @@ import Logo from "./Logo";
 
 type Props = {
   onStart: () => void;
-  /** GoatCounter site code; when set, the hero shows how many CVs were checked. */
-  counterCode: string;
 };
 
 type Card = { icon: LucideIcon; title: MessageKey; body: MessageKey };
@@ -101,7 +99,7 @@ function useMotionChoice() {
   return { playing, toggle };
 }
 
-export default function Landing({ onStart, counterCode }: Props) {
+export default function Landing({ onStart }: Props) {
   const { t, lang } = useI18n();
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -110,13 +108,15 @@ export default function Landing({ onStart, counterCode }: Props) {
   playingRef.current = playing;
   const [fieldReady, setFieldReady] = useState(false);
   const cvWord = t("particles_cv");
-  const [checked, setChecked] = useState<number | null>(null);
-  const [built, setBuilt] = useState<number | null>(null);
+  // The last counts this browser saw show at once; the current ones replace them.
+  const [checked, setChecked] = useState<number | null>(() => lastCounts().checked);
+  const [built, setBuilt] = useState<number | null>(() => lastCounts().built);
   const shownChecked = useCountUp(checked ?? 0, !playing);
   const shownBuilt = useCountUp(built ?? 0, !playing);
 
+  // Asked as soon as the page opens, not after the health check: the server answers from
+  // its cache, and with counting off it answers null and nothing shows.
   useEffect(() => {
-    if (!counterCode) return;
     let active = true;
     fetchCounts().then((counts) => {
       if (!active) return;
@@ -126,7 +126,7 @@ export default function Landing({ onStart, counterCode }: Props) {
     return () => {
       active = false;
     };
-  }, [counterCode]);
+  }, []);
 
   useEffect(() => {
     const container = root.current;

@@ -1,10 +1,13 @@
 import json
+import threading
 import logging
 import re
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import uuid4
 
@@ -32,7 +35,16 @@ from app.verification import RequirementVerifier, SkillVerifier, aggregate, veri
 
 settings = get_settings()
 
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # The landing's counts are ready before the first visitor, who would otherwise wait for
+    # GoatCounter. Defined below with the stats route.
+    _warm_counts()
+    yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="SkillSync API",
     version="0.1.0",
     description="Aligns a student's verified skills with real job market requirements.",
@@ -175,28 +187,80 @@ def _read_goatcounter(code: str, path: str) -> int:
 COUNTED_STEPS = {"checked": "step-skills", "built": "step-cv-built"}
 
 
-@app.get("/api/stats")
-def stats() -> dict[str, int | None]:
-    """How many CVs were checked and how many were built, for the landing. Asked here rather
-    than in the browser, where ad blockers often stop requests to goatcounter.com; cached for a
-    few minutes."""
-    code = _goatcounter_code()
-    if not code:
-        return {name: None for name in COUNTED_STEPS}
-    now = time.monotonic()
-    ttl = STATS_TTL_SECONDS if _stats_cache["checked"] is not None else STATS_RETRY_SECONDS
-    if _stats_cache["at"] and now - _stats_cache["at"] < ttl:
-        return {name: _stats_cache[name] for name in COUNTED_STEPS}
-    counts: dict[str, int | None] = {}
-    for name, path in COUNTED_STEPS.items():
+def _read_counts(code: str) -> dict[str, int | None]:
+    """Every counted step at once: one API request when a key is set, else the public counters
+    side by side. A count GoatCounter cannot give is None."""
+    token = settings.goatcounter_api_key.strip()
+    if token:
+        next_hour = (int(time.time()) // 3600 + 1) * 3600
+        end = time.strftime("%Y-%m-%dT%H:00:00Z", time.gmtime(next_hour))
+        query = urllib.parse.urlencode({"start": "2020-01-01T00:00:00Z", "end": end, "limit": 100})
         try:
-            counts[name] = _read_goatcounter(code, path)
+            body = _get_json(f"https://{code}.goatcounter.com/api/v0/stats/hits?{query}", token)
+            hits = body.get("hits", [])
+            return {
+                name: sum(int(hit.get("count") or 0) for hit in hits if hit.get("path") == path)
+                for name, path in COUNTED_STEPS.items()
+            }
+        except (OSError, ValueError) as error:
+            logger.warning("GoatCounter API /api/v0/stats/hits failed: %s %s; using the public counter", error, _error_body(error))
+
+    def one(path: str) -> int | None:
+        try:
+            return _read_goatcounter(code, path)
         except (OSError, ValueError) as error:
             # The counter setting off, GoatCounter refusing or down; the landing then shows nothing.
             logger.warning("GoatCounter count unavailable for %s: %s", path, error)
-            counts[name] = None
-    _stats_cache.update(at=now, **counts)
+            return None
+
+    with ThreadPoolExecutor(max_workers=len(COUNTED_STEPS)) as pool:
+        values = pool.map(one, COUNTED_STEPS.values())
+        return dict(zip(COUNTED_STEPS, values))
+
+
+_stats_refreshing = threading.Lock()
+
+
+def _refresh_counts(code: str) -> dict[str, int | None]:
+    counts = _read_counts(code)
+    _stats_cache.update(at=time.monotonic(), **counts)
     return counts
+
+
+def _refresh_in_background(code: str) -> None:
+    """One refresh at a time, off the request: visitors get the last counts at once."""
+    if not _stats_refreshing.acquire(blocking=False):
+        return
+
+    def run():
+        try:
+            _refresh_counts(code)
+        finally:
+            _stats_refreshing.release()
+
+    threading.Thread(target=run, daemon=True).start()
+
+
+def _warm_counts() -> None:
+    if code := _goatcounter_code():
+        _refresh_in_background(code)
+
+
+@app.get("/api/stats")
+def stats() -> dict[str, int | None]:
+    """How many CVs were checked and how many were built, for the landing. Asked here rather
+    than in the browser, where ad blockers often stop requests to goatcounter.com. The last
+    counts come back at once; when they are a few minutes old, they are refreshed in the
+    background for the next visitor."""
+    code = _goatcounter_code()
+    if not code:
+        return {name: None for name in COUNTED_STEPS}
+    if not _stats_cache["at"]:
+        return _refresh_counts(code)
+    ttl = STATS_TTL_SECONDS if _stats_cache["checked"] is not None else STATS_RETRY_SECONDS
+    if time.monotonic() - _stats_cache["at"] >= ttl:
+        _refresh_in_background(code)
+    return {name: _stats_cache[name] for name in COUNTED_STEPS}
 
 
 @app.post("/api/runs")

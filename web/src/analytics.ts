@@ -38,6 +38,19 @@ export function track(step: "start" | "skills" | "postings" | "gap" | "plan" | "
  */
 export type Counts = { checked: number | null; built: number | null };
 
+const COUNTS_KEY = "skillsync-counts";
+
+/** The counts this browser saw last, shown at once while the current ones load. */
+export function lastCounts(): Counts {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COUNTS_KEY) ?? "null") as Partial<Counts> | null;
+    const count = (value: unknown) => (typeof value === "number" ? value : null);
+    return { checked: count(saved?.checked), built: count(saved?.built) };
+  } catch {
+    return { checked: null, built: null };
+  }
+}
+
 export async function fetchCounts(): Promise<Counts> {
   const none = { checked: null, built: null };
   try {
@@ -45,7 +58,13 @@ export async function fetchCounts(): Promise<Counts> {
     if (!response.ok) return none;
     const body = (await response.json()) as Partial<Counts>;
     const count = (value: unknown) => (typeof value === "number" ? value : null);
-    return { checked: count(body.checked), built: count(body.built) };
+    const counts = { checked: count(body.checked), built: count(body.built) };
+    try {
+      localStorage.setItem(COUNTS_KEY, JSON.stringify(counts));
+    } catch {
+      // Without storage the counts still show; they just load fresh next time.
+    }
+    return counts;
   } catch {
     return none;
   }

@@ -52,7 +52,6 @@ export default function App() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [confirmed, setConfirmed] = useState<Skill[]>([]);
   const [extractor, setExtractor] = useState("");
-  const [analyticsCode, setAnalyticsCode] = useState("");
   const demoMode = extractor === "mock";
   const [requirements, setRequirements] = useState<RequirementsResult | null>(null);
   const [postingTitles, setPostingTitles] = useState<string[]>([]);
@@ -67,7 +66,6 @@ export default function App() {
         if (!active) return;
         setExtractor(health.extractor);
         startAnalytics(health.analytics ?? "");
-        setAnalyticsCode(health.analytics ?? "");
       })
       .catch(() => {
         if (active) setExtractor("");
@@ -182,7 +180,6 @@ export default function App() {
         </BuilderBoundary>
       ) : view === "landing" ? (
         <Landing
-          counterCode={analyticsCode}
           onStart={() => {
             track("start");
             goTo("cv");

@@ -57,7 +57,32 @@ def test_stats_asks_goatcounter_once_per_few_minutes(monkeypatch):
     client.get("/api/stats")
     client.get("/api/stats")
 
-    assert calls == ["step-skills", "step-cv-built"]
+    assert sorted(calls) == ["step-cv-built", "step-skills"]
+
+
+def test_old_counts_are_returned_at_once_and_refreshed_in_the_background(monkeypatch):
+    _reset(monkeypatch)
+    old = main.time.monotonic() - main.STATS_TTL_SECONDS - 1
+    monkeypatch.setattr(main, "_stats_cache", {"at": old, "checked": 5, "built": 1})
+    started = []
+    monkeypatch.setattr(main, "_refresh_in_background", lambda code: started.append(code))
+
+    assert client.get("/api/stats").json() == {"checked": 5, "built": 1}
+    assert started == ["skillsync"]
+
+
+def test_the_api_key_reads_both_counts_in_one_request(monkeypatch):
+    _reset(monkeypatch)
+    monkeypatch.setattr(main.settings, "goatcounter_api_key", "secret")
+    requests = []
+
+    def get_json(url, token=None):
+        requests.append(url)
+        return {"hits": [{"path": "step-skills", "count": 9}, {"path": "step-cv-built", "count": 2}]}
+
+    monkeypatch.setattr(main, "_get_json", get_json)
+    assert main._read_counts("skillsync") == {"checked": 9, "built": 2}
+    assert len(requests) == 1
 
 
 class FakeResponse:
