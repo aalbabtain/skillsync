@@ -347,29 +347,30 @@ export default function Landing({ onStart, counterCode }: Props) {
             ))}
           </div>
         </div>
+        {/* The credits close the last chapter, on the same screen as the questions. */}
+          <footer className="site-foot">
+            <div className="foot-top">
+              <div className="foot-brand">
+                <Logo />
+                <span>{t("foot_vision")}</span>
+              </div>
+              <ul className="foot-badges">
+                <li className="foot-badge">
+                  <GraduationCap size={16} aria-hidden="true" />
+                  {t("foot_ksu")}
+                </li>
+                <li className="foot-badge foot-badge-logo">
+                  <img className="foot-mark" src={daicoMark} alt="" width={14} height={20} />
+                  <img src={daicoLogo} alt="DAICO" width={72} height={16} />
+                </li>
+              </ul>
+            </div>
+            <p className="foot-copy">
+              <span dir="ltr">© 2026 SkillSync · Ahmed Ababtain</span>
+            </p>
+          </footer>
       </section>
 
-      <footer className="site-foot wrap">
-        <div className="foot-top">
-          <div className="foot-brand">
-            <Logo />
-            <span>{t("foot_vision")}</span>
-          </div>
-          <ul className="foot-badges">
-            <li className="foot-badge">
-              <GraduationCap size={16} aria-hidden="true" />
-              {t("foot_ksu")}
-            </li>
-            <li className="foot-badge foot-badge-logo">
-              <img className="foot-mark" src={daicoMark} alt="" width={14} height={20} />
-              <img src={daicoLogo} alt="DAICO" width={72} height={16} />
-            </li>
-          </ul>
-        </div>
-        <p className="foot-copy">
-          <span dir="ltr">© 2026 SkillSync · Ahmed Ababtain</span>
-        </p>
-      </footer>
 
       {fieldReady && (
         <button className="motion-toggle" type="button" onClick={toggle}>
