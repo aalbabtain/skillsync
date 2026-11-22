@@ -8,7 +8,7 @@ import type { CvLine } from "../api";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { checklist } from "./ats";
-import { applyEnglish, arabicTexts, polishable } from "./english";
+import { applyEnglish, arabicTexts, polishable, regroup } from "./english";
 import type { PolishKind } from "./english";
 import CvPreview from "./CvPreview";
 import { MonthGrid, RangePicker } from "./MonthPicker";
@@ -455,7 +455,9 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     return suggestSkills([tools, ...texts], catalog);
   }, [state, question, catalog]);
 
-  const resume = useMemo(() => {
+  // The CV as typed, with the polish applied; the page shows it with skills and certificates
+  // regrouped (see regroup), and the polish works on this one so nothing is sent twice.
+  const baseResume = useMemo(() => {
     if (!state) return null;
     const answers = { ...state.answers };
     if (question && question.kind !== "choice" && draft.trim() && !followKey) answers[question.key] = draft;
@@ -470,6 +472,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     if (writing?.target === "summary") live = { ...live, summary: [...writing.lines, writing.shown].join(" ").trim() };
     return applyEnglish(toResume(live, categoryOf), state.textEnglish ?? {});
   }, [state, draft, question, followKey, writing, categoryOf]);
+  const resume = useMemo(() => (baseResume ? regroup(baseResume, categoryOf) : null), [baseResume, categoryOf]);
 
   // The finished CV is tidied and English only: the short fields the person typed (spelling,
   // capital letters, certificates in full, language levels) and anything still in Arabic go to
@@ -477,11 +480,11 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   const [englishing, setEnglishing] = useState(false);
   const polishTried = useRef("");
   const toPolish = useMemo(() => {
-    if (!resume || !finished) return [];
+    if (!baseResume || !finished) return [];
     const done = new Set(Object.values(state?.textEnglish ?? {}));
     const seen = state?.textEnglish ?? {};
-    return polishable(resume).filter((item) => !done.has(item.text) && !(item.text in seen));
-  }, [resume, finished, state?.textEnglish]);
+    return polishable(baseResume).filter((item) => !done.has(item.text) && !(item.text in seen));
+  }, [baseResume, finished, state?.textEnglish]);
 
   const polishAll = useCallback(async (items: { text: string; kind: PolishKind }[]): Promise<Record<string, string>> => {
     const found: Record<string, string> = {};
@@ -514,7 +517,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   // Before any download: the polish has run, and nothing Arabic is left in the CV.
   async function readyInEnglish(): Promise<boolean> {
     const found = toPolish.length ? await polishAll(toPolish) : {};
-    const left = resume ? arabicTexts(applyEnglish(resume, found)) : [];
+    const left = baseResume ? arabicTexts(applyEnglish(baseResume, found)) : [];
     if (!left.length) return true;
     setDownloadError(`${t("cvb_still_arabic")} ${left.join("، ")}`);
     return false;

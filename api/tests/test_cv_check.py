@@ -78,3 +78,23 @@ def test_a_certificate_may_be_written_out_in_full_around_what_was_given():
     assert polished_ok("cert", "aws cloud practitioner 2025", "AWS Certified Cloud Practitioner, Amazon Web Services, 2025")
     assert not polished_ok("cert", "CAPM", "AWS Certified Solutions Architect")
     assert not polished_ok("cert", "aws cloud practitioner 2025", "AWS Certified Cloud Practitioner, 2024")
+
+
+def test_worse_misspellings_and_a_country_for_its_language():
+    assert polished_ok("text", "king saud unicertiy", "King Saud University")
+    assert polished_ok("text", "cyper security", "Cybersecurity")
+    assert polished_ok("langs", "arabic spain englih", "Arabic, Spanish, English")
+    assert not polished_ok("langs", "arabic spain", "Arabic, French")
+    assert not polished_ok("text", "king saud unicertiy", "Harvard University")
+
+
+def test_two_different_known_skills_are_never_the_same_word():
+    assert not polished_ok("text", "java", "JavaScript")
+    assert not polished_ok("text", "react", "React Native")
+
+
+def test_a_written_line_may_fix_the_spelling_of_a_name_given():
+    source = "student at king saud unicertiy in cyper security"
+    assert unsupported("Studied at King Saud University", source) == []
+    assert unsupported("Studied at Harvard University", source) == ["Harvard University"]
+    assert unsupported("Uses Java daily", "i use javascript") == ["Java"]

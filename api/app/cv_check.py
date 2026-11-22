@@ -124,13 +124,25 @@ def facts(line: str) -> list[str]:
     return list(dict.fromkeys(found))
 
 
+def _spelled_in(fact: str, plain_source: str) -> bool:
+    """Every word of a name is in the source, perhaps misspelt there ("King Saud University"
+    for "king saud unicertiy"). Numbers must match exactly."""
+    words = WORDS.findall(_plain(fact))
+    given = WORDS.findall(plain_source)
+    return bool(words) and all(
+        word in given if word.isdigit() else any(_similar(word, other) for other in given) for word in words
+    )
+
+
 def _supported(fact: str, source: str, plain_source: str) -> bool:
     if fact.startswith("http"):
         return fact.rstrip("/") in source
+    if NUMBER.fullmatch(fact):
+        return _contains(plain_source, _plain(fact))
     for name, spellings in SKILLS:
         if fact == name:
-            return any(_contains(plain_source, spelling) for spelling in spellings)
-    return _contains(plain_source, _plain(fact))
+            return any(_contains(plain_source, spelling) for spelling in spellings) or _spelled_in(name, plain_source)
+    return _contains(plain_source, _plain(fact)) or _spelled_in(fact, plain_source)
 
 
 def unsupported(line: str, source: str) -> list[str]:
@@ -160,19 +172,46 @@ LINKING_WORDS = {"and", "of", "in", "the", "for", "at", "with", "to", "on", "a",
 # A language's level is said in standard words, whatever the person wrote ("good" is "Fluent").
 LEVEL_WORDS = {"native", "fluent", "professional", "working", "proficiency", "proficient", "intermediate",
                "advanced", "basic", "beginner", "elementary", "conversational", "bilingual", "limited", "full"}
+# People often write the country for its language ("spain" for Spanish).
+COUNTRY_LANGUAGE = {
+    "spain": "spanish", "france": "french", "germany": "german", "italy": "italian", "china": "chinese",
+    "japan": "japanese", "turkey": "turkish", "korea": "korean", "russia": "russian", "india": "hindi",
+    "pakistan": "urdu", "iran": "persian", "england": "english", "britain": "english", "america": "english",
+    "portugal": "portuguese", "brazil": "portuguese", "indonesia": "indonesian", "malaysia": "malay",
+    "egypt": "arabic", "saudi": "arabic", "philippines": "filipino", "netherlands": "dutch", "greece": "greek",
+}
 # Multi-word skill names: one of their words matching lets the rest of the name in ("good
 # speaker" is "Public Speaking").
 SKILL_NAMES = [normalize(name).split() for name, _category, _aliases in CATALOG if " " in name]
 WORDS = re.compile(r"[^\W_]+", re.UNICODE)
 
 
+def _edits(a: str, b: str) -> int:
+    """Letters added, removed or changed to turn one word into the other."""
+    row = list(range(len(b) + 1))
+    for i, x in enumerate(a, 1):
+        previous, row[0] = row[0], i
+        for j, y in enumerate(b, 1):
+            previous, row[j] = row[j], min(row[j] + 1, row[j - 1] + 1, previous + (x != y))
+    return row[-1]
+
+
 def _similar(a: str, b: str) -> bool:
-    """The same word, misspelt or in another form: close letters, or a shared stem of four
-    letters or more ("enginner" and "engineering", "speaker" and "speaking")."""
-    if a == b or SequenceMatcher(None, a, b).ratio() >= POLISH_SAME:
+    """The same word, misspelt or in another form: close letters, a shared stem of four
+    letters or more ("enginner" and "engineering"), or up to a third of a long word's letters
+    changed ("unicertiy" and "university")."""
+    if a == b:
+        return True
+    # Java is not JavaScript: two different known skills never count as one misspelt.
+    if a in SKILL_WORDS and b in SKILL_WORDS:
+        return False
+    if SequenceMatcher(None, a, b).ratio() >= POLISH_SAME:
         return True
     stem = len(os.path.commonprefix([a, b]))
-    return stem >= 4 and stem >= 0.6 * min(len(a), len(b))
+    if stem >= 4 and stem >= 0.6 * min(len(a), len(b)):
+        return True
+    shorter = min(len(a), len(b))
+    return shorter >= 5 and _edits(a, b) <= shorter // 3
 
 
 def _numbers(text: str) -> list[str]:
@@ -191,6 +230,8 @@ def polished_ok(kind: str, original: str, polished: str) -> bool:
     written = WORDS.findall(_plain(polished))
     if kind == "cert":
         return all(any(_similar(word, other) for other in written) for word in given if not word.isdigit())
+    if kind == "langs":
+        given += [language for word in given for country, language in COUNTRY_LANGUAGE.items() if _similar(word, country)]
     joined = {a + b for a, b in zip(given, given[1:])}
     matched = {word for word in written if any(_similar(word, g) for g in [*given, *joined])}
     for word in written:
@@ -198,7 +239,9 @@ def polished_ok(kind: str, original: str, polished: str) -> bool:
             continue
         if kind == "langs" and word in LEVEL_WORDS:
             continue
-        if any(word in name and any(other in matched for other in name if other != word) for name in SKILL_NAMES):
+        # "speaking" lets "public" in (Public Speaking); "react" does not let "native" in, since
+        # React is a skill of its own and React Native another.
+        if any(word in name and any(other in matched and other not in SKILL_WORDS for other in name if other != word) for name in SKILL_NAMES):
             continue
         return False
     return True

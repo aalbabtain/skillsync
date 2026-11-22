@@ -48,3 +48,21 @@ export function polishable(resume: Resume): { text: string; kind: PolishKind }[]
   for (const text of arabicTexts(resume)) add(text, "text");
   return [...items].map(([text, kind]) => ({ text, kind }));
 }
+
+/** After the polish: a skill item that became a list is split and each skill filed under its
+ * category; a certificate line that named two certificates becomes two lines. */
+export function regroup(resume: Resume, categoryOf: (skill: string) => string): Resume {
+  const skills: Record<string, string[]> = {};
+  const seen = new Set<string>();
+  for (const item of Object.values(resume.skills).flat()) {
+    for (const skill of item.split(/[,،]/).map((part) => part.trim()).filter(Boolean)) {
+      if (seen.has(skill.toLowerCase())) continue;
+      seen.add(skill.toLowerCase());
+      (skills[categoryOf(skill)] ??= []).push(skill);
+    }
+  }
+  const certifications = resume.certifications.flatMap((cert) =>
+    cert.name.split(" | ").map((name) => ({ ...cert, name: name.trim() })).filter((cert) => cert.name),
+  );
+  return { ...resume, skills, certifications };
+}

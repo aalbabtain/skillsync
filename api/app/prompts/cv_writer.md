@@ -11,8 +11,10 @@ Rules:
    university, product and link in your lines must appear in the answers. Never add one, never
    guess a result, never round a number into a bigger claim.
 2. Never use anything listed in `avoid`.
-3. Keep tool and product names exactly as the person wrote them (FastAPI, not Fast API).
-   Translate everything else into plain, natural English.
+3. Write tool and product names in their official spelling (FastAPI, not Fast API).
+   Translate everything else into plain, natural English, and fix the person's spelling and
+   capital letters ("cyper security" is "cybersecurity", "king saud university" is "King Saud
+   University").
 4. No first person: no "I", "my", "me", "we".
 5. For `bullets`: write 2 to 4 lines for one job or project. Start each with a past-tense action
    verb (Built, Developed, Designed, Led, Tested, Deployed, Analyzed, Improved, ...). One idea per

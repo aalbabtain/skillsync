@@ -38,3 +38,20 @@ test("the short fields to polish, each with its kind, once", async () => {
   assert.ok(!items.some((item) => item.text === "Omar"));
   assert.equal(new Set(items.map((item) => item.text)).size, items.length);
 });
+
+test("after the polish, skills are split and sorted, and certificates one per line", async () => {
+  const { regroup } = await import("./english.ts");
+  const polished = applyEnglish(
+    { ...resume, skills: { "Other skills": ["python teamwork"] }, certifications: [{ name: "capm ecba", issuer: "", date: "", url: "" }] },
+    {
+      "python teamwork": "Python, Teamwork",
+      "capm ecba": "Certified Associate in Project Management (CAPM), PMI | Entry Certificate in Business Analysis (ECBA), IIBA",
+    },
+  );
+  const done = regroup(polished, (skill) => (skill === "Python" ? "Programming languages" : "Soft skills"));
+  assert.deepEqual(done.skills, { "Programming languages": ["Python"], "Soft skills": ["Teamwork"] });
+  assert.deepEqual(done.certifications.map((cert) => cert.name), [
+    "Certified Associate in Project Management (CAPM), PMI",
+    "Entry Certificate in Business Analysis (ECBA), IIBA",
+  ]);
+});
