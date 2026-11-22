@@ -1,4 +1,4 @@
-import { Check, Circle } from "lucide-react";
+import { Check, Circle, Lock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -385,10 +385,12 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
               <strong>{t("cvb_mode_update")}</strong>
               <span>{t("cvb_mode_update_body")}</span>
             </button>
-            <button className="cvb-mode" type="button" disabled>
+            <button className="cvb-mode" type="button" disabled aria-describedby="cvb-soon">
               <strong>{t("cvb_mode_tailor")}</strong>
               <span>{t("cvb_mode_tailor_body")}</span>
-              <span className="cvb-soon">{t("cvb_soon")}</span>
+              <span className="cvb-soon" id="cvb-soon">
+                <Lock size={12} aria-hidden="true" /> {t("cvb_soon")}
+              </span>
             </button>
           </div>
           {importing !== "idle" && (

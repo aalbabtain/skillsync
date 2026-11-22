@@ -2930,6 +2930,17 @@ label {
   transform: translateY(1px);
 }
 
+/* The tailoring card is shown but locked until it is built: dimmed, dashed, no hover. */
+.cvb-mode:disabled {
+  border-style: dashed;
+  background: transparent;
+}
+
+.cvb-mode:disabled strong,
+.cvb-mode:disabled span:not(.cvb-soon) {
+  opacity: 0.6;
+}
+
 .cvb-mode strong {
   font-size: 1.02rem;
 }
@@ -2940,6 +2951,9 @@ label {
 }
 
 .cvb-mode .cvb-soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   justify-self: start;
   padding: 0.05rem 0.55rem;
   border: 1px solid var(--line2);
