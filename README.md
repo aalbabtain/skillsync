@@ -156,6 +156,8 @@ Every error uses `{"detail": {"code", "message"}}`, and the site shows each code
 | `POST` | `/api/cv/follow-up` | Agent 5: one follow-up question for a vague answer, or none |
 | `POST` | `/api/cv/translate` | Agent 5: English for short Arabic answers; numbers and Latin words must survive |
 | `POST` | `/api/cv/polish` | Agent 5, at the end: short fields tidied and in English (spelling, capital letters, certificates in full, language levels); a fix is kept only when it adds nothing the person did not say |
+| `POST` | `/api/cv/whats-new` | Agent 5, update mode: what the person says is new, sorted into projects, jobs, skills, certificates, languages and activities; nothing kept that their words do not say |
+| `POST` | `/api/cv/categorize` | Agent 5: a category for skills the catalog does not know, from the catalog's own categories only |
 | `POST` | `/api/cv/import` | Agent 5, update mode: the resume read from an uploaded CV's text, every value checked against it |
 | `POST` | `/api/cv/docx` | The CV as a Word file; nothing is kept |
 
@@ -226,7 +228,7 @@ cd api
 python -m pytest
 ```
 
-298 tests, no network and no key: demo mode stands in for the model. The CV builder's
+310 tests, no network and no key: demo mode stands in for the model. The CV builder's
 conversation engine and checklist have their own tests: `cd web && npm test`.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;

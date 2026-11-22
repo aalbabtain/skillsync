@@ -3235,6 +3235,35 @@ label {
   color: #f1cf8b;
 }
 
+.cvb-changes ul {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0;
+  list-style: none;
+}
+
+.cvb-changes label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 32px;
+}
+
+.cvb-changes input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+}
+
+.cvb-change-kind {
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .cvb-facts {
   display: flex;
   flex-wrap: wrap;

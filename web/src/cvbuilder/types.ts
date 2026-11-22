@@ -20,7 +20,7 @@ export type LogEntry =
   | { kind: "ask"; key: string }
   | { kind: "answer"; key: string; text: string }
   | { kind: "skipped"; key: string }
-  | { kind: "written"; target: "summary" | Group; lines: string[]; facts: string[]; fallback?: boolean }
+  | { kind: "written"; target: "summary" | Group; lines: string[]; facts: string[]; fallback?: boolean; news?: boolean }
   | { kind: "note"; id: string }
   | { kind: "follow"; key: string; text: string }
   | { kind: "another"; group: Group };
@@ -49,6 +49,11 @@ export type State = {
   english: Record<string, string>;
   // English for any text still in Arabic in the finished CV, by its Arabic text.
   textEnglish?: Record<string, string>;
+  // Update mode: "news" while asking what is new, "summary" while offering to rewrite it.
+  phase?: "news" | "summary" | null;
+  // New projects and jobs still to be asked about, and whether the current one is one of them.
+  queue?: { group: Group; answers: Record<string, string> }[];
+  newsItem?: boolean;
   // A category for each skill the catalog does not know, from the writer.
   skillCategories?: Record<string, string>;
   log: LogEntry[];

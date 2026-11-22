@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { addAnother, answer, back, cancelEdit, current, load, replaceLines, saveItem, skip, start, toResume } from "./engine.ts";
+import { addAnother, answer, back, cancelEdit, current, done, load, replaceLines, saveItem, skip, start, toResume } from "./engine.ts";
 import { indexOf, SCRIPT } from "./script.ts";
 import type { State } from "./types.ts";
 
@@ -89,12 +89,6 @@ test("a finished project waits for its bullets, then add another repeats it", ()
   state = addAnother(saveItem(state, "project", ["Built a personal site"]), false);
   assert.equal(state.projects.length, 2);
   assert.equal(current(state)?.key, "skills");
-});
-
-test("update mode asks only what is missing", () => {
-  const state = start("update", { answers: { name: "Sara Alharbi", field: "SE student", email: "s@x.io", phone: "+966 50 000 0000", location: "Riyadh" } });
-  assert.equal(current(state)?.key, "target");
-  assert.equal(current(say(state, "skip"))?.key, "linkedin");
 });
 
 test("load returns null for version 0 or bad JSON", () => {
@@ -229,4 +223,48 @@ test("a date range splits off the end of an activity line", async () => {
   const { splitDates } = await import("./english.ts");
   assert.deepEqual(splitDates("Member, AI Club – King Saud University, Mar 2026 – Present"), ["Member, AI Club – King Saud University", "Mar 2026 – Present"]);
   assert.deepEqual(splitDates("Volunteer at Riyadh Season 2024"), ["Volunteer at Riyadh Season 2024", ""]);
+});
+
+test("update mode opens on what is new, with no question asked yet", async () => {
+  const { start: begin } = await import("./engine.ts");
+  const state = begin("update", { answers: { name: "Sara", skills: "Python" } });
+  assert.equal(state.phase, "news");
+  assert.equal(current(state), null);
+  assert.ok(state.log.some((entry) => entry.kind === "note" && entry.id === "news"));
+});
+
+test("new skills, certificates and activities are added; a new project asks only what is missing", async () => {
+  const { applyNews } = await import("./engine.ts");
+  let state = start("update", { answers: { name: "Sara", skills: "Python", certs: "CAPM" } });
+  state = applyNews(state, {
+    skills: ["Docker"], certs: ["AWS Cloud Practitioner"], langs: [], activities: ["Member, GDSC"],
+    projects: [{ name: "StudyBot", what: "answers questions from course notes", tools: "LangChain", role: "", start: "", end: "", url: "" }],
+    jobs: [],
+  });
+  assert.equal(state.answers.skills, "Python, Docker");
+  assert.equal(state.answers.certs, "CAPM\nAWS Cloud Practitioner");
+  assert.equal(state.answers.activities, "Member, GDSC");
+  assert.equal(state.phase, null);
+  assert.equal(current(state)?.key, "projDates");
+  state = say(state, "Jan 2026 - Present");
+  assert.equal(current(state)?.key, "projRole");
+});
+
+test("after a new project is written, the conversation goes back to what else is new", async () => {
+  const { applyNews, finishNews, keepSummary } = await import("./engine.ts");
+  let state = applyNews(start("update", { answers: { name: "Sara" } }), {
+    skills: [], certs: [], langs: [], activities: [], jobs: [],
+    projects: [{ name: "StudyBot", what: "answers questions", tools: "LangChain", role: "Developer", start: "Jan 2026", end: "Present", url: "https://x.dev" }],
+  });
+  assert.equal(current(state)?.key, "projLink");
+  const result = skip(state);
+  assert.equal(result.needs, "project");
+  state = saveItem(result.state, "project", ["Built StudyBot"]);
+  assert.equal(state.phase, "news");
+  assert.equal(state.pending, null);
+  assert.equal(state.projects.at(-1)?.answers.projName, "StudyBot");
+  state = finishNews(state);
+  assert.equal(state.phase, "summary");
+  state = keepSummary(state);
+  assert.ok(done(state));
 });

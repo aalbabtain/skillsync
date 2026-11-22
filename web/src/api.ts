@@ -391,3 +391,18 @@ export async function cvCategorize(skills: string[]): Promise<Record<string, str
   const result = await postJson<{ categories: Record<string, string> }>("/api/cv/categorize", { skills }, "The skills could not be sorted.");
   return result.categories;
 }
+
+export type CvNews = {
+  projects: { name: string; what: string; tools: string; role: string; start: string; end: string; url: string }[];
+  jobs: { company: string; title: string; what: string; start: string; end: string }[];
+  skills: string[];
+  certs: string[];
+  langs: string[];
+  activities: string[];
+};
+
+/** Agent 5, update mode: what the person says is new, sorted into CV parts. */
+export async function cvWhatsNew(text: string): Promise<CvNews> {
+  const result = await postJson<{ changes: CvNews }>("/api/cv/whats-new", { text }, "What is new could not be read.");
+  return result.changes;
+}

@@ -806,6 +806,25 @@ def cv_categorize_route(payload: CvCategorizeRequest, request: Request):
     return {"categories": {skill: found[skill] for skill in skills if found.get(skill) in cv_skills.CATEGORIES}}
 
 
+class CvWhatsNewRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=MAX_ANSWER_CHARS * 2)
+
+
+@app.post("/api/cv/whats-new")
+def cv_whats_new_route(payload: CvWhatsNewRequest, request: Request):
+    """Agent 5, update mode: what the person says is new, sorted into projects, jobs, skills,
+    certificates, languages and activities. Nothing is kept that their text does not say."""
+    text = cv_writer.strip_contact(payload.text)
+    if not text.strip():
+        return _error(422, "CV_ANSWERS_INVALID", "Write what is new first.")
+    if limited := _rate_limited(request, 1):
+        return limited
+    try:
+        return {"changes": cv_writer.whats_new(text)}
+    except cv_writer.CvWriterError as error:
+        return _cv_error(error)
+
+
 @app.post("/api/cv/translate")
 def cv_translate_route(payload: CvTranslateRequest, request: Request):
     """Agent 5: English for short Arabic fields. A value whose numbers or Latin words were

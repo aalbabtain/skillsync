@@ -19,7 +19,7 @@ from pydantic import BaseModel, ValidationError
 from app.agents import cv_skills, gemini, mock_extractor
 from app.agents.json_stream import ObjectScanner
 from app.config import get_settings
-from app.cv_check import check_line, mentions
+from app.cv_check import check_line, mentions, words_in
 
 logger = logging.getLogger("skillsync.agents")
 
@@ -381,3 +381,83 @@ def categorize(skills: list[str], extractor: str | None = None) -> dict[str, str
         return {}
     found = _ask("cv_categorize", Categories, json.dumps(skills, ensure_ascii=False)).items
     return {item.skill: item.category for item in found}
+
+
+class NewProject(BaseModel):
+    name: str = ""
+    what: str = ""
+    tools: str = ""
+    role: str = ""
+    start: str = ""
+    end: str = ""
+    url: str = ""
+
+
+class NewJob(BaseModel):
+    company: str = ""
+    title: str = ""
+    what: str = ""
+    start: str = ""
+    end: str = ""
+
+
+class Changes(BaseModel):
+    projects: list[NewProject] = []
+    jobs: list[NewJob] = []
+    skills: list[str] = []
+    certs: list[str] = []
+    langs: list[str] = []
+    activities: list[str] = []
+
+
+MEMBER = re.compile(r"^\s*member\s*(of|,|–|-)?\s*", re.IGNORECASE)
+LABELLED_PROJECT = re.compile(r"(?:new project|project|مشروع جديد|مشروع)\s*:\s*([^.\n]+)\.?\s*([^\n]*)", re.IGNORECASE)
+
+
+def _demo_changes(text: str) -> Changes:
+    """Demo mode: skills the catalog finds, and a project written as "New project: Name. What"."""
+    skills = [item["name"] for item in mock_extractor.extract(text)]
+    projects = [NewProject(name=m.group(1).strip(), what=m.group(2).strip()) for m in LABELLED_PROJECT.finditer(text)]
+    return Changes(projects=projects, skills=skills)
+
+
+def _said(value: str, text: str) -> str:
+    """A value kept only when the person's text says it (spelling aside)."""
+    value = " ".join(value.split())
+    return value if value and (mentions(value, text) or words_in(value, text)) else ""
+
+
+def whats_new(text: str, extractor: str | None = None) -> dict:
+    """What the person says is new since their CV, sorted into CV parts. Every name, skill,
+    certificate and activity is kept only when their text says it; a project's or job's
+    description must pass the grounding check against it."""
+    found = _demo_changes(text) if _demo(extractor) else _ask("cv_whats_new", Changes, strip_contact(text))
+    projects = []
+    for project in found.projects[:10]:
+        if not (name := _said(project.name, text)):
+            continue
+        what = " ".join(project.what.split())
+        projects.append({
+            "name": name,
+            "what": what if what and check_line(what, text) else "",
+            "tools": _said(project.tools, text), "role": _said(project.role, text),
+            "start": _said(project.start, text), "end": _said(project.end, text),
+            "url": _https(url) if (url := _said(project.url, text)) else "",
+        })
+    jobs = []
+    for job in found.jobs[:10]:
+        company, title = _said(job.company, text), _said(job.title, text)
+        if not (company or title):
+            continue
+        what = " ".join(job.what.split())
+        jobs.append({
+            "company": company, "title": title, "what": what if what and check_line(what, text) else "",
+            "start": _said(job.start, text), "end": _said(job.end, text),
+        })
+    lists = {key: list(dict.fromkeys(v for item in getattr(found, key)[:30] if (v := _said(item, text)))) for key in ("skills", "certs", "langs")}
+    # Joining a club makes one a member, so "Member" may be added; any other title must be said.
+    lists["activities"] = list(dict.fromkeys(
+        " ".join(item.split()) for item in found.activities[:30]
+        if item.strip() and _said(MEMBER.sub("", item), text)
+    ))
+    return {"projects": projects, "jobs": jobs, **lists}

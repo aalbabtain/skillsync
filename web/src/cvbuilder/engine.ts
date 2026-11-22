@@ -28,15 +28,17 @@ export function start(mode: Mode, imported?: { answers?: Record<string, string>;
     english: {},
     log: [{ kind: "note", id: mode === "update" ? "imported" : "welcome" }],
   };
+  // Updating a CV starts from what is new, not from the first question.
+  if (mode === "update") return { ...state, at: SCRIPT.length, phase: "news", log: [...state.log, { kind: "note", id: "news" }] };
   return moveTo(state, nextIndex(state, -1));
 }
 
 export function current(state: State): Question | null {
-  return state.pending ? null : SCRIPT[state.at] ?? null;
+  return state.pending || state.phase ? null : SCRIPT[state.at] ?? null;
 }
 
 export function done(state: State): boolean {
-  return !state.pending && state.at >= SCRIPT.length;
+  return !state.pending && !state.phase && state.at >= SCRIPT.length;
 }
 
 function nextIndex(state: State, from: number): number {
@@ -44,6 +46,8 @@ function nextIndex(state: State, from: number): number {
     const question = SCRIPT[i];
     if (question.group === "job" && state.answers.hasJob === "no") continue;
     if (question.group === "project" && state.answers.hasProject === "no") continue;
+    // A new project or job from "what is new" skips what was already said.
+    if (state.newsItem && question.group && state.answers[question.key]) continue;
     // In update mode, what the CV already says is not asked again; jobs and projects are,
     // so new ones can be added.
     if (state.mode === "update" && !question.group && state.answers[question.key]) continue;
@@ -58,7 +62,7 @@ function moveTo(state: State, at: number): State {
 }
 
 function advance(state: State, question: Question): Result {
-  const groupDone = question.group && SCRIPT[state.at + 1]?.group !== question.group;
+  const groupDone = question.group && SCRIPT[nextIndex(state, state.at)]?.group !== question.group;
   if (state.resumeAt !== null) {
     // Back from an edit: return to the question the person was on, already asked.
     return { state: { ...state, at: state.resumeAt, resumeAt: null }, needs: question.writes };
@@ -146,7 +150,9 @@ export function saveItem(state: State, group: Group, lines: string[]): State {
     delete skipped[key];
   }
   const list = group === "job" ? "jobs" : "projects";
-  return { ...state, answers, skipped, [list]: [...state[list], item], log: [...state.log, { kind: "another", group }] };
+  const saved: State = { ...state, answers, skipped, [list]: [...state[list], item], log: [...state.log, { kind: "another", group }] };
+  // A new item from "what is new" does not ask "add another?": the next one, or what else is new.
+  return state.newsItem ? nextNews({ ...saved, pending: null, newsItem: false }) : saved;
 }
 
 export function addAnother(state: State, yes: boolean): State {
@@ -262,4 +268,67 @@ export function toResume(state: State, categoryOf: (skill: string) => string = (
     awards: lines(a.awards),
     activities: (a.activities ?? "").split("\n").map((line) => line.trim()).filter(Boolean),
   };
+}
+
+// ---------- Update mode: what is new ----------
+
+export type News = {
+  projects: { name: string; what: string; tools: string; role: string; start: string; end: string; url: string }[];
+  jobs: { company: string; title: string; what: string; start: string; end: string }[];
+  skills: string[];
+  certs: string[];
+  langs: string[];
+  activities: string[];
+};
+
+function joined(before: string | undefined, added: string[], separator: string): string {
+  return [...(before ?? "").split(separator).map((part) => part.trim()).filter(Boolean), ...added].join(separator === "\n" ? "\n" : ", ");
+}
+
+/** The changes the person approved: lists are added to at once; each new project or job is
+ * asked about, only for what is missing, one after the other. */
+export function applyNews(state: State, news: News): State {
+  const range = (start: string, end: string) => [start, end].filter(Boolean).map((part) => normalizeDate(part) ?? part).join(" – ");
+  const answers = { ...state.answers };
+  if (news.skills.length) answers.skills = joined(answers.skills, news.skills, ",");
+  if (news.langs.length) answers.langs = joined(answers.langs, news.langs, ",");
+  if (news.certs.length) answers.certs = joined(answers.certs, news.certs, "\n");
+  if (news.activities.length) answers.activities = joined(answers.activities, news.activities, "\n");
+  const clean = (entries: Record<string, string>) => Object.fromEntries(Object.entries(entries).filter(([, value]) => value));
+  const queue = [
+    ...news.projects.map((p) => ({
+      group: "project" as Group,
+      answers: clean({ projName: p.name, projWhat: p.what, projTools: p.tools, projRole: p.role, projLink: p.url, projDates: p.start && p.end ? range(p.start, p.end) : "" }),
+    })),
+    ...news.jobs.map((j) => ({
+      group: "job" as Group,
+      answers: clean({ company: j.company, jobTitle: j.title, jobWhat: j.what, jobDates: j.start && j.end ? range(j.start, j.end) : "" }),
+    })),
+  ];
+  return nextNews({ ...state, answers, queue: [...(state.queue ?? []), ...queue] });
+}
+
+/** The next new project or job to ask about, at its first missing answer; or, with none left,
+ * back to "anything else new?". */
+export function nextNews(state: State): State {
+  const [next, ...rest] = state.queue ?? [];
+  if (!next) {
+    return { ...state, queue: [], phase: "news", log: [...state.log, { kind: "note", id: "news_more" }] };
+  }
+  const keys = groupKeys(next.group);
+  const answers = { ...state.answers };
+  for (const key of keys) delete answers[key];
+  Object.assign(answers, next.answers);
+  const base: State = { ...state, answers, queue: rest, phase: null, newsItem: true, pending: null };
+  const first = keys.map((key) => indexOf(key)).find((i) => !answers[SCRIPT[i].key]);
+  // Everything already said: the last question of the item closes it, so its lines get written.
+  return moveTo(base, first ?? indexOf(keys[keys.length - 1]));
+}
+
+export function finishNews(state: State): State {
+  return { ...state, phase: "summary", log: [...state.log, { kind: "note", id: "summary_ask" }] };
+}
+
+export function keepSummary(state: State): State {
+  return { ...state, phase: null, at: SCRIPT.length, log: [...state.log, { kind: "note", id: "done" }] };
 }

@@ -245,3 +245,9 @@ def polished_ok(kind: str, original: str, polished: str) -> bool:
             continue
         return False
     return True
+
+
+def words_in(value: str, source: str) -> bool:
+    """Every word of the value is in the source, perhaps spelt differently there; numbers
+    match exactly. For a name the person gave in passing ("aws cloud practitioner")."""
+    return _spelled_in(value, _plain(source))

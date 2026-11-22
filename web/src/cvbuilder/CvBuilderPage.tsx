@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { track } from "../analytics";
-import { ApiRequestError, createRun, cvDocx, cvFollowUp, cvImport, cvCategorize, cvPolish, cvTranslate, getSkillCatalog, streamCvLines } from "../api";
+import { ApiRequestError, createRun, cvDocx, cvFollowUp, cvImport, cvCategorize, cvPolish, cvTranslate, cvWhatsNew, getSkillCatalog, streamCvLines } from "../api";
 import type { CvLine } from "../api";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
@@ -15,7 +15,8 @@ import { MonthGrid, RangePicker } from "./MonthPicker";
 import { resolveSkill, skillIndex, splitSkills, suggestSkills } from "./skills";
 import type { SkillIndex } from "./skills";
 import type { CatalogEntry } from "./skills";
-import { addAnother, answer, back, cancelEdit, canEdit, current, done, load, replaceLines, saveItem, skip, start, toResume } from "./engine";
+import { addAnother, answer, applyNews, back, cancelEdit, canEdit, current, done, finishNews, keepSummary, load, replaceLines, saveItem, skip, start, toResume } from "./engine";
+import type { News } from "./engine";
 import { FOLLOW_UP_KEYS, groupKeys, SCRIPT, STEPS, TRANSLATED_KEYS } from "./script";
 import type { Group, Item, LogEntry, State } from "./types";
 import { hasArabic, isSkipWord, normalizeDate } from "./validate";
@@ -23,6 +24,8 @@ import { hasArabic, isSkipWord, normalizeDate } from "./validate";
 const STORAGE_KEY = "skillsync-cv";
 const WORD_MS = 55;
 const FOLLOW_UP_MIN_WORDS = 8;
+// The quick buttons under "what is new": each starts a line for the person to finish.
+const NEWS_KINDS = ["project", "skill", "cert", "job", "activity"] as const;
 // With nothing new for this long while writing, the page says the model is slow.
 const SLOW_AFTER_MS = 8000;
 // Fields polished per request (the server takes up to 40).
@@ -106,6 +109,9 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   const [follow, setFollow] = useState<{ key: string; first: string } | null>(null);
   const followKey = follow?.key ?? null;
   const [thinking, setThinking] = useState(false);
+  // Update mode: the changes found in what the person wrote, and the ones they untick.
+  const [proposed, setProposed] = useState<News | null>(null);
+  const [unticked, setUnticked] = useState<Set<string>>(new Set());
   const [slow, setSlow] = useState(false);
   const [importing, setImporting] = useState<"idle" | "choose" | "reading">("idle");
   const [importError, setImportError] = useState("");
@@ -316,6 +322,30 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     let text = input;
     if (!state || writing || thinking) return;
     setError("");
+
+    // Update mode: what is new, in the person's words, sorted into CV parts by the writer.
+    if (state.phase === "news") {
+      if (!text.trim()) return setError(t("cvb_bad_empty"));
+      const said: LogEntry = { kind: "answer", key: "news", text: text.trim() };
+      setState({ ...state, log: [...state.log, said] });
+      setDraft("");
+      setThinking(true);
+      try {
+        const found = await cvWhatsNew(text.trim());
+        const count = found.projects.length + found.jobs.length + found.skills.length + found.certs.length + found.langs.length + found.activities.length;
+        if (!count) {
+          setError(t("cvb_news_none"));
+        } else {
+          setUnticked(new Set());
+          setProposed(found);
+        }
+      } catch (caught) {
+        setError(caught instanceof ApiRequestError ? errorMessage(caught.code, t("cvb_write_failed")) : t("cvb_write_failed"));
+      } finally {
+        setThinking(false);
+      }
+      return;
+    }
 
     // The answer to a follow-up joins the description it was about.
     if (follow) {
@@ -732,7 +762,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         const group = entry.target === "summary" ? null : entry.target;
         return (
           <div className={entry.fallback ? "cvb-written is-fallback" : "cvb-written"} key={index}>
-            <h4>{entry.fallback ? t("cvb_fallback") : t(writtenTitle(entry.target))}</h4>
+            <h4>{entry.news ? t("cvb_news_added") : entry.fallback ? t("cvb_fallback") : t(writtenTitle(entry.target))}</h4>
             {entry.lines.length > 1 ? (
               <ul dir="ltr">
                 {entry.lines.map((line, i) => (
@@ -752,7 +782,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
                 ))}
               </p>
             )}
-            {finished && !writing && (
+            {finished && !writing && !entry.news && (
               <button
                 className="btn btn-ghost"
                 type="button"
@@ -791,6 +821,41 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   const rangeParts = draft.split(" – ").map((part) => part.trim());
   while (rangeParts.length < 2) rangeParts.push("");
 
+  // Every change found, each with a key the person can untick.
+  const proposedRows: { key: string; label: MessageKey; text: string }[] = proposed
+    ? [
+        ...proposed.projects.map((p, i) => ({ key: `project-${i}`, label: "cvb_news_kind_project" as MessageKey, text: p.name })),
+        ...proposed.jobs.map((j, i) => ({ key: `job-${i}`, label: "cvb_news_kind_job" as MessageKey, text: [j.title, j.company].filter(Boolean).join(", ") })),
+        ...proposed.skills.map((x, i) => ({ key: `skill-${i}`, label: "cvb_news_kind_skill" as MessageKey, text: x })),
+        ...proposed.certs.map((x, i) => ({ key: `cert-${i}`, label: "cvb_news_kind_cert" as MessageKey, text: x })),
+        ...proposed.langs.map((x, i) => ({ key: `lang-${i}`, label: "cvb_news_kind_lang" as MessageKey, text: x })),
+        ...proposed.activities.map((x, i) => ({ key: `activity-${i}`, label: "cvb_news_kind_activity" as MessageKey, text: x })),
+      ]
+    : [];
+
+  function addProposed() {
+    if (!state || !proposed) return;
+    const kept = <T,>(list: T[], prefix: string) => list.filter((_, i) => !unticked.has(`${prefix}-${i}`));
+    const news: News = {
+      projects: kept(proposed.projects, "project"),
+      jobs: kept(proposed.jobs, "job"),
+      skills: kept(proposed.skills, "skill"),
+      certs: kept(proposed.certs, "cert"),
+      langs: kept(proposed.langs, "lang"),
+      activities: kept(proposed.activities, "activity"),
+    };
+    const added = proposedRows.filter((row) => !unticked.has(row.key)).map((row) => row.text);
+    const entry: LogEntry = { kind: "written", target: "summary", lines: added, facts: [], news: true };
+    setProposed(null);
+    setState(applyNews({ ...state, log: [...state.log, entry] }, news));
+  }
+
+  async function rewriteSummaryForNews() {
+    if (!state) return;
+    await writeSummary(state);
+    setState((s) => (s ? keepSummary(s) : s));
+  }
+
   let composer: ReactNode = null;
   if (writing) {
     composer = null;
@@ -806,6 +871,76 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
           </button>
           <button className="btn btn-ghost" type="button" onClick={failure.skip}>
             {t("cvb_go_on")}
+          </button>
+        </div>
+      </div>
+    );
+  } else if (state.phase === "news" && proposed) {
+    composer = (
+      <div className="cvb-composer">
+        <div className="cvb-row">
+          <button className="btn btn-primary" type="button" onClick={addProposed}>
+            {t("cvb_news_add")}
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={() => setProposed(null)}>
+            {t("cvb_cancel")}
+          </button>
+        </div>
+      </div>
+    );
+  } else if (state.phase === "news") {
+    composer = (
+      <div className="cvb-composer">
+        <div className="cvb-offered" role="group" aria-label={t("cvb_news_quick")}>
+          {NEWS_KINDS.map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              className="cvb-chip"
+              aria-pressed={false}
+              onClick={() => {
+                const prefix = t(`cvb_news_prefix_${kind}` as MessageKey);
+                setDraft((text) => (text.trim() ? `${text.trim()}\n${prefix}` : prefix));
+                window.setTimeout(() => inputRef.current?.focus(), 0);
+              }}
+            >
+              {t(`cvb_news_kind_${kind}` as MessageKey)}
+            </button>
+          ))}
+        </div>
+        <label className="visually-hidden" htmlFor="cvb-answer">
+          {t("cvb_answer_label")}
+        </label>
+        <textarea
+          id="cvb-answer"
+          ref={inputRef}
+          dir="auto"
+          rows={3}
+          value={draft}
+          placeholder={t("cvb_news_placeholder")}
+          autoFocus
+          onChange={(event) => setDraft(event.target.value)}
+        />
+        <div className="cvb-row">
+          <button className="btn btn-ghost" type="button" disabled={thinking} onClick={() => setState(finishNews(state))}>
+            {t(state.log.some((entry) => entry.kind === "note" && entry.id === "news_more") ? "cvb_news_done" : "cvb_news_nothing")}
+          </button>
+          <button className="btn btn-primary cvb-send" type="button" disabled={thinking} onClick={() => submit(draft)}>
+            {thinking ? <span className="spinner" aria-hidden="true" /> : null}
+            {t("cvb_send")}
+          </button>
+        </div>
+      </div>
+    );
+  } else if (state.phase === "summary") {
+    composer = (
+      <div className="cvb-composer">
+        <div className="cvb-row">
+          <button className="btn btn-primary" type="button" onClick={rewriteSummaryForNews}>
+            {t("cvb_rewrite_summary")}
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={() => setState(keepSummary(state))}>
+            {t("cvb_keep_summary")}
           </button>
         </div>
       </div>
@@ -989,6 +1124,38 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         <section className="cvb-chat" aria-label={t("cvb_title")}>
           <div className="cvb-log" ref={logRef} aria-live="polite">
             {log}
+            {proposed && (
+              <div className="cvb-written cvb-changes">
+                <h4>{t("cvb_news_found")}</h4>
+                <ul>
+                  {proposedRows.map((row) => (
+                    <li key={row.key}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={!unticked.has(row.key)}
+                          onChange={() =>
+                            setUnticked((current) => {
+                              const next = new Set(current);
+                              if (next.has(row.key)) next.delete(row.key);
+                              else next.add(row.key);
+                              return next;
+                            })
+                          }
+                        />
+                        <span className="cvb-change-kind">{t(row.label)}</span>
+                        <bdi dir="auto">{row.text}</bdi>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {thinking && state.phase === "news" && (
+              <p className="cvb-msg is-bot" role="status">
+                <span className="spinner spinner-sm" aria-hidden="true" /> {t("cvb_reading")}
+              </p>
+            )}
             {writing && (
               <div className="cvb-written cvb-working" role="status">
                 <p>
