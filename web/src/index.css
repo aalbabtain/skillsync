@@ -674,9 +674,9 @@ a {
     transition: none;
   }
 
+  /* A spinner is how the page says it is still working, so it keeps turning, only slower. */
   .spinner {
-    animation: none;
-    border-top-color: var(--accent);
+    animation-duration: 1.6s;
   }
 
   .chip-evidence,
@@ -1265,7 +1265,13 @@ a {
   height: 10px;
   border-width: 1.5px;
   border-color: rgba(152, 160, 174, 0.3);
-  border-top-color: var(--muted);
+  border-top-color: var(--accent);
+}
+
+.live-slow {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 /* 2. The logo draws its line, places its points, then the dot pulses once. */

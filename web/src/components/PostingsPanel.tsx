@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ApiRequestError, streamRequirements } from "../api";
 import type { PostingInput, RequirementsResult } from "../api";
@@ -7,6 +7,8 @@ import { useI18n } from "../i18n";
 
 const MAX_POSTINGS = 10;
 const MIN_POSTING_CHARS = 80;
+// With nothing new for this long, the page says the model is slow rather than look stuck.
+const SLOW_AFTER_MS = 8000;
 
 type Draft = PostingInput & { id: number };
 
@@ -31,7 +33,18 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult, onNext
   // What each posting has turned up so far while the model is still reading.
   const [live, setLive] = useState<{ title: string; names: string[]; done: boolean; started: boolean }[]>([]);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
+  const [slow, setSlow] = useState(false);
+  const lastEvent = useRef(0);
   const { t, category, errorMessage } = useI18n();
+
+  useEffect(() => {
+    if (!running) {
+      setSlow(false);
+      return;
+    }
+    const timer = window.setInterval(() => setSlow(Date.now() - lastEvent.current > SLOW_AFTER_MS), 1000);
+    return () => window.clearInterval(timer);
+  }, [running]);
 
   const ready = drafts.every((draft) => draft.text.trim().length >= MIN_POSTING_CHARS);
 
@@ -43,6 +56,7 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult, onNext
   }
 
   async function submit() {
+    lastEvent.current = Date.now();
     setRunning(true);
     setError(null);
 
@@ -50,7 +64,9 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult, onNext
       const postings = drafts.map(({ title, text }) => ({ title: title.trim(), text }));
       setResult(null);
       setLive(postings.map((posting) => ({ title: posting.title, names: [], done: false, started: false })));
-      const extracted = await streamRequirements(postings, (event) =>
+      const extracted = await streamRequirements(postings, (event) => {
+        lastEvent.current = Date.now();
+        setSlow(false);
         setLive((current) =>
           current.map((row, index) => {
             if (index !== event.posting) return row;
@@ -58,8 +74,8 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult, onNext
             if (event.type === "requirement") return { ...row, names: [...row.names, event.name] };
             return { ...row, done: true };
           }),
-        ),
-      );
+        );
+      });
       setTitles(postings.map((posting) => posting.title));
       setResult(extracted);
       onResult(
@@ -192,6 +208,12 @@ export default function PostingsPanel({ confirmedCount, onBack, onResult, onNext
             </li>
           ))}
         </ol>
+      )}
+
+      {running && slow && (
+        <p className="live-slow" role="status">
+          {t("req_live_slow")}
+        </p>
       )}
 
       {error && (
