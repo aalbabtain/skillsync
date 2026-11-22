@@ -19,7 +19,7 @@ const WORD_MS = 55;
 const FOLLOW_UP_MIN_WORDS = 8;
 
 type Writing = { target: "summary" | Group; lines: string[]; shown: string };
-type Failure = { message: string; retry: () => void };
+type Failure = { message: string; retry: () => void; skip: () => void };
 
 function readSaved(): State | null {
   try {
@@ -134,11 +134,11 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   );
 
   const failed = useCallback(
-    (caught: unknown, retry: () => void) => {
+    (caught: unknown, retry: () => void, skip: () => void) => {
       setWriting(null);
       const message =
         caught instanceof ApiRequestError ? errorMessage(caught.code, t("cvb_write_failed")) : t("cvb_write_failed");
-      setFailure({ message, retry });
+      setFailure({ message, retry, skip });
     },
     [errorMessage, t],
   );
@@ -161,7 +161,8 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         const entry: LogEntry = { kind: "written", target: "summary", lines: [text], facts: lines.flatMap((line) => line.facts), fallback: !lines.length };
         setState((s) => (s ? { ...s, english: { ...translated.english, ...s.english }, summary: text, log: [...s.log, entry] } : s));
       } catch (caught) {
-        failed(caught, () => writeSummary(stateRef.current ?? base));
+        // Without the model the conversation goes on; the summary can be written at the end.
+        failed(caught, () => writeSummary(stateRef.current ?? base), () => setFailure(null));
       }
     },
     [failed, translateNeeded, write],
@@ -182,7 +183,19 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
           return saveItem(withEnglish, group, texts);
         });
       } catch (caught) {
-        failed(caught, () => writeItem(stateRef.current ?? base, group));
+        // Without the model, the person's own description becomes the item's line.
+        failed(
+          caught,
+          () => writeItem(stateRef.current ?? base, group),
+          () => {
+            setFailure(null);
+            setState((s) => {
+              if (!s) return s;
+              const own = (s.answers[group === "job" ? "jobWhat" : "projWhat"] ?? "").trim();
+              return saveItem(s, group, own ? [own] : []);
+            });
+          },
+        );
       }
     },
     [failed, translateNeeded, write],
@@ -199,7 +212,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         const texts = lines.length ? lines.map((line) => line.text) : [fallback ?? ""].filter(Boolean);
         setState((s) => (s ? replaceLines(s, group, index, texts) : s));
       } catch (caught) {
-        failed(caught, () => rewriteItem(group, index));
+        failed(caught, () => rewriteItem(group, index), () => setFailure(null));
       }
     },
     [failed, write],
@@ -524,6 +537,9 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         <div className="cvb-row">
           <button className="btn btn-primary" type="button" onClick={failure.retry}>
             {t("cvb_retry")}
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={failure.skip}>
+            {t("cvb_go_on")}
           </button>
         </div>
       </div>
