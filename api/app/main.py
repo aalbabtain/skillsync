@@ -12,12 +12,13 @@ from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from app.agents import cv_skills, cv_writer, plan_builder, requirements, retrieval
+from app.cv_docx import Resume, build_docx, file_name
 from app.cv_check import DIGITS, facts as line_facts, unsupported
 from app.config import get_settings
 from app.frontend import register_frontend
@@ -716,6 +717,18 @@ def cv_import_route(payload: CvImportRequest, request: Request):
     except cv_writer.CvWriterError as error:
         return _cv_error(error)
     return {"resume": resume, "contact": cv_writer.contact_from(text)}
+
+
+DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+@app.post("/api/cv/docx")
+def cv_docx_route(resume: Resume):
+    """The CV as a Word file, built from the resume the page sends. Nothing is kept."""
+    data = build_docx(resume)
+    logger.info("cv docx built: %d bytes", len(data))
+    headers = {"Content-Disposition": f'attachment; filename="{file_name(resume)}"'}
+    return Response(content=data, media_type=DOCX_TYPE, headers=headers)
 
 
 # Registered last so every API route above takes precedence over the site's catch-all.
