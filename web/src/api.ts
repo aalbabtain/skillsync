@@ -253,3 +253,48 @@ export function getSkillCatalog(): Promise<SkillCatalog> {
   }
   return catalogRequest;
 }
+
+export type PlanTopic = { text: string; source: { title: string; publisher: string; url: string } };
+
+export type PlanCard = {
+  id: string;
+  name: string;
+  kind: "learn" | "prove";
+  phase: "quick" | "core" | "extra" | "prove";
+  level: "required" | "preferred";
+  frequency: number;
+  postings_count: number;
+  builds_on: string | null;
+  weeks: number;
+  topics: PlanTopic[];
+  project: { title: string; summary: string };
+  docs_url: string | null;
+};
+
+export type PlanDone = { later: string[]; retrieval: "embeddings" | "keywords" };
+
+/**
+ * Agent 4, streamed: onCard hears each plan card as soon as the model finishes it and code has
+ * checked its sources. Resolves with what comes after the cards.
+ */
+export async function streamPlan(
+  body: { language: "en" | "ar"; gap: { missing: GapItem[]; needs_proof: GapItem[] }; skills: Skill[]; postings_count: number },
+  onCard: (card: PlanCard) => void,
+): Promise<PlanDone> {
+  const response = await fetch("/api/plan/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  let done: PlanDone | null = null;
+  await readJsonLines(response, "The plan could not be built.", (line) => {
+    if (line.type === "skill") {
+      const { type: _type, ...card } = line;
+      onCard(card as PlanCard);
+      return false;
+    }
+    if (line.type === "done") done = { later: line.later, retrieval: line.retrieval };
+    return done !== null;
+  });
+  return done as unknown as PlanDone;
+}

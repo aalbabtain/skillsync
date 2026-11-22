@@ -21,14 +21,14 @@ candidates by concrete, verifiable skills.
 
 ## How it works
 
-Four agents run one after another, each handing its output to the next. Three are built.
+Four agents run one after another, each handing its output to the next. All four are built.
 
 | # | Agent | What it does | Model? | Status |
 |---|-------|--------------|--------|--------|
 | 1 | **CV & Fit Assessor** | Reads the CV and returns each skill with a verbatim quote that proves it. Code checks every quote against the CV and drops what it cannot find. The person reviews the list and can add skills by hand. | Gemini | Built |
 | 2 | **Requirements Extractor** | Reads the postings the person pastes and returns the skills each one asks for, with a quote and a level (required or preferred). Code checks the quotes and counts how many postings ask for each skill. | Gemini | Built |
 | 3 | **Gap Evaluator** | Sorts every required skill into *you have it*, *needs proof* (added by hand, not shown in the CV) or *missing*. | No, plain code | Built |
-| 4 | **Plan Builder** | Orders the gap by demand and drafts a learning plan the person approves, edits or rejects. | Gemini | Planned |
+| 4 | **Plan Builder** | Code orders the gap into phases; for each skill, retrieval (RAG) finds notes from a curated library of official documentation, and the model writes the topics and a project only from those notes. Code keeps a topic only when its source was retrieved for that skill. The person approves, edits or rejects each skill. | Gemini + embeddings | Built |
 
 The model never decides what is verified: `api/app/verification.py` does, by matching each quote
 against the CV or posting text.
@@ -40,7 +40,7 @@ against the CV or posting text.
 - **Quality:** pytest with golden fixtures, CI on GitHub Actions
 - **Hosting:** one Docker container on Render, deployed from `main`
 
-Planned with Agent 4: SQLite for saved plans, and accounts.
+Planned next: saved plans and accounts, and a CV builder that turns the plan's projects into CV lines.
 
 ## Repository layout
 
@@ -122,6 +122,7 @@ Copy `.env.example` to `api/.env`. On Render, set them under the service's **Env
 |----------|---------|
 | `GEMINI_API_KEY` | Server-side only, never sent to the browser. Empty means demo mode. |
 | `GEMINI_MODEL` | Model used for extraction. |
+| `GEMINI_EMBEDDING_MODEL` | Embedding model for the plan's retrieval (default `gemini-embedding-001`). |
 | `GEMINI_FALLBACK_MODEL` | Optional models, comma-separated, tried in order when the main one stays busy or its daily quota is used up. On the free tier each model has its own quota. |
 | `SKILLSYNC_EXTRACTOR` | `mock` or `gemini` to force one. Empty picks Gemini when a key is set. |
 | `SKILLSYNC_RATE_LIMIT` | Model requests per visitor address per hour (default 20; a CV counts 1, each posting 1). `0` turns it off. |
@@ -137,6 +138,7 @@ Every error uses `{"detail": {"code", "message"}}`, and the site shows each code
 |--------|------|---------|
 | `GET` | `/api/health` | Status, model and whether demo mode is on |
 | `GET` | `/api/stats` | How many CVs were checked, read from GoatCounter and cached for 5 minutes; `null` when counting is off |
+| `POST` | `/api/plan/stream` | Agent 4: the learning plan, streamed card by card, every topic with its source |
 | `GET` | `/api/skills/catalog` | Every skill the picker offers, with its category, and related skills for suggestions |
 | `POST` | `/api/runs` | Upload a CV (PDF or Word .docx) and get its text |
 | `POST` | `/api/skills/extract/stream` | Agent 1, streamed: one JSON line per verified skill as soon as it is proven, then a closing line. The site uses this one |
@@ -191,8 +193,19 @@ model's answer time is logged, never the request or the answer.
 **Limits:** the two model routes allow 20 model requests per visitor address per hour
 (`SKILLSYNC_RATE_LIMIT`), then answer `429 RATE_LIMITED` with a `Retry-After` header.
 
-**Planned with Agent 4:** saving runs (`GET /api/runs/{id}`), approving, editing or rejecting the
-plan, and accounts.
+**`POST /api/plan/stream`** (Agent 4) takes `{"language", "gap": {"missing", "needs_proof"}, "skills",
+"postings_count"}`, the shapes `/api/gap` returns and takes. Code orders up to 12 skills into
+quick wins, core, extras and "prove what you know"; retrieval ranks library notes per skill with
+Gemini embeddings of a query built from the skill, what it builds on and the postings' lines (BM25
+keywords without a key or when embedding fails); one streamed model call writes the cards. Lines:
+one `{"type": "skill", ...card}` per card, then `{"type": "done", "later", "retrieval"}`. Codes:
+`PLAN_EMPTY`, `PLAN_INVALID`, `PLAN_BUSY`, `PLAN_QUOTA_EXCEEDED`, `PLAN_UNAVAILABLE`,
+`PLAN_MALFORMED`, `RATE_LIMITED`. Prompt: `api/app/prompts/plan_builder.md`.
+
+**The learning library** lives in `api/scripts/library_notes.py`: short notes in our own words,
+each pointing to one official page (128 notes for 32 skills). `python scripts/build_library.py`
+writes `api/app/library/sources.json`, which the server reads; a test fails when the two differ.
+The note vectors are built by the server the first time a plan needs them.
 
 ## Testing
 
@@ -201,7 +214,7 @@ cd api
 python -m pytest
 ```
 
-212 tests, no network and no key: demo mode stands in for the model.
+237 tests, no network and no key: demo mode stands in for the model.
 
 - **CV cases.** `api/tests/fixtures/cases/` holds 12 fictional CVs: English, Arabic and mixed;
   printed by Chrome like browser and Google Docs exports; a Word file; two pages; a career
@@ -239,7 +252,8 @@ docker run -p 8000:8000 skillsync
 - [x] Landing page and full Arabic / English site
 - [x] Deployment on Render, CI, per-visitor limit
 - [x] Fictional CV cases with an expectations file
-- [ ] Agent 4: learning plan, approve / edit / reject
+- [x] Agent 4: learning plan with retrieval from a curated library, approve / edit / reject
+- [ ] CV builder: turn the plan's projects into CV lines
 - [ ] Saved runs and accounts
 - [ ] Agent 1: short skill check for skills without evidence
 

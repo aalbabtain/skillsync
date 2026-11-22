@@ -23,7 +23,7 @@ export function startAnalytics(code: string) {
 }
 
 /** Counts one step of the flow, once per visit, so a reload or Back does not count it twice. */
-export function track(step: "start" | "skills" | "postings" | "gap") {
+export function track(step: "start" | "skills" | "postings" | "gap" | "plan") {
   if (counted.has(step)) return;
   const counter = window.goatcounter;
   if (!counter?.count) return;

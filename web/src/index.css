@@ -1567,6 +1567,533 @@ a {
   color: var(--muted);
 }
 
+/* ---------- Learning plan (Agent 4) ---------- */
+
+/* A vertical timeline on the inline-start edge: phases sit on it, cards hang off it. */
+.plan-how {
+  margin-top: 1rem;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.plan-how summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.plan-how ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 16px 14px;
+  padding-inline-start: 34px;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.plan-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
+  margin-top: 1rem;
+  padding: 14px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.plan-totals {
+  font-weight: 600;
+}
+
+.plan-totals span {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.plan-hours {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.plan-seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+}
+
+.plan-seg button {
+  min-width: 52px;
+  min-height: 40px;
+  padding: 0 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+}
+
+.plan-seg button + button {
+  border-inline-start: 1px solid var(--line2);
+}
+
+.plan-seg button[aria-pressed="true"] {
+  color: #fff;
+  background: var(--blue);
+}
+
+.plan-seg button:not([aria-pressed="true"]):hover {
+  background: var(--accent-soft);
+}
+
+.plan-timeline {
+  position: relative;
+  margin-top: 1.6rem;
+  padding-inline-start: 28px;
+}
+
+.plan-timeline:empty {
+  display: none;
+}
+
+.plan-timeline::before {
+  content: "";
+  position: absolute;
+  inset-block: 6px;
+  inset-inline-start: 7px;
+  width: 2px;
+  background: var(--line);
+  border-radius: 2px;
+}
+
+.plan-phase + .plan-phase {
+  margin-top: 1.6rem;
+}
+
+.plan-phase-head {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+
+.plan-phase-head::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -28px;
+  top: 0.45em;
+  width: 16px;
+  height: 16px;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+}
+
+.plan-phase-head h3 {
+  font-size: 1.05rem;
+}
+
+.plan-phase-head p {
+  flex-basis: 100%;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.plan-range,
+.plan-weeks {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.plan-cards {
+  display: grid;
+  gap: 12px;
+}
+
+.plan-card {
+  padding: 16px;
+  background: rgba(11, 17, 32, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  animation: chip-arrive 0.4s ease-out;
+}
+
+.plan-card.is-approved {
+  border-color: rgba(127, 209, 168, 0.45);
+}
+
+.plan-card.is-rejected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-block: 8px;
+  color: var(--muted);
+  background: transparent;
+  border-style: dashed;
+}
+
+.plan-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.plan-card-head h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.plan-weeks {
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+
+.plan-tag {
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid;
+  border-radius: 999px;
+}
+
+.plan-tag.required {
+  color: #f0a3a3;
+  border-color: rgba(240, 163, 163, 0.4);
+}
+
+.plan-tag.preferred {
+  color: var(--muted);
+  border-color: var(--line2);
+}
+
+.plan-tag.proof {
+  color: #f1cf8b;
+  border-color: rgba(241, 207, 139, 0.4);
+}
+
+.plan-why {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.plan-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.plan-body.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.plan-body h5 {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.plan-topics ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-topics label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 0 0;
+  font-size: 0.93rem;
+}
+
+.plan-topics input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--blue);
+}
+
+.plan-topics input:checked + span {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--line2);
+}
+
+/* Every topic cites the library note it came from. */
+.plan-source {
+  display: block;
+  padding-inline-start: 28px;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: start;
+}
+
+.plan-source:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+[dir="rtl"] .plan-source {
+  direction: rtl;
+}
+
+.plan-remove {
+  width: 28px;
+  height: 28px;
+  margin-inline-start: auto;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+}
+
+.plan-remove:hover {
+  color: #f0a3a3;
+  border-color: #f0a3a3;
+}
+
+/* The project is what later becomes the CV line that proves the skill. */
+.plan-project {
+  padding: 12px 14px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(121, 212, 255, 0.22);
+  border-radius: 12px;
+}
+
+.plan-project strong {
+  display: block;
+}
+
+.plan-project p {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.plan-project .plan-proves {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--accent);
+}
+
+.plan-docs {
+  display: inline-flex;
+  margin-top: 12px;
+  font-size: 0.88rem;
+  color: var(--accent);
+}
+
+.plan-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  font-size: 0.88rem;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+}
+
+.plan-stepper {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+}
+
+.plan-stepper button {
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+}
+
+.plan-stepper output {
+  min-width: 72px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text);
+}
+
+.plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.plan-actions .is-on {
+  color: var(--ok);
+  border-color: var(--ok);
+  background: rgba(127, 209, 168, 0.1);
+}
+
+.plan-actions .plan-reject:hover {
+  color: #f0a3a3;
+  border-color: #f0a3a3;
+}
+
+.plan-link {
+  min-height: 40px;
+  padding: 0 10px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: transparent;
+  border: 0;
+}
+
+.plan-building {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 1.2rem;
+  color: var(--muted);
+}
+
+.plan-finish {
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.plan-finish p {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.plan-approved {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 1rem;
+  padding: 14px 16px;
+  background: rgba(127, 209, 168, 0.08);
+  border: 1px solid rgba(127, 209, 168, 0.45);
+  border-radius: 12px;
+}
+
+.plan-approved strong {
+  color: var(--ok);
+}
+
+.plan-rewrite {
+  margin-top: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .plan-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plan-weeks {
+    flex-basis: 100%;
+    margin-inline-start: 0;
+  }
+
+  .plan-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .plan-timeline {
+    padding-inline-start: 22px;
+  }
+
+  .plan-phase-head::before {
+    inset-inline-start: -22px;
+  }
+
+  .plan-timeline::before {
+    inset-inline-start: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-card {
+    animation: none;
+  }
+}
+
+/* Printing an approved plan: the cards and their sources, nothing else. */
+@media print {
+  body {
+    color: #000;
+    background: #fff;
+  }
+
+  .site-head,
+  .stepper,
+  .demo-note,
+  .plan-actions,
+  .plan-edit,
+  .plan-finish,
+  .plan-approved,
+  .plan-seg,
+  .plan-rewrite,
+  .skills-head .btn {
+    display: none !important;
+  }
+
+  .panel,
+  .plan-card,
+  .plan-project,
+  .plan-summary,
+  .plan-how {
+    color: #000;
+    background: #fff;
+    border-color: #999;
+  }
+
+  .plan-card {
+    break-inside: avoid;
+  }
+
+  .plan-how ol,
+  .plan-source,
+  .plan-why,
+  .plan-project p,
+  .plan-range,
+  .plan-weeks {
+    color: #333;
+  }
+}
+
 /* ---------- Skill picker and suggestions ---------- */
 
 .picker {

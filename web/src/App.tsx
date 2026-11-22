@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { startAnalytics, track } from "./analytics";
 import { getHealth } from "./api";
-import type { RequirementsResult, Skill, SkillsResult } from "./api";
+import type { GapResult, RequirementsResult, Skill, SkillsResult } from "./api";
 import GapPanel from "./components/GapPanel";
 import Landing from "./components/Landing";
 import LanguageMenu from "./components/LanguageMenu";
+import PlanPanel from "./components/PlanPanel";
 import Logo from "./components/Logo";
 import PostingsPanel from "./components/PostingsPanel";
 import SkillsPanel from "./components/SkillsPanel";
@@ -16,9 +17,9 @@ import type { StepId } from "./components/Stepper";
 import UploadPanel from "./components/UploadPanel";
 import { useI18n } from "./i18n";
 
-type Step = "cv" | "skills" | "postings" | "gap";
+type Step = "cv" | "skills" | "postings" | "gap" | "plan";
 
-const STEPS: Step[] = ["cv", "skills", "postings", "gap"];
+const STEPS: Step[] = ["cv", "skills", "postings", "gap", "plan"];
 
 type Route = { view: "landing"; anchor: string } | { view: "service"; step: Step };
 
@@ -50,6 +51,8 @@ export default function App() {
   const demoMode = extractor === "mock";
   const [requirements, setRequirements] = useState<RequirementsResult | null>(null);
   const [postingTitles, setPostingTitles] = useState<string[]>([]);
+  // The gap the plan was asked for; a new CV or new postings clear it.
+  const [planGap, setPlanGap] = useState<GapResult | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -84,6 +87,7 @@ export default function App() {
   if (extraction) reachable.push("skills");
   if (confirmed.length > 0) reachable.push("postings");
   if (confirmed.length > 0 && requirements) reachable.push("gap");
+  if (confirmed.length > 0 && requirements && planGap) reachable.push("plan");
 
   const view = route.view;
   // A step that is not open yet (after a refresh, or a new CV) falls back to the last open one.
@@ -106,6 +110,7 @@ export default function App() {
 
   useEffect(() => {
     if (view === "service" && step === "gap") track("gap");
+    if (view === "service" && step === "plan") track("plan");
   }, [view, step]);
 
   const goTo = (target: Step) => navigate(target);
@@ -175,10 +180,8 @@ export default function App() {
           <Stepper
             current={step}
             reachable={reachable}
-            soon={["plan"]}
-            onSelect={(target) => {
-              if (target !== "plan") goTo(target);
-            }}
+            soon={[]}
+            onSelect={(target) => goTo(target)}
           />
 
           <div className="wrap step-stage" data-direction={direction}>
@@ -192,6 +195,7 @@ export default function App() {
                   setEntries(result.skills.map((skill) => ({ ...skill, source: "verified" })));
                   setConfirmed([]);
                   setRequirements(null);
+                  setPlanGap(null);
                   goTo("skills");
                 }}
               />
@@ -225,6 +229,7 @@ export default function App() {
                     track("postings");
                     setRequirements(result);
                     setPostingTitles(titles);
+                    setPlanGap(null);
                   }}
                   onNext={() => goTo("gap")}
                 />
@@ -243,12 +248,27 @@ export default function App() {
                     setEntries((current) => [...current, added]);
                     setConfirmed((current) => [...current, { ...added, verified: false }]);
                   }}
+                  onPlan={(result) => {
+                    setPlanGap(result);
+                    goTo("plan");
+                  }}
                   onUnclaim={(name) => {
                     const isHandAdded = (skill: { name: string; evidence: string }) =>
                       skill.name === name && !skill.evidence;
                     setEntries((current) => current.filter((entry) => !isHandAdded(entry)));
                     setConfirmed((current) => current.filter((skill) => !isHandAdded(skill)));
                   }}
+                />
+              </section>
+            )}
+
+            {step === "plan" && requirements && planGap && (
+              <section className="panel" aria-labelledby="plan-title">
+                <PlanPanel
+                  gap={planGap}
+                  skills={confirmed}
+                  postingsCount={requirements.postings_count}
+                  onBack={() => goTo("gap")}
                 />
               </section>
             )}

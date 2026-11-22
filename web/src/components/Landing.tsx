@@ -39,7 +39,7 @@ const STEPS: (Card & { soon?: boolean })[] = [
   { icon: FileCheck2, title: "st_skills", body: "s1" },
   { icon: ClipboardList, title: "st_postings", body: "s2" },
   { icon: GitCompareArrows, title: "st_gap", body: "s3" },
-  { icon: Route, title: "st_plan", body: "s4", soon: true },
+  { icon: Route, title: "st_plan", body: "s4" },
 ];
 
 const AUDIENCES: Card[] = [

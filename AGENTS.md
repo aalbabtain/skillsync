@@ -29,7 +29,7 @@ Requirements: Python 3.11+ and Node.js 20+.
 .\run.ps1 -Tests
 ```
 
-Runs `pytest` in `api` (212 tests, no network, no key). The frontend check is
+Runs `pytest` in `api` (237 tests, no network, no key). The frontend check is
 `cd web; npm run build`.
 
 ## Run every CV case
@@ -83,7 +83,11 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `api/app/agents/gemini.py` | The Gemini call: on a busy model or a used-up quota moves through `GEMINI_FALLBACK_MODEL` at once; only the last model is retried |
 | `api/app/skills_catalog.py` | Every known skill with its category and spellings, and related skills: feeds the skill picker, suggestions and demo mode |
 | `api/app/agents/mock_extractor.py` | Demo mode: matches the skill catalog against CV and posting text |
-| `api/app/prompts/` | Agent prompts: `cv_assessor.md`, `requirements_extractor.md` |
+| `api/app/prompts/` | Agent prompts: `cv_assessor.md`, `requirements_extractor.md`, `plan_builder.md` |
+| `api/app/plan.py` | Agent 4, the code half: order and phases of the plan, and the check that every topic cites a retrieved note |
+| `api/app/agents/plan_builder.py` | Agent 4, the model half: one streamed call writes every card from its notes |
+| `api/app/agents/retrieval.py` | Agent 4's retrieval (RAG): ranks library notes per skill by embeddings, or BM25 keywords as a fallback |
+| `api/scripts/library_notes.py`, `api/app/library/sources.json` | The learning library: reviewed notes, and the file the server reads (rebuild with `scripts/build_library.py`) |
 | `api/tests/fixtures/postings/` | Sample job postings written for the tests |
 | `api/app/rate_limit.py` | Per-visitor limit on model requests (`SKILLSYNC_RATE_LIMIT`, default 20 an hour) |
 | `api/app/expectations.py` | Checks CV cases against `api/tests/fixtures/cases/expected.json` |
@@ -99,6 +103,7 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 | `web/src/i18n.tsx` | Every user-facing string, in English and Arabic (right to left) |
 | `web/src/components/Landing.tsx` | The landing page: five full-screen chapters around a particle object, with a motion button |
 | `web/src/particles.ts`, `web/src/chapters.ts` | The landing's three.js particle field (loaded only on the landing) and the one-scroll-per-chapter glide |
+| `web/src/components/PlanPanel.tsx` | The plan page: streamed cards with sourced topics, hours a week, approve / edit / reject, print |
 | `web/src/analytics.ts` | Anonymous GoatCounter visit and step counts, on only when `GOATCOUNTER_CODE` is set |
 
 ## Rules that must not break
@@ -107,6 +112,8 @@ Check it first with `cd api; .venv\Scripts\python scripts\check_gemini.py`.
 - The model never decides what is verified: `api/app/verification.py` does, by matching
   each quoted evidence string against the CV or posting text. Counting how many postings
   ask for a skill is also plain code.
+- In the plan, the model never chooses the order, the phases or a link: code does, and a
+  topic is kept only when it cites a note retrieved for that skill.
 - The skill category label is `Programming languages` (plural) in the prompt, the backend,
   the frontend and the tests. The Arabic site only translates it for display.
 - Every user-facing string lives in `web/src/i18n.tsx`, in both languages. Use logical CSS

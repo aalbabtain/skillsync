@@ -15,6 +15,8 @@ type Props = {
   /** "I have this skill" on a missing skill: adds it by hand, so it moves to needs proof. */
   onClaim: (item: GapItem) => void;
   onUnclaim: (name: string) => void;
+  /** Opens the learning plan for the gap as it stands now. */
+  onPlan: (result: GapResult) => void;
 };
 
 type Group = {
@@ -31,6 +33,7 @@ export default function GapPanel({
   onBack,
   onClaim,
   onUnclaim,
+  onPlan,
 }: Props) {
   const { t, category, errorMessage } = useI18n();
   const [result, setResult] = useState<GapResult | null>(null);
@@ -210,10 +213,13 @@ export default function GapPanel({
           ))}
 
           <div className="skills-actions gap-next">
-            <button className="btn btn-primary" disabled>
-              {t("build_plan")}
-            </button>
-            <span className="stepper-soon">{t("st_soon")}</span>
+            {result.missing.length + result.needs_proof.length > 0 ? (
+              <button className="btn btn-primary" onClick={() => onPlan(result)}>
+                {t("build_plan")}
+              </button>
+            ) : (
+              <p className="skills-note">{t("plan_nothing")}</p>
+            )}
           </div>
         </>
       )}
