@@ -137,5 +137,14 @@ def unsupported(line: str, source: str) -> list[str]:
     return [fact for fact in facts(line) if not _supported(fact, source, plain_source)]
 
 
+def mentions(value: str, source: str) -> bool:
+    """True when the source contains the value, or a catalog spelling of the skill it names."""
+    plain_source = _plain(source)
+    for name, spellings in SKILLS:
+        if value == name:
+            return any(_contains(plain_source, spelling) for spelling in spellings)
+    return _contains(plain_source, _plain(value))
+
+
 def check_line(line: str, source: str) -> bool:
     return not unsupported(line, source)

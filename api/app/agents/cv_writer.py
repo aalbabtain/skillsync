@@ -16,9 +16,10 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, ValidationError
 
-from app.agents import cv_skills, gemini
+from app.agents import cv_skills, gemini, mock_extractor
 from app.agents.json_stream import ObjectScanner
 from app.config import get_settings
+from app.cv_check import check_line, mentions
 
 logger = logging.getLogger("skillsync.agents")
 
@@ -55,6 +56,30 @@ class Translated(BaseModel):
 
 class Translation(BaseModel):
     items: list[Translated]
+
+
+class ImportedProject(BaseModel):
+    name: str = ""
+    lines: list[str] = []
+
+
+class Imported(BaseModel):
+    name: str = ""
+    field: str = ""
+    school: str = ""
+    degree: str = ""
+    grad: str = ""
+    gpa: str = ""
+    skills: list[str] = []
+    projects: list[ImportedProject] = []
+    certs: list[str] = []
+    langs: list[str] = []
+
+
+IMPORT_TEXT_FIELDS = ("name", "field", "school", "degree", "grad", "gpa")
+MAX_IMPORT_ITEMS = 30
+LINKEDIN = re.compile(r"(?:https?://)?(?:www\.)?linkedin\.com/[^\s|,;]+", re.IGNORECASE)
+GITHUB = re.compile(r"(?:https?://)?(?:www\.)?github\.com/[^\s|,;]+", re.IGNORECASE)
 
 
 class CvWriterError(Exception):
@@ -200,3 +225,50 @@ def translate(items: dict[str, str], extractor: str | None = None) -> dict[str, 
     contents = json.dumps([{"key": key, "text": strip_contact(value)} for key, value in arabic.items()], ensure_ascii=False)
     answer = {item.key: " ".join(item.text.split()) for item in _ask("cv_translate", Translation, contents).items}
     return {key: answer.get(key) or value for key, value in items.items()}
+
+
+def _https(link: str) -> str:
+    link = link.rstrip("./")
+    return link if link.lower().startswith("http") else f"https://{link}"
+
+
+def contact_from(cv_text: str) -> dict[str, str]:
+    """Contact details read by code, so they never pass through the model."""
+    email = EMAIL.search(cv_text)
+    phone = next((m.group().strip() for m in PHONE.finditer(cv_text) if _looks_like_phone(m.group())), "")
+    linkedin = LINKEDIN.search(cv_text)
+    github = GITHUB.search(cv_text)
+    return {
+        "email": email.group() if email else "",
+        "phone": phone,
+        "linkedin": _https(linkedin.group()) if linkedin else "",
+        "github": _https(github.group()) if github else "",
+    }
+
+
+def _kept(found: Imported, cv_text: str) -> dict:
+    """Only values the CV itself contains: text fields and list items by mention, project
+    lines by the grounding check."""
+    resume = {key: (value if (value := getattr(found, key).strip()) and mentions(value, cv_text) else "") for key in IMPORT_TEXT_FIELDS}
+    for key in ("skills", "certs", "langs"):
+        items = [" ".join(item.split()) for item in getattr(found, key)]
+        resume[key] = list(dict.fromkeys(item for item in items if item and mentions(item, cv_text)))[:MAX_IMPORT_ITEMS]
+    projects = []
+    for project in found.projects[:MAX_IMPORT_ITEMS]:
+        name = project.name.strip()
+        if not name or not mentions(name, cv_text):
+            continue
+        lines = [" ".join(line.split()) for line in project.lines]
+        projects.append({"name": name, "lines": [line for line in lines if line and check_line(line, cv_text)][:MAX_LINES]})
+    resume["projects"] = projects
+    return resume
+
+
+def import_resume(cv_text: str, extractor: str | None = None) -> dict:
+    """Fill the resume from an existing CV. The model sees the text without contact details,
+    and every value it returns is kept only when the CV contains it."""
+    if _demo(extractor):
+        first = next((line.strip() for line in cv_text.splitlines() if line.strip()), "")
+        skills = [item["name"] for item in mock_extractor.extract(cv_text)]
+        return _kept(Imported(name=first, skills=skills), cv_text)
+    return _kept(_ask("cv_import", Imported, strip_contact(cv_text)), cv_text)

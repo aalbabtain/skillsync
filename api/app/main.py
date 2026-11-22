@@ -696,6 +696,28 @@ def cv_translate_route(payload: CvTranslateRequest, request: Request):
     return {"items": items}
 
 
+class CvImportRequest(BaseModel):
+    text: str
+
+
+@app.post("/api/cv/import")
+def cv_import_route(payload: CvImportRequest, request: Request):
+    """Agent 5, update mode: the resume read from an existing CV's text (as /api/runs returns
+    it). Contact details are read by code; every other value is kept only if the CV has it."""
+    text = payload.text.strip()
+    if len(text) < MIN_CV_TEXT_CHARS:
+        return _error(422, "TEXT_TOO_SHORT", "The CV text is too short to read.")
+    if len(text) > MAX_CV_TEXT_CHARS:
+        return _error(413, "TEXT_TOO_LONG", "The CV text is too long to read.")
+    if limited := _rate_limited(request, 1):
+        return limited
+    try:
+        resume = cv_writer.import_resume(text)
+    except cv_writer.CvWriterError as error:
+        return _cv_error(error)
+    return {"resume": resume, "contact": cv_writer.contact_from(text)}
+
+
 # Registered last so every API route above takes precedence over the site's catch-all.
 if settings.skillsync_static_dir:
     register_frontend(app, Path(settings.skillsync_static_dir))
