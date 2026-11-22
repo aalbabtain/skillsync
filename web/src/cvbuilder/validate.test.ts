@@ -36,3 +36,18 @@ test("skip words", () => {
   for (const word of ["skip", "Skip", "تخطي", "تخطى", "-"]) assert.ok(isSkipWord(word), word);
   assert.ok(!isSkipWord("skipped a year"));
 });
+
+test("dates are read loosely and stored as Mmm YYYY", async () => {
+  const { normalizeDate } = await import("./validate.ts");
+  assert.equal(normalizeDate("june 2027"), "Jun 2027");
+  assert.equal(normalizeDate("Jun 2027"), "Jun 2027");
+  assert.equal(normalizeDate("06/2027"), "Jun 2027");
+  assert.equal(normalizeDate("2027-6"), "Jun 2027");
+  assert.equal(normalizeDate("يونيو ٢٠٢٧"), "Jun 2027");
+  assert.equal(normalizeDate("سبتمبر 2025"), "Sep 2025");
+  assert.equal(normalizeDate("present"), "Present");
+  assert.equal(normalizeDate("حتى الآن"), "Present");
+  assert.equal(normalizeDate("next summer"), null);
+  assert.equal(normalizeDate("13/2027"), null);
+  assert.equal(validate("date", "june 2027"), "");
+});

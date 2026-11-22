@@ -1,6 +1,6 @@
 // The CV builder's data. Resume mirrors api/app/cv_docx.py's Resume, which /api/cv/docx takes.
 
-export type QuestionKind = "text" | "latin" | "long" | "email" | "phone" | "url" | "date" | "gpa" | "choice";
+export type QuestionKind = "text" | "latin" | "long" | "email" | "phone" | "url" | "date" | "gpa" | "choice" | "skills";
 
 export type Group = "job" | "project";
 

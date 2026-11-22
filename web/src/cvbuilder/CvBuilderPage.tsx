@@ -9,10 +9,13 @@ import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 import { checklist } from "./ats";
 import CvPreview from "./CvPreview";
+import MonthPicker from "./MonthPicker";
+import { suggestSkills } from "./skills";
+import type { CatalogEntry } from "./skills";
 import { addAnother, addDetail, answer, back, canEdit, current, done, load, replaceLines, saveItem, skip, start, toResume } from "./engine";
 import { FOLLOW_UP_KEYS, groupKeys, SCRIPT, STEPS, TRANSLATED_KEYS } from "./script";
 import type { Group, Item, LogEntry, State } from "./types";
-import { hasArabic, isSkipWord } from "./validate";
+import { hasArabic, isSkipWord, normalizeDate } from "./validate";
 
 const STORAGE_KEY = "skillsync-cv";
 const WORD_MS = 55;
@@ -65,6 +68,9 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
   const [importError, setImportError] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [categories, setCategories] = useState<Map<string, string>>(new Map());
+  const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
+  // Skills offered at the skills question that the person turned off.
+  const [dropped, setDropped] = useState<Set<string>>(new Set());
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const stateRef = useRef(state);
@@ -79,6 +85,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
           for (const spelling of [skill.name, ...skill.aliases]) map.set(spelling.toLowerCase(), skill.category);
         }
         setCategories(map);
+        setCatalog(catalog.skills.map((skill) => ({ name: skill.name, aliases: skill.aliases })));
       })
       .catch(() => setCategories(new Map()));
   }, []);
@@ -234,7 +241,8 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
 
   // ---------- The conversation ----------
 
-  async function submit(text: string) {
+  async function submit(input: string) {
+    let text = input;
     if (!state || writing) return;
     setError("");
 
@@ -246,6 +254,11 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     }
 
     const question = current(state);
+    if (question?.kind === "skills") {
+      // The offered skills the person kept, then the ones they typed.
+      const kept = offered.filter((skill) => !dropped.has(skill));
+      text = [...kept, ...text.split(/[,،\n]/).map((part) => part.trim()).filter(Boolean)].join(", ");
+    }
     const result = answer(state, text);
     if (result.error) {
       setError(t(`cvb_bad_${result.error}` as MessageKey));
@@ -325,15 +338,16 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
       };
       put("name", hasArabic(resume.name) ? "" : resume.name);
       put("field", resume.field);
+      if (resume.projects.length) answers.hasProject = "yes";
       put("email", contact.email);
       put("phone", contact.phone);
       put("linkedin", contact.linkedin);
       put("github", contact.github);
       put("school", hasArabic(resume.school) ? "" : resume.school);
       put("degree", resume.degree);
-      put("grad", resume.grad);
-      put("gpa", resume.gpa);
       put("skills", resume.skills.join(", "));
+      put("grad", normalizeDate(resume.grad) ?? resume.grad);
+      put("gpa", resume.gpa);
       put("certs", resume.certs.join("\n"));
       put("langs", resume.langs.join(", "));
       const projects: Item[] = resume.projects.map((project) => ({ answers: { projName: project.name }, lines: project.lines }));
@@ -349,6 +363,16 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
 
   const question = state ? current(state) : null;
   const finished = state ? done(state) : false;
+
+  // At the skills question: the tools named in jobs and projects, and catalog skills in what
+  // the person wrote about them.
+  const offered = useMemo(() => {
+    if (!state || question?.kind !== "skills") return [];
+    const items = [...state.jobs, ...state.projects];
+    const tools = items.map((item) => [item.answers.tools, item.answers.projTools].filter(Boolean).join(", ")).join(", ");
+    const texts = [...items.flatMap((item) => [item.answers.jobWhat ?? "", item.answers.projWhat ?? "", ...item.lines]), state.answers.background ?? ""];
+    return suggestSkills([tools, ...texts], catalog);
+  }, [state, question, catalog]);
 
   const resume = useMemo(() => {
     if (!state) return null;
@@ -449,17 +473,18 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         );
       case "ask": {
         const q = SCRIPT.find((item) => item.key === entry.key);
-        const example = t(`cvb_ex_${entry.key}` as MessageKey);
+        const example = entry.key === "skills" && offered.length > 0 ? "" : t(`cvb_ex_${entry.key}` as MessageKey);
         return (
           <p className="cvb-msg is-bot" key={index}>
-            {t(`cvb_q_${entry.key}` as MessageKey)}
+            {entry.key === "skills" && offered.length > 0 ? t("cvb_q_skills_found") : t(`cvb_q_${entry.key}` as MessageKey)}
             {q?.optional && <span className="cvb-ex">{t("cvb_optional")}</span>}
             {example && <span className="cvb-ex">{example}</span>}
           </p>
         );
       }
       case "answer": {
-        const shown = entry.key === "hasJob" ? t(entry.text === "yes" ? "cvb_choice_yes" : "cvb_choice_no") : entry.text;
+        const asked = SCRIPT.find((item) => item.key === entry.key);
+        const shown = asked?.kind === "choice" ? t(`cvb_choice_${entry.text}` as MessageKey) : entry.text;
         return (
           <p className="cvb-msg is-me" dir="auto" key={index}>
             {shown}
@@ -579,8 +604,32 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         <label className="visually-hidden" htmlFor="cvb-answer">
           {t("cvb_answer_label")}
         </label>
+        {question.kind === "skills" && offered.length > 0 && (
+          <div className="cvb-offered" role="group" aria-label={t("cvb_q_skills_found")}>
+            {offered.map((skill) => (
+              <button
+                key={skill}
+                type="button"
+                className="cvb-chip"
+                aria-pressed={!dropped.has(skill)}
+                onClick={() =>
+                  setDropped((current) => {
+                    const next = new Set(current);
+                    if (next.has(skill)) next.delete(skill);
+                    else next.add(skill);
+                    return next;
+                  })
+                }
+              >
+                {!dropped.has(skill) && <Check size={13} aria-hidden="true" />}
+                <bdi dir="ltr">{skill}</bdi>
+              </button>
+            ))}
+          </div>
+        )}
         <textarea
           id="cvb-answer"
+          placeholder={question.kind === "skills" && offered.length > 0 ? t("cvb_skills_more") : undefined}
           ref={inputRef}
           dir="auto"
           rows={2}
@@ -607,6 +656,9 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
             {t("cvb_send")}
           </button>
         </div>
+        {question.kind === "date" && (
+          <MonthPicker key={question.key} allowPresent={question.key === "jobEnd"} onPick={(value) => submit(value)} />
+        )}
       </div>
     );
   }

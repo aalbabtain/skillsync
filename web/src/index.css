@@ -3216,6 +3216,104 @@ label {
   color: var(--muted);
 }
 
+.cvb-offered {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.cvb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 36px;
+  padding: 0 0.75rem;
+  border: 1px dashed var(--line2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.cvb-chip[aria-pressed="true"] {
+  border-style: solid;
+  border-color: rgba(127, 209, 168, 0.55);
+  background: rgba(127, 209, 168, 0.08);
+  color: var(--text);
+}
+
+.cvb-chip:hover {
+  border-color: var(--accent);
+}
+
+.cvb-picker {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.cvb-picker-panel {
+  display: grid;
+  gap: 0.6rem;
+  width: min(100%, 320px);
+  padding: 0.75rem;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--bg2);
+}
+
+.cvb-picker-year {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.cvb-year-step {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+}
+
+.cvb-year-step:hover,
+.cvb-month:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* The arrows point back and forward in the reading direction. */
+:root[dir="rtl"] .cvb-year-step svg {
+  transform: scaleX(-1);
+}
+
+.cvb-months {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.cvb-month {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.cvb-month:active,
+.cvb-year-step:active,
+.cvb-chip:active {
+  transform: translateY(1px);
+}
+
 .cvb-preview {
   position: sticky;
   top: 1rem;

@@ -5,6 +5,33 @@ export type Problem = "" | "empty" | "latin" | "email" | "phone" | "url" | "date
 const ARABIC = /[؀-ۿ]/;
 const MONTHS = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
 const DATE = new RegExp(`^(?:(?:${MONTHS}) \\d{4}|Present)$`, "i");
+export const MONTH_NAMES = MONTHS.split("|");
+// Month names people write, English and Arabic, each to its month number.
+const MONTH_WORDS: Record<string, number> = {
+  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, sept: 9, october: 10, november: 11, december: 12,
+  jan: 1, feb: 2, mar: 3, apr: 4, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+  يناير: 1, فبراير: 2, مارس: 3, أبريل: 4, ابريل: 4, إبريل: 4, مايو: 5, يونيو: 6, يوليو: 7, أغسطس: 8, اغسطس: 8, سبتمبر: 9, أكتوبر: 10, اكتوبر: 10, نوفمبر: 11, ديسمبر: 12,
+};
+const PRESENT = new Set(["present", "now", "current", "currently", "الآن", "حتى الآن", "حاليا", "حاليًا", "الان", "حتى الان"]);
+
+function monthYear(month: number, year: number): string | null {
+  if (month < 1 || month > 12 || year < 1950 || year > 2100) return null;
+  return `${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+/** A month and year however it was written ("june 2027", "06/2027", "يونيو ٢٠٢٧"), as
+ * "Jun 2027"; "Present" for a job still held; null when it is not a month and year. */
+export function normalizeDate(raw: string): string | null {
+  const text = westernDigits(raw).trim().toLowerCase().replace(/\s+/g, " ");
+  if (PRESENT.has(text)) return "Present";
+  let match = /^([a-z\u0600-\u06ff]+)\.?,? (\d{4})$/.exec(text);
+  if (match && MONTH_WORDS[match[1]]) return monthYear(MONTH_WORDS[match[1]], Number(match[2]));
+  match = /^(\d{1,2})\s*[/.-]\s*(\d{4})$/.exec(text);
+  if (match) return monthYear(Number(match[1]), Number(match[2]));
+  match = /^(\d{4})\s*[/.-]\s*(\d{1,2})$/.exec(text);
+  if (match) return monthYear(Number(match[2]), Number(match[1]));
+  return null;
+}
 const SKIP_WORDS = new Set(["skip", "تخطي", "تخطى", "تخط", "تخطَّ", "-"]);
 
 export function westernDigits(text: string): string {
@@ -36,7 +63,7 @@ export function validate(kind: QuestionKind, raw: string): Problem {
     case "url":
       return /^https:\/\/\S+\.\S+$/.test(text) ? "" : "url";
     case "date":
-      return isDate(text) ? "" : "date";
+      return normalizeDate(text) ? "" : "date";
     case "gpa": {
       const match = /^(\d+(?:\.\d+)?)(?:\s*\/\s*(\d+(?:\.\d+)?))?$/.exec(text);
       if (!match) return "gpa";

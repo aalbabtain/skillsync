@@ -2,7 +2,7 @@ import type { Question } from "./types.ts";
 
 // The nine steps of the conversation, in order. Question text and examples live in i18n.tsx
 // as cvb_q_<key> and cvb_ex_<key>. The last question of a group closes one job or project.
-export const STEPS = ["personal", "contact", "summary", "experience", "education", "skills", "projects", "certifications", "additional"] as const;
+export const STEPS = ["personal", "contact", "summary", "experience", "education", "projects", "skills", "certifications", "additional"] as const;
 
 export const SCRIPT: Question[] = [
   { key: "name", step: 0, kind: "latin" },
@@ -26,18 +26,19 @@ export const SCRIPT: Question[] = [
   { key: "tools", step: 3, kind: "text", group: "job", optional: true },
 
   { key: "school", step: 4, kind: "latin" },
-  { key: "degree", step: 4, kind: "text" },
-  { key: "major", step: 4, kind: "text", optional: true },
+  { key: "degree", step: 4, kind: "choice", choices: ["highschool", "diploma", "bachelor", "master", "phd"] },
   { key: "grad", step: 4, kind: "date" },
   { key: "gpa", step: 4, kind: "gpa", optional: true },
 
-  { key: "skills", step: 5, kind: "long" },
+  { key: "hasProject", step: 5, kind: "choice", choices: ["yes", "no"] },
+  { key: "projName", step: 5, kind: "latin", group: "project" },
+  { key: "projWhat", step: 5, kind: "long", group: "project" },
+  { key: "projTools", step: 5, kind: "text", group: "project", optional: true },
+  { key: "projRole", step: 5, kind: "text", group: "project", optional: true },
+  { key: "projLink", step: 5, kind: "url", group: "project", optional: true },
 
-  { key: "projName", step: 6, kind: "latin", group: "project" },
-  { key: "projWhat", step: 6, kind: "long", group: "project" },
-  { key: "projTools", step: 6, kind: "text", group: "project", optional: true },
-  { key: "projRole", step: 6, kind: "text", group: "project", optional: true },
-  { key: "projLink", step: 6, kind: "url", group: "project", optional: true },
+  // Offered from the tools and skills named in the jobs and projects; the person keeps or adds.
+  { key: "skills", step: 6, kind: "skills" },
 
   { key: "certs", step: 7, kind: "long", optional: true },
 
@@ -47,7 +48,16 @@ export const SCRIPT: Question[] = [
 ];
 
 // Short answers that go into the CV as written, so an Arabic one is translated first.
-export const TRANSLATED_KEYS = ["field", "target", "location", "jobTitle", "degree", "major", "langs", "projRole"];
+export const TRANSLATED_KEYS = ["field", "target", "location", "jobTitle", "langs", "projRole"];
+
+// The degree as the CV writes it, by the choice the person picked.
+export const DEGREE_TEXT: Record<string, string> = {
+  highschool: "High School Diploma",
+  diploma: "Diploma",
+  bachelor: "Bachelor's degree",
+  master: "Master's degree",
+  phd: "PhD",
+};
 
 // Answers the page asks a follow-up about when they are too vague to write from.
 export const FOLLOW_UP_KEYS = ["jobWhat", "projWhat"];

@@ -1,8 +1,8 @@
 // The conversation as a state machine over SCRIPT. Pure functions: each returns a new State,
 // and the page renders it. No React, no DOM, no network.
-import { groupKeys, indexOf, SCRIPT } from "./script.ts";
+import { DEGREE_TEXT, groupKeys, indexOf, SCRIPT } from "./script.ts";
 import type { Group, Item, LogEntry, Mode, Question, Resume, State } from "./types.ts";
-import { isSkipWord, validate, westernDigits } from "./validate.ts";
+import { isSkipWord, normalizeDate, validate, westernDigits } from "./validate.ts";
 import type { Problem } from "./validate.ts";
 
 export type Result = {
@@ -42,6 +42,7 @@ function nextIndex(state: State, from: number): number {
   for (let i = from + 1; i < SCRIPT.length; i++) {
     const question = SCRIPT[i];
     if (question.group === "job" && state.answers.hasJob === "no") continue;
+    if (question.group === "project" && state.answers.hasProject === "no") continue;
     // In update mode, what the CV already says is not asked again; jobs and projects are,
     // so new ones can be added.
     if (state.mode === "update" && !question.group && state.answers[question.key]) continue;
@@ -69,6 +70,9 @@ function advance(state: State, question: Question): Result {
   if (question.key === "hasJob" && state.answers.hasJob === "no") {
     next = { ...next, log: [...next.log, { kind: "note", id: "no_job" }] };
   }
+  if (question.key === "hasProject" && state.answers.hasProject === "no") {
+    next = { ...next, log: [...next.log, { kind: "note", id: "no_project" }] };
+  }
   return { state: moveTo(next, nextIndex(next, state.at)), needs: question.writes };
 }
 
@@ -83,7 +87,7 @@ export function answer(state: State, text: string): Result {
     const problem = validate(question.kind, value);
     if (problem) return { state, error: problem };
   }
-  const stored = question.kind === "date" || question.kind === "gpa" ? westernDigits(value) : value;
+  const stored = question.kind === "date" ? normalizeDate(value) ?? value : question.kind === "gpa" ? westernDigits(value) : value;
   const skipped = { ...state.skipped };
   delete skipped[question.key];
   const next: State = {
@@ -208,7 +212,9 @@ export function toResume(state: State, categoryOf: (skill: string) => string = (
       role_line: answers.tools ?? "",
       bullets,
     })),
-    education: a.school ? [{ institution: a.school, degree: en("degree"), major: en("major"), end: a.grad ?? "", gpa: a.gpa ?? "", achievements: [] }] : [],
+    education: a.school
+      ? [{ institution: a.school, degree: DEGREE_TEXT[a.degree] ?? a.degree ?? "", major: en("field"), end: a.grad ?? "", gpa: a.gpa ?? "", achievements: [] }]
+      : [],
     skills,
     projects: state.projects.map(({ answers, lines: bullets }) => ({
       name: answers.projName ?? "",

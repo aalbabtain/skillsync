@@ -53,8 +53,8 @@ test("back edits an earlier answer and resumes where the person was", () => {
   let state = say(start("scratch"), "Sara Alharbi", "SE student", "skip", "s@x.io");
   state = back(state, "field");
   assert.equal(current(state)?.key, "field");
-  state = say(state, "Software Engineering student");
-  assert.equal(state.answers.field, "Software Engineering student");
+  state = say(state, "Software Engineering");
+  assert.equal(state.answers.field, "Software Engineering");
   assert.equal(current(state)?.key, "phone");
 });
 
@@ -88,7 +88,7 @@ test("a finished project waits for its bullets, then add another repeats it", ()
   state = say(state, "Portfolio", "a site for my work", "skip", "skip", "https://sara.dev");
   state = addAnother(saveItem(state, "project", ["Built a personal site"]), false);
   assert.equal(state.projects.length, 2);
-  assert.equal(current(state)?.key, "certs");
+  assert.equal(current(state)?.key, "skills");
 });
 
 test("update mode asks only what is missing", () => {
@@ -135,4 +135,29 @@ test("rewritten lines replace an item's lines", () => {
   state = addAnother(saveItem(skip(state).state, "project", ["Built an API"]), false);
   state = replaceLines(state, "project", 0, ["Built the SkillSync API"]);
   assert.deepEqual(state.projects[0].lines, ["Built the SkillSync API"]);
+});
+
+test("no to hasProject skips the project questions", () => {
+  const state = say(atKey("hasProject"), "no");
+  assert.equal(current(state)?.key, "skills");
+  assert.ok(state.log.some((entry) => entry.kind === "note" && entry.id === "no_project"));
+});
+
+test("projects come before skills, and the degree is a choice", () => {
+  assert.ok(indexOf("projName") < indexOf("skills"));
+  assert.equal(indexOf("major"), -1);
+  assert.equal(answer(atKey("degree"), "B.Sc.").error, "empty");
+  assert.equal(current(say(atKey("degree"), "bachelor"))?.key, "grad");
+});
+
+test("a loosely written date is stored as Mmm YYYY", () => {
+  const state = say(atKey("grad"), "june 2027");
+  assert.equal(state.answers.grad, "Jun 2027");
+});
+
+test("the CV says the degree in words and the field as the major", () => {
+  const state = { ...start("scratch"), answers: { name: "Sara", field: "Software Engineering", school: "KSU", degree: "bachelor", grad: "Jun 2027" } };
+  const school = toResume(state).education[0];
+  assert.equal(school.degree, "Bachelor's degree");
+  assert.equal(school.major, "Software Engineering");
 });
