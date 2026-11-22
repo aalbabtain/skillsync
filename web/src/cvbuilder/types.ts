@@ -54,6 +54,8 @@ export type State = {
   // New projects and jobs still to be asked about, and whether the current one is one of them.
   queue?: { group: Group; answers: Record<string, string> }[];
   newsItem?: boolean;
+  // The skill headings of an uploaded CV, kept in update mode.
+  skillGroups?: { name: string; items: string[] }[];
   // A category for each skill the catalog does not know, from the writer.
   skillCategories?: Record<string, string>;
   log: LogEntry[];

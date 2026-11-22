@@ -69,6 +69,11 @@ class ImportedProject(BaseModel):
     lines: list[str] = []
 
 
+class ImportedSkillGroup(BaseModel):
+    name: str = ""
+    items: list[str] = []
+
+
 class ImportedJob(BaseModel):
     company: str = ""
     title: str = ""
@@ -88,6 +93,7 @@ class Imported(BaseModel):
     grad: str = ""
     gpa: str = ""
     skills: list[str] = []
+    skill_groups: list[ImportedSkillGroup] = []
     projects: list[ImportedProject] = []
     jobs: list[ImportedJob] = []
     certs: list[str] = []
@@ -297,6 +303,16 @@ def _kept(found: Imported, cv_text: str) -> dict:
     for key in ("skills", "certs", "langs", "activities"):
         items = [_in_cv(item, cv_text) for item in getattr(found, key)]
         resume[key] = list(dict.fromkeys(item for item in items if item))[:MAX_IMPORT_ITEMS]
+    # The CV's own skill headings, kept so an update does not reorder them.
+    groups = []
+    for group in found.skill_groups[:12]:
+        name = _in_cv(group.name, cv_text)
+        items = list(dict.fromkeys(v for item in group.items[:40] if (v := _in_cv(item, cv_text))))
+        if name and items:
+            groups.append({"name": name, "items": items})
+    resume["skill_groups"] = groups
+    grouped = [item for group in groups for item in group["items"]]
+    resume["skills"] = list(dict.fromkeys(grouped + resume["skills"]))[:60]
     projects = []
     for project in found.projects[:MAX_IMPORT_ITEMS]:
         name = _in_cv(project.name, cv_text)

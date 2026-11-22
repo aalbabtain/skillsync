@@ -489,7 +489,7 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
         ),
         lines: job.lines,
       }));
-      setState({ ...start("update", { answers, projects, jobs }), summary: resume.summary });
+      setState({ ...start("update", { answers, projects, jobs }), summary: resume.summary, skillGroups: resume.skill_groups ?? [] });
       setImporting("idle");
     } catch (caught) {
       setImporting("choose");
@@ -530,8 +530,8 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     return applyEnglish(toResume(live, categoryOf), state.textEnglish ?? {});
   }, [state, draft, question, followKey, writing, categoryOf]);
   const resume = useMemo(
-    () => (baseResume ? regroup(baseResume, resolve, state?.skillCategories ?? {}) : null),
-    [baseResume, resolve, state?.skillCategories],
+    () => (baseResume ? regroup(baseResume, resolve, state?.skillCategories ?? {}, state?.skillGroups ?? []) : null),
+    [baseResume, resolve, state?.skillCategories, state?.skillGroups],
   );
 
 
@@ -544,8 +544,10 @@ export default function CvBuilderPage({ demoMode }: { demoMode: boolean }) {
     if (!baseResume || !finished) return [];
     const done = new Set(Object.values(state?.textEnglish ?? {}));
     const seen = state?.textEnglish ?? {};
-    return polishable(baseResume).filter((item) => !done.has(item.text) && !(item.text in seen));
-  }, [baseResume, finished, state?.textEnglish]);
+    // Skills already in the uploaded CV are left as the person wrote them.
+    const own = new Set((state?.skillGroups ?? []).flatMap((group) => group.items));
+    return polishable(baseResume).filter((item) => !done.has(item.text) && !(item.text in seen) && !own.has(item.text));
+  }, [baseResume, finished, state?.textEnglish, state?.skillGroups]);
 
   const polishAll = useCallback(async (items: { text: string; kind: PolishKind }[]): Promise<Record<string, string>> => {
     const found: Record<string, string> = {};

@@ -134,3 +134,25 @@ def test_import_reads_every_section_and_cleans_what_the_model_copied(monkeypatch
     assert nakhlah["role"] == "UI/UX & Full-Stack Developer" and nakhlah["tools"] == "Flutter, React, Firebase"
     assert nakhlah["lines"] == ["Wrote the dashboard's authentication and data layer with Firebase Auth", "Built the admin dashboard in React"]
     assert resume["activities"] == ["Member, Artificial Intelligence Club – King Saud University, Mar 2026 – Present"]
+
+
+SKILLS_CV = FULL_CV + """
+SKILLS
+Programming Languages: Java, Python, Dart, TypeScript/JavaScript, PHP, SQL
+Backend & Databases: Firebase (Auth, Firestore, Storage), MySQL/MariaDB, REST APIs
+AI & Agents: Multi-agent design, Prompt engineering"""
+
+
+def test_import_keeps_the_cvs_own_skill_headings(monkeypatch):
+    answer = {"skill_groups": [
+        {"name": "Programming Languages", "items": ["Java", "Python", "TypeScript/JavaScript"]},
+        {"name": "Backend & Databases", "items": ["Firebase (Auth, Firestore, Storage)", "MySQL/MariaDB", "Kubernetes"]},
+        {"name": "Invented Heading", "items": ["Python"]},
+    ]}
+    fake_import(monkeypatch, answer, [])
+    resume = cv_writer.import_resume(SKILLS_CV)
+    assert resume["skill_groups"] == [
+        {"name": "Programming Languages", "items": ["Java", "Python", "TypeScript/JavaScript"]},
+        {"name": "Backend & Databases", "items": ["Firebase (Auth, Firestore, Storage)", "MySQL/MariaDB"]},
+    ]
+    assert "Firebase (Auth, Firestore, Storage)" in resume["skills"]

@@ -1,6 +1,7 @@
 // The conversation as a state machine over SCRIPT. Pure functions: each returns a new State,
 // and the page renders it. No React, no DOM, no network.
 import { DEGREE_TEXT, groupKeys, indexOf, SCRIPT } from "./script.ts";
+import { splitList } from "./skills.ts";
 import { STATE_VERSION } from "./types.ts";
 import type { Group, Item, LogEntry, Mode, Question, Resume, State } from "./types.ts";
 import { isSkipWord, normalizeDate, normalizeRange, validate, westernDigits } from "./validate.ts";
@@ -237,7 +238,7 @@ export function toResume(state: State, categoryOf: (skill: string) => string = (
   // A degree read from a CV may already name its major ("B.Sc. in Software Engineering").
   const degreeText = DEGREE_TEXT[a.degree] ?? a.degree ?? "";
   const skills: Record<string, string[]> = {};
-  for (const skill of list(a.skills)) (skills[categoryOf(skill)] ??= []).push(skill);
+  for (const skill of splitList(a.skills ?? "")) (skills[categoryOf(skill)] ??= []).push(skill);
   return {
     personal: { name: nameCase(a.name ?? ""), field: en("field"), target_title: en("target") },
     contact: { email: a.email ?? "", phone: a.phone ?? "", location: en("location"), linkedin: a.linkedin ?? "", github: a.github ?? "" },

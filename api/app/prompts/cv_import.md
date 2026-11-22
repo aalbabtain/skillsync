@@ -11,6 +11,9 @@ Leave a field or list empty when the CV does not say it. Never guess, never shor
   expected date, as written), gpa (as written, "4.67/5")
 - skills: every skill, tool, language and technology in the skills section, one per item,
   without the section's own headings ("Programming Languages:" is not a skill)
+- skill_groups: the skills section as the CV groups it: each heading as written ("Frameworks &
+  Libraries") with its items as written, one per item ("Firebase (Auth, Firestore, Storage)"
+  is one item). Empty when the CV does not group its skills.
 - projects: every project, in the CV's order, none left out. For each:
   - name: the project's title as written, without its link or dates
   - url: its link, if any ("nakhlahsa.com")

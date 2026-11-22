@@ -51,7 +51,7 @@ export function splitSkills(text: string, catalog: CatalogEntry[]): string[] {
     for (const spelling of [skill.name, ...skill.aliases]) spellings.set(spelling.toLowerCase(), skill.name);
   }
   const out: string[] = [];
-  for (const part of text.split(/[,،\n]/).map((item) => item.trim()).filter(Boolean)) {
+  for (const part of splitList(text)) {
     const words = part.split(/\s+/);
     if (words.length < 2) {
       out.push(part);
@@ -102,5 +102,31 @@ export function skillIndex(catalog: { name: string; category: string; aliases: s
 }
 
 export function resolveSkill(text: string, index: SkillIndex): KnownSkill | null {
-  return index.get(skillKey(text)) ?? null;
+  const exact = index.get(skillKey(text));
+  if (exact) return exact;
+  // "Firebase (Auth, Firestore)" and "TypeScript/JavaScript" are known by their first part,
+  // and keep the name the person wrote.
+  const base = text.replace(/\([^)]*\)/g, "").trim();
+  const first = base.split("/")[0].trim();
+  const known = index.get(skillKey(base)) ?? index.get(skillKey(first));
+  return known ? { name: text.trim(), category: known.category } : null;
+}
+
+/** A list split at its commas, but not at commas inside brackets. */
+export function splitList(text: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let part = "";
+  for (const char of text) {
+    if (char === "(") depth += 1;
+    if (char === ")") depth = Math.max(0, depth - 1);
+    if (depth === 0 && (char === "," || char === "،" || char === "\n")) {
+      out.push(part);
+      part = "";
+    } else {
+      part += char;
+    }
+  }
+  out.push(part);
+  return out.map((item) => item.trim()).filter(Boolean);
 }

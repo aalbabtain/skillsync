@@ -62,3 +62,45 @@ test("regroup files each skill by the catalog, then by the writer's categories, 
   const done = regroup(typed, (skill) => ({ Python: { name: "Python", category: "Programming languages" }, "Problem-Solving": { name: "Problem Solving", category: "Soft skills" } })[skill] ?? null, { "Document Preparation": "Tools" });
   assert.deepEqual(done.skills, { "Soft skills": ["Problem Solving"], Tools: ["Document Preparation"], "Programming languages": ["Python"] });
 });
+
+test("the CV's own skill groups are kept, new skills join the closest one, and Other is one heading", async () => {
+  const { regroup } = await import("./english.ts");
+  const typed = { ...resume, skills: { "Other skills": ["Python, Flutter, Docker, REST APIs, Kubernetes, Firebase (Auth, Firestore, Storage)"] } };
+  const known: Record<string, { name: string; category: string }> = {
+    Python: { name: "Python", category: "Programming languages" },
+    Flutter: { name: "Flutter", category: "Frameworks" },
+    Docker: { name: "Docker", category: "Cloud & DevOps" },
+    "REST APIs": { name: "REST APIs", category: "Other" },
+    Kubernetes: { name: "Kubernetes", category: "Cloud & DevOps" },
+  };
+  const groups = [
+    { name: "Programming Languages", items: ["Python"] },
+    { name: "Frameworks & Libraries", items: ["Flutter"] },
+    { name: "Backend & Databases", items: ["Firebase (Auth, Firestore, Storage)"] },
+    { name: "Tools & Practices", items: ["Docker"] },
+  ];
+  const done = regroup(typed, (skill) => known[skill] ?? null, {}, groups);
+  assert.deepEqual(done.skills, {
+    "Programming Languages": ["Python"],
+    "Frameworks & Libraries": ["Flutter"],
+    "Backend & Databases": ["Firebase (Auth, Firestore, Storage)"],
+    "Tools & Practices": ["Docker", "Kubernetes"],
+    "Other skills": ["REST APIs"],
+  });
+});
+
+test("skills keep their order inside the CV's own headings, new ones after", async () => {
+  const { regroup } = await import("./english.ts");
+  const typed = { ...resume, skills: { Tools: ["Vercel, Docker"], "Cloud & DevOps": ["Git/GitHub, Kubernetes"] } };
+  const groups = [{ name: "Tools & Practices", items: ["Git/GitHub", "Docker", "Vercel"] }];
+  const done = regroup(typed, (skill) => (skill === "Kubernetes" ? { name: skill, category: "Cloud & DevOps" } : null), {}, groups);
+  assert.deepEqual(done.skills, { "Tools & Practices": ["Git/GitHub", "Docker", "Vercel", "Kubernetes"] });
+});
+
+test("a skill already under the CV's own heading keeps the person's spelling", async () => {
+  const { regroup } = await import("./english.ts");
+  const typed = { ...resume, skills: { "AI/ML": ["Prompt engineering"] } };
+  const groups = [{ name: "AI & Agents", items: ["Prompt engineering"] }];
+  const done = regroup(typed, () => ({ name: "Prompt Engineering", category: "AI/ML" }), {}, groups);
+  assert.deepEqual(done.skills, { "AI & Agents": ["Prompt engineering"] });
+});

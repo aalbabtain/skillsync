@@ -357,7 +357,7 @@ export type CvImported = {
   resume: {
     name: string; title: string; location: string; summary: string; field: string;
     school: string; degree: string; grad: string; gpa: string;
-    skills: string[]; projects: CvImportedProject[]; jobs: CvImportedJob[];
+    skills: string[]; skill_groups: { name: string; items: string[] }[]; projects: CvImportedProject[]; jobs: CvImportedJob[];
     certs: string[]; langs: string[]; activities: string[];
   };
   contact: { email: string; phone: string; linkedin: string; github: string };

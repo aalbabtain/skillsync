@@ -40,3 +40,18 @@ test("a skill is found in the catalog whatever its hyphens, capitals or a traili
   assert.deepEqual(resolveSkill("microsoft  excel", index), { name: "Excel", category: "Tools" });
   assert.equal(resolveSkill("Document Preparation", index), null);
 });
+
+test("commas inside brackets do not split a skill", async () => {
+  const { splitList } = await import("./skills.ts");
+  assert.deepEqual(splitList("Firebase (Auth, Firestore, Storage), MySQL/MariaDB, AWS (EC2, S3)"), ["Firebase (Auth, Firestore, Storage)", "MySQL/MariaDB", "AWS (EC2, S3)"]);
+});
+
+test("a compound skill is known by its first part, and keeps its own name", async () => {
+  const { resolveSkill, skillIndex } = await import("./skills.ts");
+  const index = skillIndex([
+    { name: "TypeScript", category: "Programming languages", aliases: ["typescript"] },
+    { name: "Firebase", category: "Databases", aliases: ["firebase"] },
+  ]);
+  assert.deepEqual(resolveSkill("TypeScript/JavaScript", index), { name: "TypeScript/JavaScript", category: "Programming languages" });
+  assert.deepEqual(resolveSkill("Firebase (Auth, Firestore, Storage)", index), { name: "Firebase (Auth, Firestore, Storage)", category: "Databases" });
+});
