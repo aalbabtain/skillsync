@@ -110,8 +110,12 @@ class Resume(BaseModel):
     activities: list[str] = Field(default=[], max_length=15)
 
 
-def _run(text: str, *, bold: bool = False, italic: bool = False, size: int | None = None) -> str:
-    props = ("<w:b/>" if bold else "") + ("<w:i/>" if italic else "") + (f'<w:sz w:val="{size}"/>' if size else "")
+LINK_COLOR = "0563C1"
+
+
+def _run(text: str, *, bold: bool = False, italic: bool = False, size: int | None = None, color: str = "") -> str:
+    props = ("<w:b/>" if bold else "") + ("<w:i/>" if italic else "") + (f'<w:color w:val="{color}"/>' if color else "")
+    props += f'<w:sz w:val="{size}"/>' if size else ""
     rpr = f"<w:rPr>{props}</w:rPr>" if props else ""
     return f'<w:r>{rpr}<w:t xml:space="preserve">{escape(text)}</w:t></w:r>'
 
@@ -119,7 +123,7 @@ def _run(text: str, *, bold: bool = False, italic: bool = False, size: int | Non
 def _link(text: str, target: str) -> str:
     """A run that opens target when clicked. Its relationship id is filled in by build_docx,
     which numbers the links once the page's size is chosen."""
-    return _hyperlink(_run(text), target)
+    return _hyperlink(_run(text, color=LINK_COLOR), target)
 
 
 def _hyperlink(runs: str, target: str) -> str:
@@ -192,10 +196,9 @@ def split_dates(line: str) -> tuple[str, str]:
 
 
 def _contact_run(text: str, link: str, size: int) -> str:
-    run = _run(text.strip(), size=size)
     if not link.strip():
-        return run
-    return _hyperlink(run, _href(link))
+        return _run(text.strip(), size=size)
+    return _hyperlink(_run(text.strip(), size=size, color=LINK_COLOR), _href(link))
 
 
 def _bullets(lines: list[str]) -> str:

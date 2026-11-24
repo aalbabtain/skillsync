@@ -110,6 +110,7 @@ def test_links_are_clickable():
     for target in ("mailto:sara@example.com", "https://linkedin.com/in/sara-a", "https://github.com/sara-a/skillsync"):
         assert f'Target="{target}" TargetMode="External"' in rels
     assert xml.count("<w:hyperlink ") == 3
+    assert xml.count('<w:color w:val="0563C1"/>') == 3
     assert "link:" not in xml
 
 
