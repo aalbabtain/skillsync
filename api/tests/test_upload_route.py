@@ -25,14 +25,14 @@ def test_accepts_a_pdf_and_returns_its_text():
     assert len(body["run_id"]) == 36
     assert body["pages"] == 1
     assert body["characters"] >= 40
-    assert "Ahmed Ababtain" in body["text"]
+    assert "Example Candidate" in body["text"]
 
 
 def test_accepts_an_arabic_pdf():
     response = upload("arabic_cv.pdf")
 
     assert response.status_code == 200
-    assert "أحمد" in response.json()["text"]
+    assert "مرشح" in response.json()["text"]
 
 
 def test_rejects_a_file_that_is_neither_pdf_nor_word():

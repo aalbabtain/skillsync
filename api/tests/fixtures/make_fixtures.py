@@ -20,7 +20,7 @@ ARABIC_FONT_URL = (
 )
 
 ENGLISH = [
-    "Ahmed Ababtain",
+    "Example Candidate",
     "Computer Science, King Saud University",
     "MARKER-7731",
     "Skills: Python, FastAPI, React, TypeScript, SQL",
@@ -28,7 +28,7 @@ ENGLISH = [
 ]
 
 ARABIC = [
-    "أحمد أبا بطين",
+    "مرشح تجريبي",
     "علوم الحاسب - جامعة الملك سعود",
     "المهارات: بايثون، فاست API، ريأكت، تايب سكربت",
     "المشاريع: منصة سكيل سينك، مخطط المقررات",

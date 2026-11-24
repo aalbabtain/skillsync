@@ -1,6 +1,6 @@
 from app.verification import normalize, verify_skills
 
-CV = """Ahmed Ababtain
+CV = """Example Candidate
 Skills: Python, ReactJS, TypeScript, PostgreSQL
 Project: SkillSync pipeline built with FastAPI and ReactJS
 """

@@ -7,7 +7,7 @@ from app.main import app
 
 client = TestClient(app)
 
-CV_TEXT = """Ahmed Ababtain
+CV_TEXT = """Example Candidate
 Skills: Python, ReactJS, TypeScript
 Project: SkillSync pipeline built with FastAPI and ReactJS
 """

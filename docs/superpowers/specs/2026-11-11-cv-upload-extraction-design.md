@@ -34,7 +34,7 @@ Success `200`:
   "filename": "cv.pdf",
   "pages": 2,
   "characters": 1840,
-  "text": "Ahmed Ababtain\n..."
+  "text": "Example Candidate\n..."
 }
 ```
 

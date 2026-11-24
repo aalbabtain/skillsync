@@ -17,7 +17,7 @@ def test_extracts_latin_text():
     document = extract(read("english_cv.pdf"))
 
     assert document.pages == 1
-    assert "Ahmed Ababtain" in document.text
+    assert "Example Candidate" in document.text
     assert "FastAPI" in document.text
     assert document.characters >= 40
 
@@ -26,7 +26,7 @@ def test_extracts_arabic_text():
     document = extract(read("arabic_cv.pdf"))
 
     assert document.pages == 1
-    assert "أحمد" in document.text
+    assert "مرشح" in document.text
     assert "بايثون" in document.text
     assert "جامعة" in document.text
     assert document.characters >= 40

@@ -1,6 +1,6 @@
 from app.agents import cv_skills, mock_extractor
 
-CV_TEXT = """Ahmed Ababtain
+CV_TEXT = """Example Candidate
 Skills: Python, React, Docker
 Built a FastAPI service with PostgreSQL
 """

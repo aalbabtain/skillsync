@@ -70,7 +70,7 @@ HERE = Path(__file__).resolve().parent
 ARABIC_FONT = HERE / "NotoNaskhArabic.ttf"
 
 ENGLISH = [
-    "Ahmed Ababtain",
+    "Example Candidate",
     "Computer Science, King Saud University",
     "MARKER-7731",
     "Skills: Python, FastAPI, React, TypeScript, SQL",
@@ -135,7 +135,7 @@ def test_extracts_latin_text():
     document = extract(read("english_cv.pdf"))
 
     assert document.pages == 1
-    assert "Ahmed Ababtain" in document.text
+    assert "Example Candidate" in document.text
     assert "FastAPI" in document.text
     assert document.characters >= 40
 
@@ -277,7 +277,7 @@ git commit -m "feat: extract text from PDF uploads"
 
 ```python
 ARABIC_LINES = [
-    "أحمد أبا بطين",
+    "مرشح تجريبي",
     "علوم الحاسب - جامعة الملك سعود",
     "المهارات: بايثون، فاستAPI، ريأكت، تايب سكربت",
     "المشاريع: منصة سكيل سينك، مخطط المقررات",
@@ -303,7 +303,7 @@ def test_extracts_arabic_text():
     document = extract(read("arabic_cv.pdf"))
 
     assert document.pages == 1
-    assert "أحمد" in document.text
+    assert "مرشح" in document.text
     assert "بايثون" in document.text
     assert document.characters >= 40
 ```
@@ -480,7 +480,7 @@ def test_accepts_a_pdf_and_returns_its_text():
     assert len(body["run_id"]) == 36
     assert body["pages"] == 1
     assert body["characters"] >= 40
-    assert "Ahmed Ababtain" in body["text"]
+    assert "Example Candidate" in body["text"]
 
 
 def test_rejects_a_non_pdf_content_type():
