@@ -116,6 +116,27 @@ def _run(text: str, *, bold: bool = False, italic: bool = False, size: int | Non
     return f'<w:r>{rpr}<w:t xml:space="preserve">{escape(text)}</w:t></w:r>'
 
 
+def _link(text: str, target: str) -> str:
+    """A run that opens target when clicked. Its relationship id is filled in by build_docx,
+    which numbers the links once the page's size is chosen."""
+    return _hyperlink(_run(text), target)
+
+
+def _hyperlink(runs: str, target: str) -> str:
+    ref = LINK_PREFIX + escape(target, {'"': "&quot;"})
+    return f'<w:hyperlink r:id="{ref}">{runs}</w:hyperlink>'
+
+
+def _href(link: str) -> str:
+    """The address a link opens: an email gets mailto:, a bare address gets https://."""
+    link = link.strip()
+    if re.match(r"^[a-z][a-z0-9+.-]*:", link, re.I):
+        return link
+    if "@" in link and "/" not in link:
+        return f"mailto:{link}"
+    return f"https://{link}"
+
+
 def _tab() -> str:
     return "<w:r><w:tab/></w:r>"
 
@@ -145,7 +166,7 @@ def _dates(start: str, end: str) -> str:
 def _title_row(title: str, link: str, dates: str) -> str:
     runs = _run(title, bold=True)
     if link:
-        runs += _run(f" | {_bare(link)}")
+        runs += _run(" | ") + _link(_bare(link), _href(link))
     if dates:
         runs += _tab() + _run(dates)
     return _para(runs, tab=True, before=_gap(60), after=0)
@@ -170,6 +191,13 @@ def split_dates(line: str) -> tuple[str, str]:
     return line[: match.start()].strip(" ,–-"), match.group(1).replace(" - ", " – ")
 
 
+def _contact_run(text: str, link: str, size: int) -> str:
+    run = _run(text.strip(), size=size)
+    if not link.strip():
+        return run
+    return _hyperlink(run, _href(link))
+
+
 def _bullets(lines: list[str]) -> str:
     return "".join(_para(_run(line), bullet=True, after=0) for line in lines if line.strip())
 
@@ -179,9 +207,14 @@ def _body(resume: Resume) -> str:
     out = [_para(_run(p.name, bold=True, size=_half_points("name")), center=True, after=0)]
     if title := (p.target_title or p.field).strip():
         out.append(_para(_run(title, bold=True, size=_half_points("title")), center=True, after=20))
-    contact = [c.location, c.phone, c.email, _bare(c.linkedin), _bare(c.github)]
-    if line := " | ".join(part.strip() for part in contact if part.strip()):
-        out.append(_para(_run(line, size=_half_points("contact")), center=True, after=40))
+    size = _half_points("contact")
+    contact = [
+        _contact_run(part, link, size)
+        for part, link in ((c.location, ""), (c.phone, ""), (c.email, c.email), (_bare(c.linkedin), c.linkedin), (_bare(c.github), c.github))
+        if part.strip()
+    ]
+    if contact:
+        out.append(_para(_run(" | ", size=size).join(contact), center=True, after=40))
 
     if resume.summary.strip():
         out += [_heading("Professional Summary"), _para(_run(resume.summary.strip()))]
@@ -240,6 +273,10 @@ def _body(resume: Resume) -> str:
 
 
 NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+R_NS = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
+LINK_PREFIX = "link:"
+LINK_ID = re.compile(rf'r:id="{LINK_PREFIX}([^"]*)"')
+HYPERLINK = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 
 CONTENT_TYPES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -259,7 +296,25 @@ DOCUMENT_RELS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>
-</Relationships>"""
+{links}</Relationships>"""
+
+
+def _numbered_links(body: str) -> tuple[str, str]:
+    """The body with each link's relationship id, and the relationships that point them at
+    their addresses."""
+    ids: dict[str, str] = {}
+
+    def number(match: re.Match) -> str:
+        target = match.group(1)
+        ids.setdefault(target, f"rIdLink{len(ids) + 1}")
+        return f'r:id="{ids[target]}"'
+
+    body = LINK_ID.sub(number, body)
+    rels = "".join(
+        f'<Relationship Id="{rid}" Type="{HYPERLINK}" Target="{target}" TargetMode="External"/>\n'
+        for target, rid in ids.items()
+    )
+    return body, rels
 
 STYLES = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles {NS}>
@@ -330,8 +385,9 @@ def fitted_body(resume: Resume) -> tuple[str, float]:
 
 def build_docx(resume: Resume) -> bytes:
     body, body_pt = fitted_body(resume)
+    body, links = _numbered_links(body)
     document = (
-        f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:document {NS}><w:body>{body}'
+        f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:document {NS} {R_NS}><w:body>{body}'
         f'<w:sectPr><w:pgSz w:w="{PAGE_WIDTH}" w:h="{PAGE_HEIGHT}"/>'
         f'<w:pgMar w:top="{MARGIN_TOP}" w:right="{MARGIN_SIDE}" w:bottom="{MARGIN_BOTTOM}" w:left="{MARGIN_SIDE}" w:header="0" w:footer="0" w:gutter="0"/>'
         "</w:sectPr></w:body></w:document>"
@@ -340,7 +396,7 @@ def build_docx(resume: Resume) -> bytes:
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("[Content_Types].xml", CONTENT_TYPES)
         archive.writestr("_rels/.rels", ROOT_RELS)
-        archive.writestr("word/_rels/document.xml.rels", DOCUMENT_RELS)
+        archive.writestr("word/_rels/document.xml.rels", DOCUMENT_RELS.replace("{links}", links))
         archive.writestr("word/document.xml", document)
         archive.writestr("word/styles.xml", STYLES.replace("{size}", str(round(2 * body_pt))))
         archive.writestr("word/numbering.xml", NUMBERING)

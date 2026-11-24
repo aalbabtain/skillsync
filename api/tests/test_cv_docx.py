@@ -100,3 +100,22 @@ def test_activities_have_their_section_with_dates_at_the_line_end():
     assert "ACTIVITIES & MEMBERSHIPS" in text
     assert "Member, Artificial Intelligence Club – King Saud University" in text
     assert '<w:r><w:tab/></w:r><w:r><w:t xml:space="preserve">Mar 2026 – Present</w:t>' in xml
+
+
+def test_links_are_clickable():
+    data = build_docx(Resume.model_validate(SAMPLE))
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        rels = archive.read("word/_rels/document.xml.rels").decode("utf-8")
+    xml = document_xml(data)
+    for target in ("mailto:sara@example.com", "https://linkedin.com/in/sara-a", "https://github.com/sara-a/skillsync"):
+        assert f'Target="{target}" TargetMode="External"' in rels
+    assert xml.count("<w:hyperlink ") == 3
+    assert "link:" not in xml
+
+
+def test_a_bare_link_opens_over_https():
+    data = build_docx(Resume.model_validate({**SAMPLE, "projects": [{**SAMPLE["projects"][0], "url": "nakhlahsa.com"}]}))
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        rels = archive.read("word/_rels/document.xml.rels").decode("utf-8")
+    assert 'Target="https://nakhlahsa.com"' in rels
+    assert ">nakhlahsa.com<" in document_xml(data)
