@@ -35,7 +35,7 @@ ARABIC = [
 ]
 
 BACKEND = [
-    "Sara Alharbi",
+    "Example Candidate",
     "Backend Engineer, Riyadh",
     "Skills: Python, Django, PostgreSQL, Docker, AWS",
     "Experience: REST APIs in Django with Redis caching",

@@ -71,8 +71,8 @@ def test_model_error_ends_with_its_code(monkeypatch):
 def test_contact_in_answers_is_never_passed_on(monkeypatch):
     seen = []
     monkeypatch.setattr(cv_writer, "write_lines", lambda task, answers: seen.append(answers) or iter([]))
-    client.post("/api/cv/write/stream", json={"task": "summary", "answers": {"background": "student, sara@example.com"}})
-    assert "sara@example.com" not in json.dumps(seen[0])
+    client.post("/api/cv/write/stream", json={"task": "summary", "answers": {"background": "student, candidate@example.com"}})
+    assert "candidate@example.com" not in json.dumps(seen[0])
 
 
 def test_bad_task_is_refused():

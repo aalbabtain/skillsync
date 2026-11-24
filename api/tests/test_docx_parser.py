@@ -11,18 +11,18 @@ SKILLS = "Skills: Python, FastAPI, React and TypeScript in production projects."
 
 
 def test_reads_paragraphs_in_order():
-    data = build_docx(paragraph("Sara Alharbi") + paragraph(SKILLS))
+    data = build_docx(paragraph("Example Candidate") + paragraph(SKILLS))
 
     document = extract_document(data)
 
-    assert document.text == f"Sara Alharbi\n{SKILLS}"
+    assert document.text == f"Example Candidate\n{SKILLS}"
     assert document.pages == 1
 
 
 def test_reads_the_header_first():
-    data = build_docx(paragraph(SKILLS), header=paragraph("Sara Alharbi, Riyadh"))
+    data = build_docx(paragraph(SKILLS), header=paragraph("Example Candidate, Riyadh"))
 
-    assert extract_document(data).text.splitlines()[0] == "Sara Alharbi, Riyadh"
+    assert extract_document(data).text.splitlines()[0] == "Example Candidate, Riyadh"
 
 
 def test_reads_table_cells():
@@ -88,7 +88,7 @@ def code_of(data: bytes) -> str:
 
 
 def test_rejects_an_almost_empty_document():
-    assert code_of(build_docx(paragraph("Sara"))) == "DOCX_NO_TEXT"
+    assert code_of(build_docx(paragraph("Example"))) == "DOCX_NO_TEXT"
 
 
 def test_rejects_a_broken_zip():

@@ -43,7 +43,7 @@
 
 1. **Arabic answers with Western or Arabic digits** ("٣ مشاريع", "3 projects"). A number in a written line must match either form. This is tested in Task 1.
 2. **A short company name** ("STC" for "Saudi Telecom Company"). The check rejects it, and the person's own words are offered instead, so the CV is never empty. Tested in Task 3.
-3. **An email or phone inside free text** ("contact me at sara@x.com"). It is stripped before the model call. Tested in Task 3.
+3. **An email or phone inside free text** ("contact me at candidate@x.com"). It is stripped before the model call. Tested in Task 3.
 4. **Reloading mid-conversation, or a stored state from an older version.** The page resumes, or starts clean on a version mismatch, and never crashes. Tested in Task 6.
 5. **A model answer cut off mid-stream (the RESTART sentinel).** Lines already sent are not sent twice. Tested in Task 2.
 
@@ -149,7 +149,7 @@ def test_link_must_appear():
   - `test_model_lines_streamed_one_by_one`
   - `test_restart_does_not_repeat_lines`: the first model yields one line and then raises 503; the second yields the same line and a new one. Expect 2 lines in total.
   - `test_strip_contact_removes_email_phone_url`
-  - `test_model_request_has_no_contact`: an answer containing `sara@example.com` and `+966 50 000 0000`; assert that neither appears in the `contents` the fake client received.
+  - `test_model_request_has_no_contact`: an answer containing `candidate@example.com` and `+966 50 000 0000`; assert that neither appears in the `contents` the fake client received.
   - `test_translate_passes_latin_through`
 
 - [ ] **Step 2: Run them and confirm they fail.**

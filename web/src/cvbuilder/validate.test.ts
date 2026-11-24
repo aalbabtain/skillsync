@@ -18,17 +18,17 @@ test("gpa accepts 4.6/5 and 3.2, refuses 6/5", () => {
 });
 
 test("email, phone and https links", () => {
-  assert.equal(validate("email", "sara@example.com"), "");
-  assert.equal(validate("email", "sara at example"), "email");
+  assert.equal(validate("email", "candidate@example.com"), "");
+  assert.equal(validate("email", "candidate at example"), "email");
   assert.equal(validate("phone", "+966 50 000 0000"), "");
   assert.equal(validate("phone", "call me"), "phone");
-  assert.equal(validate("url", "https://linkedin.com/in/sara"), "");
-  assert.equal(validate("url", "linkedin.com/in/sara"), "url");
+  assert.equal(validate("url", "https://linkedin.com/in/candidate"), "");
+  assert.equal(validate("url", "linkedin.com/in/candidate"), "url");
 });
 
 test("names in Latin letters only, empty answers refused", () => {
-  assert.equal(validate("latin", "Sara Alharbi"), "");
-  assert.equal(validate("latin", "سارة"), "latin");
+  assert.equal(validate("latin", "Example Candidate"), "");
+  assert.equal(validate("latin", "مرشح"), "latin");
   assert.equal(validate("text", "  "), "empty");
 });
 

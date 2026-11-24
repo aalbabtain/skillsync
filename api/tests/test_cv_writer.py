@@ -90,9 +90,9 @@ def test_restart_does_not_repeat_lines(monkeypatch):
 
 
 def test_strip_contact_removes_email_phone_url():
-    text = "Reach me at sara@example.com or +966 50 000 0000, code at https://github.com/sara/app."
+    text = "Reach me at candidate@example.com or +966 50 000 0000, code at https://github.com/candidate/app."
     cleaned = cv_writer.strip_contact(text)
-    for gone in ("sara@example.com", "+966", "000 0000", "github.com"):
+    for gone in ("candidate@example.com", "+966", "000 0000", "github.com"):
         assert gone not in cleaned
     assert cleaned.startswith("Reach me at")
 
@@ -105,9 +105,9 @@ def test_strip_contact_keeps_year_ranges_and_removes_local_numbers():
 def test_model_request_has_no_contact(monkeypatch):
     seen = []
     fake_model(monkeypatch, {"main-model": ['{"lines": []}']}, seen)
-    answers = {"background": "student, email sara@example.com, phone +966 50 000 0000"}
+    answers = {"background": "student, email candidate@example.com, phone +966 50 000 0000"}
     list(cv_writer.write_lines("summary", answers))
-    assert "sara@example.com" not in seen[0] and "000 0000" not in seen[0]
+    assert "candidate@example.com" not in seen[0] and "000 0000" not in seen[0]
 
 
 def test_rejected_facts_reach_the_model_as_things_to_avoid(monkeypatch):

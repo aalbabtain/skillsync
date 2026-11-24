@@ -10,8 +10,8 @@ from app.parsers import extract_document
 
 client = TestClient(app)
 
-CV = """Sara Alharbi
-sara@example.com | +966 50 000 0000 | linkedin.com/in/sara-a | github.com/sara-a
+CV = """Example Candidate
+candidate@example.com | +966 50 000 0000 | linkedin.com/in/candidate | github.com/candidate
 King Saud University, B.Sc. in Software Engineering, Jun 2027
 Skills: Python, FastAPI, Docker
 SkillSync: built the API with FastAPI and tested it with pytest"""
@@ -26,10 +26,10 @@ def fresh_limits():
 
 def test_contact_found_by_code():
     assert cv_writer.contact_from(CV) == {
-        "email": "sara@example.com",
+        "email": "candidate@example.com",
         "phone": "+966 50 000 0000",
-        "linkedin": "https://linkedin.com/in/sara-a",
-        "github": "https://github.com/sara-a",
+        "linkedin": "https://linkedin.com/in/candidate",
+        "github": "https://github.com/candidate",
     }
 
 
@@ -50,15 +50,15 @@ def fake_import(monkeypatch, answer, seen):
 
 def test_model_never_sees_contact(monkeypatch):
     seen = []
-    fake_import(monkeypatch, {"name": "Sara Alharbi"}, seen)
+    fake_import(monkeypatch, {"name": "Example Candidate"}, seen)
     cv_writer.import_resume(CV)
-    for gone in ("sara@example.com", "000 0000", "linkedin.com", "github.com"):
+    for gone in ("candidate@example.com", "000 0000", "linkedin.com", "github.com"):
         assert gone not in seen[0]
 
 
 def test_invented_value_dropped(monkeypatch):
     answer = {
-        "name": "Sara Alharbi", "school": "MIT", "degree": "B.Sc. in Software Engineering",
+        "name": "Example Candidate", "school": "MIT", "degree": "B.Sc. in Software Engineering",
         "skills": ["Python", "Kubernetes"],
         "projects": [{"name": "SkillSync", "lines": ["Built the API with FastAPI", "Deployed it on AWS"]}],
     }
@@ -72,15 +72,15 @@ def test_invented_value_dropped(monkeypatch):
 def test_demo_import_backend_cv():
     text = extract_document(open("tests/fixtures/cases/backend_cv.pdf", "rb").read()).text
     resume = cv_writer.import_resume(text, extractor=cv_skills.MOCK)
-    assert resume["name"] == "Sara Alharbi"
+    assert resume["name"] == "Example Candidate"
     assert len(resume["skills"]) >= 3
 
 
 def test_import_route(monkeypatch):
     monkeypatch.setattr(cv_skills, "extractor_mode", lambda: cv_skills.MOCK)
     body = client.post("/api/cv/import", json={"text": CV}).json()
-    assert body["resume"]["name"] == "Sara Alharbi"
-    assert body["contact"]["email"] == "sara@example.com"
+    assert body["resume"]["name"] == "Example Candidate"
+    assert body["contact"]["email"] == "candidate@example.com"
 
 
 def test_import_route_refuses_short_text():

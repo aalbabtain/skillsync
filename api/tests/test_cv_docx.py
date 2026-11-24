@@ -10,14 +10,14 @@ from app.parsers import docx
 client = TestClient(app)
 
 SAMPLE = {
-    "personal": {"name": "Sara Alharbi", "field": "Software Engineering student", "target_title": "Backend Developer"},
-    "contact": {"email": "sara@example.com", "phone": "+966 50 000 0000", "location": "Riyadh, Saudi Arabia",
-                "linkedin": "https://linkedin.com/in/sara-a", "github": ""},
+    "personal": {"name": "Example Candidate", "field": "Software Engineering student", "target_title": "Backend Developer"},
+    "contact": {"email": "candidate@example.com", "phone": "+966 50 000 0000", "location": "Riyadh, Saudi Arabia",
+                "linkedin": "https://linkedin.com/in/candidate", "github": ""},
     "summary": "Final-year Software Engineering student who builds APIs with FastAPI.",
     "education": [{"institution": "King Saud University", "degree": "B.Sc.", "major": "Software Engineering",
                    "end": "Jun 2027", "gpa": "4.6/5", "achievements": []}],
     "skills": {"Programming languages": ["Python", "SQL"], "Frameworks": ["FastAPI"]},
-    "projects": [{"name": "SkillSync", "url": "https://github.com/sara-a/skillsync", "start": "Jan 2026", "end": "Present",
+    "projects": [{"name": "SkillSync", "url": "https://github.com/candidate/skillsync", "start": "Jan 2026", "end": "Present",
                   "role_line": "Backend developer | Python, FastAPI", "bullets": ["Built the API with FastAPI", "Wrote the tests with pytest"]}],
 }
 
@@ -29,7 +29,7 @@ def document_xml(data: bytes) -> str:
 
 def test_docx_opens_with_our_reader():
     text = docx.extract(build_docx(Resume.model_validate(SAMPLE))).text
-    for expected in ("Sara Alharbi", "Backend Developer", "sara@example.com", "PROFESSIONAL SUMMARY", "EDUCATION",
+    for expected in ("Example Candidate", "Backend Developer", "candidate@example.com", "PROFESSIONAL SUMMARY", "EDUCATION",
                      "PROJECTS", "TECHNICAL SKILLS", "King Saud University", "Built the API with FastAPI",
                      "Programming languages: Python, SQL"):
         assert expected in text
@@ -60,7 +60,7 @@ def test_route_returns_attachment():
     response = client.post("/api/cv/docx", json=SAMPLE)
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-    assert response.headers["content-disposition"] == 'attachment; filename="Sara-Alharbi-CV.docx"'
+    assert response.headers["content-disposition"] == 'attachment; filename="Example-Candidate-CV.docx"'
     assert zipfile.is_zipfile(io.BytesIO(response.content))
 
 
@@ -107,7 +107,7 @@ def test_links_are_clickable():
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         rels = archive.read("word/_rels/document.xml.rels").decode("utf-8")
     xml = document_xml(data)
-    for target in ("mailto:sara@example.com", "https://linkedin.com/in/sara-a", "https://github.com/sara-a/skillsync"):
+    for target in ("mailto:candidate@example.com", "https://linkedin.com/in/candidate", "https://github.com/candidate/skillsync"):
         assert f'Target="{target}" TargetMode="External"' in rels
     assert xml.count("<w:hyperlink ") == 3
     assert xml.count('<w:color w:val="0563C1"/>') == 3

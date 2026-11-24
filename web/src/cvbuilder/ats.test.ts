@@ -5,7 +5,7 @@ import { checklist } from "./ats.ts";
 import type { Resume } from "./types.ts";
 
 const GOOD: Resume = {
-  personal: { name: "Sara Alharbi", field: "Student", target_title: "" },
+  personal: { name: "Example Candidate", field: "Student", target_title: "" },
   contact: { email: "s@x.io", phone: "+966 50 000 0000", location: "Riyadh", linkedin: "https://linkedin.com/in/s", github: "" },
   summary: "Final-year student who builds APIs.",
   experience: [],

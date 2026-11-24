@@ -50,13 +50,13 @@ def test_judges_the_file_by_its_bytes_not_its_label():
 
 
 def test_accepts_a_word_document_whatever_the_browser_calls_it():
-    data = build_docx(paragraph("Sara Alharbi") + paragraph(SKILLS) + paragraph("MARKER-5512"))
+    data = build_docx(paragraph("Example Candidate") + paragraph(SKILLS) + paragraph("MARKER-5512"))
 
     response = upload("cv.docx", content_type="application/octet-stream", data=data)
 
     assert response.status_code == 200
     assert response.json()["filename"] == "cv.docx"
-    assert "Sara Alharbi" in response.json()["text"]
+    assert "Example Candidate" in response.json()["text"]
 
 
 def test_explains_an_old_word_file():
@@ -68,7 +68,7 @@ def test_explains_an_old_word_file():
 
 def test_never_logs_word_text(caplog):
     caplog.set_level(logging.DEBUG)
-    data = build_docx(paragraph("Sara Alharbi") + paragraph(SKILLS) + paragraph("MARKER-5512"))
+    data = build_docx(paragraph("Example Candidate") + paragraph(SKILLS) + paragraph("MARKER-5512"))
 
     upload("cv.docx", data=data)
 
